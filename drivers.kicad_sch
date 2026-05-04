@@ -1,0 +1,6348 @@
+(kicad_sch
+	(version 20260306)
+	(generator "eeschema")
+	(generator_version "10.0")
+	(uuid "99e042aa-1352-41f9-ba3c-0069edf30160")
+	(paper "A4")
+	(lib_symbols
+		(symbol "C"
+			(pin_names
+				(offset 0.254)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "C"
+				(at 0.635 2.54 0)
+				(show_name yes)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left)
+				)
+			)
+			(property "Value" "C"
+				(at 0.635 -2.54 0)
+				(show_name yes)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left)
+				)
+			)
+			(property "Footprint" ""
+				(at 0.9652 -3.81 0)
+				(show_name yes)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(show_name yes)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" "Unpolarized capacitor"
+				(at 0 0 0)
+				(show_name yes)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_keywords" "cap capacitor"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_fp_filters" "C_*"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "C_0_1"
+				(polyline
+					(pts
+						(xy -2.032 0.762) (xy 2.032 0.762)
+					)
+					(stroke
+						(width 0.508)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -2.032 -0.762) (xy 2.032 -0.762)
+					)
+					(stroke
+						(width 0.508)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "C_1_1"
+				(pin passive line
+					(at 0 3.81 270)
+					(length 2.794)
+					(name ""
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 0 -3.81 90)
+					(length 2.794)
+					(name ""
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+		(symbol "DRV8825_STEPSTICK_1"
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "A"
+				(at 0 -1.27 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "DRV8825_STEPSTICK"
+				(at 0.254 -3.81 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_2x08_P2.54mm_Vertical"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "DRV8825_STEPSTICK_1_0_1"
+				(rectangle
+					(start -10.16 20.32)
+					(end 10.16 -2.54)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+			)
+			(symbol "DRV8825_STEPSTICK_1_1_1"
+				(pin input line
+					(at -12.7 17.78 0)
+					(length 2.54)
+					(name "EN"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -12.7 15.24 0)
+					(length 2.54)
+					(name "M0"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -12.7 12.7 0)
+					(length 2.54)
+					(name "M1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -12.7 10.16 0)
+					(length 2.54)
+					(name "M2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -12.7 7.62 0)
+					(length 2.54)
+					(name "RESET"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "5"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -12.7 5.08 0)
+					(length 2.54)
+					(name "SLEEP"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "6"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -12.7 2.54 0)
+					(length 2.54)
+					(name "STEP"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "7"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -12.7 0 0)
+					(length 2.54)
+					(name "DIR"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "8"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at 12.7 0 180)
+					(length 2.54)
+					(name "GND2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "9"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin open_collector line
+					(at 12.7 2.54 180)
+					(length 2.54)
+					(name "FAULT"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "10"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin output line
+					(at 12.7 5.08 180)
+					(length 2.54)
+					(name "A2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "11"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin output line
+					(at 12.7 7.62 180)
+					(length 2.54)
+					(name "A1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "12"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin output line
+					(at 12.7 10.16 180)
+					(length 2.54)
+					(name "B1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "13"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin output line
+					(at 12.7 12.7 180)
+					(length 2.54)
+					(name "B2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "14"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at 12.7 15.24 180)
+					(length 2.54)
+					(name "GND1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "15"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at 12.7 17.78 180)
+					(length 2.54)
+					(name "VMOT"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "16"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+		(symbol "DRV8825_STEPSTICK_2"
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "A"
+				(at 0 -1.27 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "DRV8825_STEPSTICK"
+				(at 0.254 -3.81 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_2x08_P2.54mm_Vertical"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "DRV8825_STEPSTICK_2_0_1"
+				(rectangle
+					(start -10.16 20.32)
+					(end 10.16 -2.54)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+			)
+			(symbol "DRV8825_STEPSTICK_2_1_1"
+				(pin input line
+					(at -12.7 17.78 0)
+					(length 2.54)
+					(name "EN"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -12.7 15.24 0)
+					(length 2.54)
+					(name "M0"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -12.7 12.7 0)
+					(length 2.54)
+					(name "M1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -12.7 10.16 0)
+					(length 2.54)
+					(name "M2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -12.7 7.62 0)
+					(length 2.54)
+					(name "RESET"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "5"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -12.7 5.08 0)
+					(length 2.54)
+					(name "SLEEP"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "6"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -12.7 2.54 0)
+					(length 2.54)
+					(name "STEP"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "7"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -12.7 0 0)
+					(length 2.54)
+					(name "DIR"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "8"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at 12.7 0 180)
+					(length 2.54)
+					(name "GND2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "9"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin open_collector line
+					(at 12.7 2.54 180)
+					(length 2.54)
+					(name "FAULT"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "10"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin output line
+					(at 12.7 5.08 180)
+					(length 2.54)
+					(name "A2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "11"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin output line
+					(at 12.7 7.62 180)
+					(length 2.54)
+					(name "A1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "12"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin output line
+					(at 12.7 10.16 180)
+					(length 2.54)
+					(name "B1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "13"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin output line
+					(at 12.7 12.7 180)
+					(length 2.54)
+					(name "B2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "14"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at 12.7 15.24 180)
+					(length 2.54)
+					(name "GND1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "15"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at 12.7 17.78 180)
+					(length 2.54)
+					(name "VMOT"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "16"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+		(symbol "DRV8825_STEPSTICK_3"
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "A"
+				(at 0 -1.27 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "DRV8825_STEPSTICK"
+				(at 0.254 -3.81 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_2x08_P2.54mm_Vertical"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "DRV8825_STEPSTICK_3_0_1"
+				(rectangle
+					(start -10.16 20.32)
+					(end 10.16 -2.54)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+			)
+			(symbol "DRV8825_STEPSTICK_3_1_1"
+				(pin input line
+					(at -12.7 17.78 0)
+					(length 2.54)
+					(name "EN"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -12.7 15.24 0)
+					(length 2.54)
+					(name "M0"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -12.7 12.7 0)
+					(length 2.54)
+					(name "M1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -12.7 10.16 0)
+					(length 2.54)
+					(name "M2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -12.7 7.62 0)
+					(length 2.54)
+					(name "RESET"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "5"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -12.7 5.08 0)
+					(length 2.54)
+					(name "SLEEP"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "6"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -12.7 2.54 0)
+					(length 2.54)
+					(name "STEP"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "7"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -12.7 0 0)
+					(length 2.54)
+					(name "DIR"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "8"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at 12.7 0 180)
+					(length 2.54)
+					(name "GND2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "9"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin open_collector line
+					(at 12.7 2.54 180)
+					(length 2.54)
+					(name "FAULT"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "10"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin output line
+					(at 12.7 5.08 180)
+					(length 2.54)
+					(name "A2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "11"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin output line
+					(at 12.7 7.62 180)
+					(length 2.54)
+					(name "A1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "12"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin output line
+					(at 12.7 10.16 180)
+					(length 2.54)
+					(name "B1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "13"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin output line
+					(at 12.7 12.7 180)
+					(length 2.54)
+					(name "B2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "14"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at 12.7 15.24 180)
+					(length 2.54)
+					(name "GND1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "15"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at 12.7 17.78 180)
+					(length 2.54)
+					(name "VMOT"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "16"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+		(symbol "GND"
+			(power global)
+			(pin_names
+				(offset 0)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "#PWR"
+				(at 0 -6.35 0)
+				(show_name yes)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "GND"
+				(at 0 -3.81 0)
+				(show_name yes)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 0 0)
+				(show_name yes)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(show_name yes)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+				(at 0 0 0)
+				(show_name yes)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_keywords" "global power"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "GND_0_1"
+				(polyline
+					(pts
+						(xy 0 0) (xy 0 -1.27) (xy 1.27 -1.27) (xy 0 -2.54) (xy -1.27 -1.27) (xy 0 -1.27)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "GND_1_1"
+				(pin power_in line
+					(at 0 0 270)
+					(length 0)
+					(name ""
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+		(symbol "SteppingMotorDriver_symbols:DRV8825_STEPSTICK"
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "A"
+				(at 0 -1.27 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "DRV8825_STEPSTICK"
+				(at 0.254 -3.81 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_2x08_P2.54mm_Vertical"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "DRV8825_STEPSTICK_0_1"
+				(rectangle
+					(start -10.16 20.32)
+					(end 10.16 -2.54)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+			)
+			(symbol "DRV8825_STEPSTICK_1_1"
+				(pin input line
+					(at -12.7 17.78 0)
+					(length 2.54)
+					(name "EN"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -12.7 15.24 0)
+					(length 2.54)
+					(name "M0"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -12.7 12.7 0)
+					(length 2.54)
+					(name "M1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -12.7 10.16 0)
+					(length 2.54)
+					(name "M2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -12.7 7.62 0)
+					(length 2.54)
+					(name "RESET"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "5"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -12.7 5.08 0)
+					(length 2.54)
+					(name "SLEEP"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "6"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -12.7 2.54 0)
+					(length 2.54)
+					(name "STEP"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "7"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -12.7 0 0)
+					(length 2.54)
+					(name "DIR"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "8"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at 12.7 0 180)
+					(length 2.54)
+					(name "GND2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "9"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin open_collector line
+					(at 12.7 2.54 180)
+					(length 2.54)
+					(name "FAULT"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "10"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin output line
+					(at 12.7 5.08 180)
+					(length 2.54)
+					(name "A2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "11"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin output line
+					(at 12.7 7.62 180)
+					(length 2.54)
+					(name "A1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "12"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin output line
+					(at 12.7 10.16 180)
+					(length 2.54)
+					(name "B1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "13"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin output line
+					(at 12.7 12.7 180)
+					(length 2.54)
+					(name "B2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "14"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at 12.7 15.24 180)
+					(length 2.54)
+					(name "GND1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "15"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at 12.7 17.78 180)
+					(length 2.54)
+					(name "VMOT"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "16"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+		(symbol "SteppingMotorDriver_symbols:MOTOR_CONN_1X4"
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "J"
+				(at -6.096 -2.794 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "MOTOR_CONN_1X4"
+				(at -0.762 10.16 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" "TerminalBlock:TerminalBlock_bornier-4_P5.08mm"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "MOTOR_CONN_1X4_0_1"
+				(rectangle
+					(start -8.89 8.89)
+					(end -2.54 -1.27)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+			)
+			(symbol "MOTOR_CONN_1X4_1_1"
+				(pin passive line
+					(at -11.43 7.62 0)
+					(length 2.54)
+					(name "A1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -11.43 5.08 0)
+					(length 2.54)
+					(name "A2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -11.43 2.54 0)
+					(length 2.54)
+					(name "B1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -11.43 0 0)
+					(length 2.54)
+					(name "B2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+		(symbol "power:+3V3"
+			(power global)
+			(pin_numbers
+				(hide yes)
+			)
+			(pin_names
+				(offset 0)
+				(hide yes)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "#PWR"
+				(at 0 -3.81 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "+3V3"
+				(at 0 3.556 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" "Power symbol creates a global label with name \"+3V3\""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_keywords" "global power"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "+3V3_0_1"
+				(polyline
+					(pts
+						(xy -0.762 1.27) (xy 0 2.54)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0 2.54) (xy 0.762 1.27)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0 0) (xy 0 2.54)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "+3V3_1_1"
+				(pin power_in line
+					(at 0 0 90)
+					(length 0)
+					(name ""
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+		(symbol "power:GNDPWR"
+			(power global)
+			(pin_numbers
+				(hide yes)
+			)
+			(pin_names
+				(offset 0)
+				(hide yes)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "#PWR"
+				(at 0 -5.08 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "GNDPWR"
+				(at 0 -3.302 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 -1.27 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 -1.27 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" "Power symbol creates a global label with name \"GNDPWR\" , global ground"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_keywords" "global ground"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "GNDPWR_0_1"
+				(polyline
+					(pts
+						(xy -1.016 -1.27) (xy -1.27 -2.032) (xy -1.27 -2.032)
+					)
+					(stroke
+						(width 0.2032)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -0.508 -1.27) (xy -0.762 -2.032) (xy -0.762 -2.032)
+					)
+					(stroke
+						(width 0.2032)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0 -1.27) (xy 0 0)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0 -1.27) (xy -0.254 -2.032) (xy -0.254 -2.032)
+					)
+					(stroke
+						(width 0.2032)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0.508 -1.27) (xy 0.254 -2.032) (xy 0.254 -2.032)
+					)
+					(stroke
+						(width 0.2032)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 1.016 -1.27) (xy -1.016 -1.27) (xy -1.016 -1.27)
+					)
+					(stroke
+						(width 0.2032)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 1.016 -1.27) (xy 0.762 -2.032) (xy 0.762 -2.032) (xy 0.762 -2.032)
+					)
+					(stroke
+						(width 0.2032)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "GNDPWR_1_1"
+				(pin power_in line
+					(at 0 0 270)
+					(length 0)
+					(name ""
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+	)
+	(text "Motor connectors: JST-VH 4pin, A1 A2 B1 B2"
+		(exclude_from_sim no)
+		(at 155.448 18.796 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "e0e8e88e-eb53-4589-b308-ddfb8bcb9d66")
+	)
+	(wire
+		(pts
+			(xy 83.82 116.84) (xy 102.87 116.84)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "000dae3d-0646-4ba6-85f7-74fe9f752fb6")
+	)
+	(wire
+		(pts
+			(xy 27.94 45.72) (xy 25.4 45.72)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "007093d4-8cab-4484-8370-28a1876d4d83")
+	)
+	(wire
+		(pts
+			(xy 27.94 71.12) (xy 25.4 71.12)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "05840a87-dbd0-42e2-a120-26c3e874d922")
+	)
+	(wire
+		(pts
+			(xy 27.94 55.88) (xy 25.4 55.88)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "07b1956c-378d-48d6-9e03-98e0d84a1252")
+	)
+	(wire
+		(pts
+			(xy 191.77 133.35) (xy 191.77 142.24)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "0b4a8c0a-46b9-4667-85e6-1ff81dff335f")
+	)
+	(wire
+		(pts
+			(xy 146.05 31.75) (xy 127 31.75)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "0e577383-5897-4954-b5d5-f71e4e1d21a9")
+	)
+	(wire
+		(pts
+			(xy 128.27 111.76) (xy 139.7 111.76)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1180ef5b-e894-4c9f-9431-9c7c3e43ef64")
+	)
+	(wire
+		(pts
+			(xy 140.97 44.45) (xy 127 44.45)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1513c6bb-fb98-4a05-918e-50e529ebcd9e")
+	)
+	(wire
+		(pts
+			(xy 127 41.91) (xy 135.89 41.91)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "15496b11-47e1-48f0-8f35-b7b3eecc38d6")
+	)
+	(wire
+		(pts
+			(xy 83.82 36.83) (xy 101.6 36.83)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "18ad146a-f9ec-4611-8f81-d99d3f11fbdc")
+	)
+	(wire
+		(pts
+			(xy 83.82 73.66) (xy 101.6 73.66)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1fb4f036-bebb-49f8-85aa-732bb6e9a4d7")
+	)
+	(wire
+		(pts
+			(xy 83.82 140.97) (xy 101.6 140.97)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "20ebda65-f544-4c67-87a5-c2f6cc3634ba")
+	)
+	(wire
+		(pts
+			(xy 190.5 30.48) (xy 190.5 34.29)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "278c874b-ce39-41a5-9caa-2ffb21a3e422")
+	)
+	(wire
+		(pts
+			(xy 148.59 153.67) (xy 165.1 153.67)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2839e7d7-f4c5-47bf-abc6-b2c175bff823")
+	)
+	(wire
+		(pts
+			(xy 127 36.83) (xy 163.83 36.83)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2d233e3a-81fd-4409-b0ee-3a87411ca2f5")
+	)
+	(wire
+		(pts
+			(xy 83.82 151.13) (xy 101.6 151.13)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2e8c204a-747f-406d-9610-3e026ccf947a")
+	)
+	(wire
+		(pts
+			(xy 144.78 76.2) (xy 163.83 76.2)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3160beba-00df-409b-a4ca-09097686843c")
+	)
+	(wire
+		(pts
+			(xy 135.89 46.99) (xy 146.05 46.99)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3931d5c5-62d4-4cda-b405-a1fa2371affb")
+	)
+	(wire
+		(pts
+			(xy 29.21 27.94) (xy 25.4 27.94)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3a218671-326a-4382-860d-4dc9cc84033e")
+	)
+	(wire
+		(pts
+			(xy 83.82 49.53) (xy 101.6 49.53)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3b7282ed-3eca-44fb-a64c-a2739d4f63a3")
+	)
+	(wire
+		(pts
+			(xy 27.94 60.96) (xy 25.4 60.96)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3bcc2c3b-410a-4a36-a8ba-e954802b013a")
+	)
+	(wire
+		(pts
+			(xy 128.27 106.68) (xy 163.83 106.68)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3d922fde-a654-406e-8a2b-bab632f01928")
+	)
+	(wire
+		(pts
+			(xy 143.51 151.13) (xy 143.51 153.67)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3e681041-192a-443d-ad17-29023416362a")
+	)
+	(wire
+		(pts
+			(xy 83.82 76.2) (xy 101.6 76.2)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "42b046ca-b8f0-48cb-89e8-db8b03d68025")
+	)
+	(wire
+		(pts
+			(xy 27.94 66.04) (xy 25.4 66.04)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "44522575-43be-4ad6-8666-14b2f492ea5e")
+	)
+	(wire
+		(pts
+			(xy 132.08 46.99) (xy 127 46.99)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "44786f44-de79-4062-ba80-9dac0d5a900b")
+	)
+	(wire
+		(pts
+			(xy 83.82 114.3) (xy 102.87 114.3)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "4652cca5-9f48-493c-b557-77f19a5a9602")
+	)
+	(wire
+		(pts
+			(xy 138.43 156.21) (xy 148.59 156.21)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "473e204d-4e0e-4551-8216-6f817a5bf292")
+	)
+	(wire
+		(pts
+			(xy 127 148.59) (xy 165.1 148.59)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "49ce2d00-bea2-4782-9e67-9518cf0bddf3")
+	)
+	(wire
+		(pts
+			(xy 83.82 158.75) (xy 101.6 158.75)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "4af5114e-933e-49ce-8fd6-16e11872e294")
+	)
+	(wire
+		(pts
+			(xy 27.94 96.52) (xy 25.4 96.52)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "503abbb7-60e8-44e9-b4ca-6cdb011916ad")
+	)
+	(wire
+		(pts
+			(xy 149.86 78.74) (xy 149.86 81.28)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "54749adf-f548-4638-8588-af3415e25cf2")
+	)
+	(wire
+		(pts
+			(xy 127 39.37) (xy 163.83 39.37)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "572fcc09-db18-4872-aaf9-a907e134c251")
+	)
+	(wire
+		(pts
+			(xy 83.82 143.51) (xy 101.6 143.51)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "58a7b2f8-b121-4a17-8bcc-241f16dadbc1")
+	)
+	(wire
+		(pts
+			(xy 139.7 116.84) (xy 149.86 116.84)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5b5ed67b-e810-432c-9875-29fc6d15ca12")
+	)
+	(wire
+		(pts
+			(xy 83.82 68.58) (xy 101.6 68.58)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5b95a143-0350-4c9a-94e8-568a79a8b160")
+	)
+	(wire
+		(pts
+			(xy 83.82 46.99) (xy 101.6 46.99)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5bf9c823-3afc-4242-bd2d-876bc761cfed")
+	)
+	(wire
+		(pts
+			(xy 128.27 109.22) (xy 163.83 109.22)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5e9da3b9-75e4-447d-8038-80fd96bc1198")
+	)
+	(wire
+		(pts
+			(xy 133.35 116.84) (xy 128.27 116.84)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "61224efc-a242-4d0f-aced-84dfe505c51c")
+	)
+	(wire
+		(pts
+			(xy 27.94 76.2) (xy 25.4 76.2)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6456e176-e5e9-4339-8832-154e89f30c26")
+	)
+	(wire
+		(pts
+			(xy 83.82 156.21) (xy 101.6 156.21)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "680e8593-5398-4af8-8c40-162895ad8007")
+	)
+	(wire
+		(pts
+			(xy 83.82 83.82) (xy 101.6 83.82)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "68bc33cd-4364-4f57-9018-d5a11a2c0a10")
+	)
+	(wire
+		(pts
+			(xy 138.43 151.13) (xy 138.43 156.21)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6b798383-e785-4ada-a348-fd41e84be9fd")
+	)
+	(wire
+		(pts
+			(xy 127 71.12) (xy 163.83 71.12)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6eba798e-2533-4409-8093-ec6aea27d95c")
+	)
+	(wire
+		(pts
+			(xy 27.94 91.44) (xy 25.4 91.44)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6ec29440-9724-4b27-80fe-07906b9d5e56")
+	)
+	(wire
+		(pts
+			(xy 146.05 140.97) (xy 127 140.97)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "71061b39-3ad4-4bba-bb3f-a44f089daf88")
+	)
+	(wire
+		(pts
+			(xy 83.82 106.68) (xy 102.87 106.68)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "792b48e7-d867-451b-a590-d76a633452e0")
+	)
+	(wire
+		(pts
+			(xy 149.86 78.74) (xy 163.83 78.74)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7a3279a6-5cb6-4e9c-871f-9941642f1404")
+	)
+	(wire
+		(pts
+			(xy 190.5 63.5) (xy 190.5 72.39)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7b4cb85f-483f-4185-94bd-7f70765fbce3")
+	)
+	(wire
+		(pts
+			(xy 140.97 81.28) (xy 140.97 76.2)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7b88789f-4e4a-43fd-9c23-890b553ef419")
+	)
+	(wire
+		(pts
+			(xy 83.82 71.12) (xy 101.6 71.12)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7e11c573-c9fc-490c-a314-3d09025e1a11")
+	)
+	(wire
+		(pts
+			(xy 140.97 41.91) (xy 140.97 44.45)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "864d497b-3c2e-4cfb-8d80-fea1499487f9")
+	)
+	(wire
+		(pts
+			(xy 135.89 41.91) (xy 135.89 46.99)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "86b68dd4-f5de-4a8e-aef9-8026d9d7e195")
+	)
+	(wire
+		(pts
+			(xy 149.86 81.28) (xy 140.97 81.28)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8bd1d97c-0202-47a8-a619-ea4b57a778bc")
+	)
+	(wire
+		(pts
+			(xy 146.05 66.04) (xy 127 66.04)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "932e0191-0ccb-4c27-af97-3246a46c70ff")
+	)
+	(wire
+		(pts
+			(xy 83.82 119.38) (xy 102.87 119.38)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "99420d9e-2252-4d33-99d1-49c8b0e128ec")
+	)
+	(wire
+		(pts
+			(xy 165.1 151.13) (xy 143.51 151.13)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9c2e1393-c551-4228-a883-76666adae41b")
+	)
+	(wire
+		(pts
+			(xy 83.82 31.75) (xy 101.6 31.75)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9c4bb9f0-2ab8-4864-b1a9-94fadadb33e5")
+	)
+	(wire
+		(pts
+			(xy 127 73.66) (xy 163.83 73.66)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a1fbf91e-2f34-49d4-9d8b-1c085bc87e02")
+	)
+	(wire
+		(pts
+			(xy 83.82 34.29) (xy 101.6 34.29)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a675f757-35ad-47ca-8b91-2671d18e4786")
+	)
+	(wire
+		(pts
+			(xy 83.82 39.37) (xy 101.6 39.37)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a8b0a724-2821-4b70-800a-3cfccfdc1916")
+	)
+	(wire
+		(pts
+			(xy 27.94 81.28) (xy 25.4 81.28)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a912dc8c-250c-486e-8dc4-6f5daa08c20b")
+	)
+	(wire
+		(pts
+			(xy 146.05 101.6) (xy 128.27 101.6)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "aa48f54e-01af-480a-b0c9-f609578d781d")
+	)
+	(wire
+		(pts
+			(xy 27.94 101.6) (xy 25.4 101.6)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "aa852e61-591c-443a-8045-b96b785a5dc3")
+	)
+	(wire
+		(pts
+			(xy 132.08 81.28) (xy 127 81.28)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b0e2e44d-1471-4c76-a377-a93e21f6919d")
+	)
+	(wire
+		(pts
+			(xy 149.86 114.3) (xy 163.83 114.3)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b22a5c6e-23f8-43e4-b4a8-20b6a68e9594")
+	)
+	(wire
+		(pts
+			(xy 27.94 86.36) (xy 25.4 86.36)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b2f70c57-b705-4e98-8ba4-eeb19be43c03")
+	)
+	(wire
+		(pts
+			(xy 83.82 111.76) (xy 102.87 111.76)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b6571957-1371-48f5-a247-591471823088")
+	)
+	(wire
+		(pts
+			(xy 83.82 101.6) (xy 102.87 101.6)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b881976b-ab8e-43fe-8f25-af0aa89549cd")
+	)
+	(wire
+		(pts
+			(xy 83.82 41.91) (xy 101.6 41.91)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b8a53cdc-72cd-463b-8d97-80d4e99fa8d1")
+	)
+	(wire
+		(pts
+			(xy 127 146.05) (xy 165.1 146.05)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b8da1df5-6857-4361-aefc-9bdfcf2b5b6e")
+	)
+	(wire
+		(pts
+			(xy 29.21 34.29) (xy 25.4 34.29)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ba5c5d09-7d73-43cd-a88a-095a33aa8249")
+	)
+	(wire
+		(pts
+			(xy 139.7 111.76) (xy 139.7 116.84)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ba90cac1-390a-45f8-b87c-19d62dee6e14")
+	)
+	(wire
+		(pts
+			(xy 74.93 20.32) (xy 67.31 20.32)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "bb65bcec-dbed-439b-be05-2fb36cadacf3")
+	)
+	(wire
+		(pts
+			(xy 83.82 146.05) (xy 101.6 146.05)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c1913b83-58af-4fb2-83f0-31c1f55fcb10")
+	)
+	(wire
+		(pts
+			(xy 27.94 50.8) (xy 25.4 50.8)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c436c32a-fbaa-4176-bf36-e67ca1fc38fd")
+	)
+	(wire
+		(pts
+			(xy 144.78 78.74) (xy 144.78 76.2)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c445b387-041a-4659-a638-40c6768892cf")
+	)
+	(wire
+		(pts
+			(xy 83.82 66.04) (xy 101.6 66.04)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c81755fd-44c2-4b00-893c-f10eb43e2de9")
+	)
+	(wire
+		(pts
+			(xy 83.82 153.67) (xy 101.6 153.67)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c89fd2ef-b0fd-41da-b715-68163ca2f69e")
+	)
+	(wire
+		(pts
+			(xy 163.83 41.91) (xy 140.97 41.91)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "cbba1ab7-d4d7-4833-ab92-9eeb365e4bfe")
+	)
+	(wire
+		(pts
+			(xy 128.27 114.3) (xy 144.78 114.3)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ccb06dce-c6ca-4b2c-9d98-75ccfb125af7")
+	)
+	(wire
+		(pts
+			(xy 148.59 156.21) (xy 148.59 153.67)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "cfdd7e31-2402-403c-94d0-d0eeae1031ec")
+	)
+	(wire
+		(pts
+			(xy 83.82 109.22) (xy 102.87 109.22)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d0b46860-6877-4598-a4c2-607f742bebf7")
+	)
+	(wire
+		(pts
+			(xy 140.97 76.2) (xy 127 76.2)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d1cb0b7d-824f-43e1-9630-0989efafaf4d")
+	)
+	(wire
+		(pts
+			(xy 83.82 104.14) (xy 102.87 104.14)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d47c5cf6-e71f-4148-8e7f-f553d8a9124c")
+	)
+	(wire
+		(pts
+			(xy 27.94 106.68) (xy 25.4 106.68)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d7ef47bf-e184-4572-9414-4048b83d343e")
+	)
+	(wire
+		(pts
+			(xy 83.82 44.45) (xy 101.6 44.45)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d9c969fa-1060-4b3c-a7e8-c0d12febe6a7")
+	)
+	(wire
+		(pts
+			(xy 83.82 78.74) (xy 101.6 78.74)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "dc29ad47-008b-4c0a-8a17-f80ec8bbb203")
+	)
+	(wire
+		(pts
+			(xy 146.05 44.45) (xy 163.83 44.45)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e0d7c7c9-e8cd-4bf4-a23c-aa5313e7356f")
+	)
+	(wire
+		(pts
+			(xy 83.82 81.28) (xy 101.6 81.28)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e20666bb-1049-4e42-a3ac-3f0b241e9ba6")
+	)
+	(wire
+		(pts
+			(xy 27.94 41.91) (xy 25.4 41.91)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e56be8b3-0eaa-471f-bbbe-6951e3dd7c60")
+	)
+	(wire
+		(pts
+			(xy 127 78.74) (xy 144.78 78.74)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e591f793-7e80-4333-9333-e351b921c71a")
+	)
+	(wire
+		(pts
+			(xy 132.08 156.21) (xy 127 156.21)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e81c59de-e8c7-4562-ae0d-884a4325982e")
+	)
+	(wire
+		(pts
+			(xy 144.78 111.76) (xy 144.78 114.3)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "eb037ecb-1df9-4bf0-9a53-9d3a3a372725")
+	)
+	(wire
+		(pts
+			(xy 191.77 97.79) (xy 191.77 105.41)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ecd66b8e-73a3-4171-8d5a-840b49817116")
+	)
+	(wire
+		(pts
+			(xy 127 153.67) (xy 143.51 153.67)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f2a8e079-b009-4bea-b869-a42314c0d161")
+	)
+	(wire
+		(pts
+			(xy 127 151.13) (xy 138.43 151.13)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f2c1bb5f-0303-4b0e-83e7-ca963a566bd8")
+	)
+	(wire
+		(pts
+			(xy 163.83 111.76) (xy 144.78 111.76)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f5814cab-7fb9-45e0-a9b4-e3eb12b4d91f")
+	)
+	(wire
+		(pts
+			(xy 146.05 46.99) (xy 146.05 44.45)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f769c2a9-4796-43a6-a736-5f190c55a60d")
+	)
+	(wire
+		(pts
+			(xy 83.82 148.59) (xy 101.6 148.59)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "fca7203d-acc4-4c1c-831e-0a1b4393014c")
+	)
+	(wire
+		(pts
+			(xy 149.86 116.84) (xy 149.86 114.3)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ffff6a5c-7ad7-486c-899b-835bdf81bd45")
+	)
+	(label "DRV_RESET"
+		(at 27.94 86.36 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "064f0125-3106-4202-8507-aefd45f73462")
+	)
+	(label "DRV_EN"
+		(at 83.82 66.04 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "06f9c053-45c7-4b35-85ce-f0befed8d258")
+	)
+	(label "STEP_2"
+		(at 27.94 60.96 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "079380bc-e4dd-41a9-94c8-094098f2f9ad")
+	)
+	(label "VIN_24V"
+		(at 191.77 97.79 90)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "09b35c74-eb98-4710-b91f-41429392e37b")
+	)
+	(label "VIN_24V"
+		(at 146.05 31.75 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "0f3c5428-3f3e-4ac5-88bf-5a843ec9859e")
+	)
+	(label "MS_0"
+		(at 83.82 104.14 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "10df3c74-9108-4fc8-890f-90730d4d2e7e")
+	)
+	(label "VDD"
+		(at 132.08 46.99 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "1d64facc-9606-4bce-90ce-906fbf73b956")
+	)
+	(label "VIN_24V"
+		(at 146.05 140.97 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "258b12a2-6fd9-4c51-ae31-e5d6995e3e2e")
+	)
+	(label "MS_2"
+		(at 27.94 106.68 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "280f3745-ceaa-4556-bd5f-744e574ac1fc")
+	)
+	(label "STEP_3"
+		(at 83.82 156.21 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "318ed308-b257-460a-9624-94ec9020dd90")
+	)
+	(label "DIR_2"
+		(at 83.82 119.38 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "3c9f5c37-5399-4ce4-8605-75fb563ec844")
+	)
+	(label "DIR_0"
+		(at 83.82 49.53 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "3d110d72-3040-4856-acca-1302f49cd23e")
+	)
+	(label "MS_2"
+		(at 83.82 109.22 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "3e82a156-871d-4aaa-9077-79abcff16b23")
+	)
+	(label "VDD"
+		(at 133.35 116.84 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "4357c207-69c4-4ea9-aff5-0617b2b3e4c9")
+	)
+	(label "MS_2"
+		(at 83.82 73.66 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "43cea430-7a26-465b-b0da-66db5d884b3f")
+	)
+	(label "DRV_RESET"
+		(at 83.82 41.91 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "47b447f4-a041-4d16-b994-aafe4c30938b")
+	)
+	(label "MS_2"
+		(at 83.82 148.59 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "483115d9-07e9-40eb-b999-261d307af9ac")
+	)
+	(label "STEP_1"
+		(at 27.94 50.8 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "5410517b-873c-4339-b04c-923847d3f735")
+	)
+	(label "MS_0"
+		(at 83.82 68.58 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "5ffa85f4-da5c-4fbe-9205-2b8b4850fefc")
+	)
+	(label "DRV_EN"
+		(at 83.82 140.97 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "60c25f49-9cb2-4a27-bf10-849f651b2246")
+	)
+	(label "STEP_2"
+		(at 83.82 116.84 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "686ce8ee-549e-4230-8b9f-3e5f69affe03")
+	)
+	(label "VDD"
+		(at 132.08 156.21 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "6ea5f46d-0437-462c-8e7b-7af963d10162")
+	)
+	(label "DRV_EN"
+		(at 83.82 101.6 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "74a9e90b-aa4e-4a62-ad79-d04a5a9cb483")
+	)
+	(label "DRV_RESET"
+		(at 83.82 111.76 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "7f81c8c0-280f-4828-aa51-84f17ac67b3b")
+	)
+	(label "VIN_24V"
+		(at 146.05 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "825b9687-d0b9-42ec-a1ae-cfb87fda79c8")
+	)
+	(label "DIR_1"
+		(at 83.82 83.82 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "84c34558-375c-4a44-ab84-5a95bef4e8ab")
+	)
+	(label "DRV_EN"
+		(at 83.82 31.75 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "87105a46-f0ea-46e5-883c-edd4c498a1c4")
+	)
+	(label "VDD"
+		(at 67.31 20.32 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "8b747b9e-1a8f-472a-9137-019e1394395f")
+	)
+	(label "DIR_0"
+		(at 27.94 45.72 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "8f860d19-f23d-45b0-94ac-ba265debfc28")
+	)
+	(label "DRV_SLEEP"
+		(at 83.82 114.3 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "925ec333-b697-47bd-8810-3e59d8c22a9e")
+	)
+	(label "DIR_1"
+		(at 27.94 55.88 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "93322fbc-ee39-487a-8e0a-cd6adb9107e1")
+	)
+	(label "DRV_SLEEP"
+		(at 83.82 78.74 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "959198b1-dc9c-4e01-be09-1e816a94f8fa")
+	)
+	(label "MS_0"
+		(at 83.82 143.51 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "95c609ee-f8cd-40dd-9d4d-3877145ea52b")
+	)
+	(label "VIN_24V"
+		(at 29.21 27.94 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "97b3db65-469f-4569-afed-ad3056fef15c")
+	)
+	(label "DRV_SLEEP"
+		(at 27.94 91.44 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "99affa6d-d32e-4af8-af53-9d718d8c11a2")
+	)
+	(label "STEP_1"
+		(at 83.82 81.28 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "9b469d5a-0dd3-4d24-8ff8-f807fa68be96")
+	)
+	(label "MS_2"
+		(at 83.82 39.37 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "9f08cbde-6eed-47e4-9d02-e50e1497db44")
+	)
+	(label "MS_1"
+		(at 27.94 101.6 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "a04941ca-18d2-401a-9ebe-0fdd81022239")
+	)
+	(label "DRV_RESET"
+		(at 83.82 151.13 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "a127c8ad-f577-4ae1-ac35-9d8fdc695234")
+	)
+	(label "MS_1"
+		(at 83.82 106.68 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "a1bb81a7-089a-45b2-9d26-87c7ea5a2434")
+	)
+	(label "DIR_2"
+		(at 27.94 66.04 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "af2790f6-799c-4226-b685-28a1148fda81")
+	)
+	(label "MS_1"
+		(at 83.82 146.05 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "b77e6ea9-9e48-4ea5-913d-ea12cd4c1d73")
+	)
+	(label "STEP_0"
+		(at 83.82 46.99 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "b7c458d1-ce45-42e7-bbc0-666840ca5ab6")
+	)
+	(label "VIN_24V"
+		(at 190.5 63.5 90)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "ba6aed53-df6d-40b6-afc2-354b64bc4613")
+	)
+	(label "VIN_24V"
+		(at 191.77 133.35 90)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "bfa45317-2a1a-42c6-a3b5-9462511e68bd")
+	)
+	(label "VDD"
+		(at 132.08 81.28 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "c0fbc179-6a5a-4a46-a6fd-d1d6aac6f362")
+	)
+	(label "DRV_SLEEP"
+		(at 83.82 44.45 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "cdf70d80-aee4-4a91-93a8-4258879d3544")
+	)
+	(label "VIN_24V"
+		(at 146.05 101.6 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "d918dddb-b6a5-4708-bfec-7b27a57dee97")
+	)
+	(label "STEP_0"
+		(at 27.94 41.91 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "e79dd3d1-953e-4a14-b9a2-65adee212a11")
+	)
+	(label "MS_1"
+		(at 83.82 71.12 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "e83d228e-c592-44ca-8bb7-e73e6b260e12")
+	)
+	(label "VIN_24V"
+		(at 190.5 30.48 90)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "ead7bf25-3b49-4a5f-bdfa-e262c0cfbfb2")
+	)
+	(label "STEP_3"
+		(at 27.94 71.12 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "ee6db8dd-4079-4f42-a4b6-2e77aa204e84")
+	)
+	(label "DRV_EN"
+		(at 27.94 81.28 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "f06c7290-fc73-4241-923f-293bad4abc61")
+	)
+	(label "DRV_RESET"
+		(at 83.82 76.2 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "f33ceaa3-58ba-471d-94de-252ec7a51217")
+	)
+	(label "DIR_3"
+		(at 27.94 76.2 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "f5542ffa-c8b6-4784-b813-fefd4436a7c4")
+	)
+	(label "DIR_3"
+		(at 83.82 158.75 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "f5b7ed82-eb6a-438b-8d5e-c4649a97b015")
+	)
+	(label "DRV_SLEEP"
+		(at 83.82 153.67 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "f908079d-4294-4678-9452-519cb36640ae")
+	)
+	(label "MS_0"
+		(at 83.82 34.29 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "fa70fbd4-2c99-47bb-86de-1abcc5956c2e")
+	)
+	(label "MS_1"
+		(at 83.82 36.83 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "fabe9820-3dcd-4bd4-8e45-c5d78c1fca39")
+	)
+	(label "MS_0"
+		(at 27.94 96.52 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "fabfc317-97d7-4d1b-8d87-45d0fe31cea9")
+	)
+	(label "GND"
+		(at 29.21 34.29 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "fd1fb7d8-6b42-4930-b143-ea51b01e407f")
+	)
+	(hierarchical_label "DIR_0"
+		(shape input)
+		(at 25.4 45.72 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "1279e444-bb56-47bf-8a83-edab4cd84dc6")
+	)
+	(hierarchical_label "GND"
+		(shape passive)
+		(at 25.4 34.29 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "1f15fe2e-bb11-4a54-8dfb-b0497747a09d")
+	)
+	(hierarchical_label "DRV_RESET"
+		(shape input)
+		(at 25.4 86.36 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "246960e9-a18e-4bda-97cf-123ca5c8e591")
+	)
+	(hierarchical_label "STEP_1"
+		(shape input)
+		(at 25.4 50.8 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "3981b351-fb28-4477-83ba-924718351466")
+	)
+	(hierarchical_label "MS_1"
+		(shape input)
+		(at 25.4 101.6 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "3d08ed37-44cd-4130-9f14-2a1031ee63da")
+	)
+	(hierarchical_label "DIR_2"
+		(shape input)
+		(at 25.4 66.04 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "62d13186-4101-476e-803f-0a6b9267535d")
+	)
+	(hierarchical_label "DIR_1"
+		(shape input)
+		(at 25.4 55.88 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "68a5974a-f43b-4acb-92ae-34ec89bbf7c6")
+	)
+	(hierarchical_label "MS_0"
+		(shape input)
+		(at 25.4 96.52 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "6a525b80-c851-48a1-b192-fecb081fb8b0")
+	)
+	(hierarchical_label "STEP_2"
+		(shape input)
+		(at 25.4 60.96 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "6aa46dbc-041f-4082-8ad8-29a2ebb84184")
+	)
+	(hierarchical_label "STEP_3"
+		(shape input)
+		(at 25.4 71.12 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "9e083b41-3e6e-4af1-ad48-ef9c0d764c2f")
+	)
+	(hierarchical_label "MS_2"
+		(shape input)
+		(at 25.4 106.68 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "a1f17748-a5c9-4704-91b6-f30552ad9a6a")
+	)
+	(hierarchical_label "DRV_SLEEP"
+		(shape input)
+		(at 25.4 91.44 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "a3c713df-3a0a-4996-aa0e-cd560b154bbd")
+	)
+	(hierarchical_label "DRV_EN"
+		(shape input)
+		(at 25.4 81.28 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "b50b2438-5d98-4ca4-ab05-6ea06188e927")
+	)
+	(hierarchical_label "STEP_0"
+		(shape input)
+		(at 25.4 41.91 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "c2caa5c3-cc5e-4508-9070-121cd0fc31ed")
+	)
+	(hierarchical_label "VIN_24V"
+		(shape input)
+		(at 25.4 27.94 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "d005358c-a4de-4d01-a9d7-8ea8850bd28a")
+	)
+	(hierarchical_label "DIR_3"
+		(shape input)
+		(at 25.4 76.2 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "e3de158a-c8de-4cae-a5f5-b6e432aa2917")
+	)
+	(symbol
+		(lib_id "power:GNDPWR")
+		(at 127 83.82 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "03dee9d6-5067-48db-8875-fb61a6ac7e4a")
+		(property "Reference" "#PWR034"
+			(at 132.08 83.82 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GNDPWR"
+			(at 130.81 83.9469 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" ""
+			(at 128.27 83.82 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 128.27 83.82 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GNDPWR\" , global ground"
+			(at 127 83.82 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "399607f3-de03-4043-ba3f-2d09f5d2fff0")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/d1f4f23a-ba0b-4a7e-9ef5-2ae04815e6f6"
+					(reference "#PWR034")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GNDPWR")
+		(at 128.27 104.14 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "09fbb623-9481-4c5d-b03b-9650c250724b")
+		(property "Reference" "#PWR033"
+			(at 133.35 104.14 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GNDPWR"
+			(at 132.08 104.2669 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" ""
+			(at 129.54 104.14 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 129.54 104.14 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GNDPWR\" , global ground"
+			(at 128.27 104.14 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "ade3af3e-58b0-4044-bc52-9f86057b1825")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/d1f4f23a-ba0b-4a7e-9ef5-2ae04815e6f6"
+					(reference "#PWR033")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_name "C")
+		(lib_id "Device:C")
+		(at 191.77 109.22 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "1c1ee679-c911-4579-a813-35f433514f99")
+		(property "Reference" "C32"
+			(at 191.77 105.41 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "100uF"
+			(at 191.77 113.03 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm"
+			(at 191.77 109.22 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 191.77 109.22 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 191.77 109.22 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "ca68a40a-4f9a-433e-be6c-04bae29ae9ee")
+		)
+		(pin "2"
+			(uuid "9bc44f3a-23d2-4a3c-968e-66d2b47b2689")
+		)
+		(instances
+			(project "drivers"
+				(path "/99e042aa-1352-41f9-ba3c-0069edf30160"
+					(reference "C32")
+					(unit 1)
+				)
+			)
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/d1f4f23a-ba0b-4a7e-9ef5-2ae04815e6f6"
+					(reference "C32")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GNDPWR")
+		(at 190.5 80.01 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "2f4bb8c8-10c7-4348-a240-e479d3aced38")
+		(property "Reference" "#PWR022"
+			(at 190.5 85.09 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GNDPWR"
+			(at 190.373 83.82 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 190.5 81.28 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 190.5 81.28 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GNDPWR\" , global ground"
+			(at 190.5 80.01 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "e638cd6b-6597-4dce-85da-6e7b18483231")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/d1f4f23a-ba0b-4a7e-9ef5-2ae04815e6f6"
+					(reference "#PWR022")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GNDPWR")
+		(at 127 158.75 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "41b48546-7bbc-4298-ad31-a5bcfaaa7e98")
+		(property "Reference" "#PWR029"
+			(at 132.08 158.75 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GNDPWR"
+			(at 130.81 158.8769 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" ""
+			(at 128.27 158.75 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 128.27 158.75 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GNDPWR\" , global ground"
+			(at 127 158.75 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "1277fe2c-b7be-48ba-ad96-aeb195758f6f")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/d1f4f23a-ba0b-4a7e-9ef5-2ae04815e6f6"
+					(reference "#PWR029")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GNDPWR")
+		(at 191.77 149.86 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "4293b868-4a7c-4ea7-a49d-ed31c482084b")
+		(property "Reference" "#PWR024"
+			(at 191.77 154.94 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GNDPWR"
+			(at 191.643 153.67 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 191.77 151.13 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 191.77 151.13 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GNDPWR\" , global ground"
+			(at 191.77 149.86 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "627b500f-414e-4e6f-b19f-451ed79862c2")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/d1f4f23a-ba0b-4a7e-9ef5-2ae04815e6f6"
+					(reference "#PWR024")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_name "DRV8825_STEPSTICK_2")
+		(lib_id "SteppingMotorDriver_symbols:DRV8825_STEPSTICK")
+		(at 114.3 83.82 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "4f3fdb1b-57df-4ea5-8a84-1f4a2e0d0376")
+		(property "Reference" "A2"
+			(at 114.3 80.01 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "DRV8825_CH1"
+			(at 114.3 87.63 0)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Library:DRV8825_Driver"
+			(at 114.3 83.82 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" "https://www.pololu.com/product/2982"
+			(at 114.3 83.82 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Pololu Breakout Board, Stepper Driver DRV8825"
+			(at 114.3 83.82 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "MPN" "DRV8825 StepStick"
+			(at 114.3 83.82 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LibrarySymbol" "Driver_Motor:Pololu_Breakout_DRV8825"
+			(at 114.3 83.82 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "7ce9f32f-6d4a-4222-acf9-47081edd54bc")
+		)
+		(pin "10"
+			(uuid "980e56e6-c023-4b30-88c2-1b3150134797")
+		)
+		(pin "11"
+			(uuid "e6f31a2a-ba64-407e-b676-f74cd9b522de")
+		)
+		(pin "12"
+			(uuid "eb1176de-9dcf-4b38-b4c7-ecd68e257fde")
+		)
+		(pin "13"
+			(uuid "e846ad33-0381-4ed0-b38f-c847be8ec82c")
+		)
+		(pin "14"
+			(uuid "25c3e3cd-9d7c-4a6a-a33c-6dbaae828e96")
+		)
+		(pin "15"
+			(uuid "4ab68ed7-5783-45c6-922f-8dac13b6e630")
+		)
+		(pin "16"
+			(uuid "54373f2d-db1e-4973-beec-cf3117f8aa80")
+		)
+		(pin "2"
+			(uuid "d1e23655-69be-41bf-a7db-087fe7673be2")
+		)
+		(pin "3"
+			(uuid "6227677a-20aa-473a-a0b7-df079ffb0515")
+		)
+		(pin "4"
+			(uuid "ca87930c-4bd6-45d8-8f1f-ad96682c4bb3")
+		)
+		(pin "5"
+			(uuid "a227d425-5d2f-41b2-9997-1e33797efbbe")
+		)
+		(pin "6"
+			(uuid "e14fd207-6660-4341-a390-0e3fc3f1e20d")
+		)
+		(pin "7"
+			(uuid "52247e61-6962-4cbb-9689-ac96a34c5cf4")
+		)
+		(pin "8"
+			(uuid "03dc1db4-4e1a-4b0f-81ec-3b88686a6746")
+		)
+		(pin "9"
+			(uuid "385476d6-5c0d-4d80-9667-4ecc2bf7fa3c")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/d1f4f23a-ba0b-4a7e-9ef5-2ae04815e6f6"
+					(reference "A2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "SteppingMotorDriver_symbols:MOTOR_CONN_1X4")
+		(at 175.26 106.68 0)
+		(mirror x)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "5c8f2e65-053a-480a-a399-61aab3484b0a")
+		(property "Reference" "J32"
+			(at 175.26 106.68 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "MOTOR_CH2"
+			(at 169.926 104.14 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Connector_JST:JST_XH_B4B-XH-A_1x04_P2.50mm_Vertical"
+			(at 175.26 106.68 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 175.26 106.68 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Motor output channel 2, pin order A1 A2 B1 B2"
+			(at 175.26 106.68 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Manufacturer" "JST"
+			(at 175.26 106.68 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "fa50498e-2fac-46bd-9a51-318dc3abadee")
+		)
+		(pin "2"
+			(uuid "476319e3-48a7-402b-a584-bd024be50308")
+		)
+		(pin "3"
+			(uuid "e5a5ea3d-f04c-4271-8f5e-9e249b473cea")
+		)
+		(pin "4"
+			(uuid "ebba8a4c-730d-49a5-9095-bbb4b78411f8")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/d1f4f23a-ba0b-4a7e-9ef5-2ae04815e6f6"
+					(reference "J32")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_name "DRV8825_STEPSTICK_1")
+		(lib_id "SteppingMotorDriver_symbols:DRV8825_STEPSTICK")
+		(at 114.3 49.53 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "69095514-9811-43d8-9fb8-37e6d494de30")
+		(property "Reference" "A1"
+			(at 114.3 45.72 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "DRV8825_CH0"
+			(at 114.3 53.34 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Library:DRV8825_Driver"
+			(at 114.3 49.53 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" "https://www.pololu.com/product/2982"
+			(at 114.3 49.53 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Pololu Breakout Board, Stepper Driver DRV8825"
+			(at 114.3 49.53 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "MPN" "DRV8825 StepStick"
+			(at 114.3 49.53 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LibrarySymbol" "Driver_Motor:Pololu_Breakout_DRV8825"
+			(at 114.3 49.53 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "45661d36-b329-4f96-9c9a-ff609231124d")
+		)
+		(pin "10"
+			(uuid "c04b07f8-6bac-4e57-a23d-1bc1fcb5d8af")
+		)
+		(pin "11"
+			(uuid "028c7ff3-2c9f-4b16-a808-2fd71abe356e")
+		)
+		(pin "12"
+			(uuid "175b71c1-2fb5-47b1-bba9-9ec7d1cd442c")
+		)
+		(pin "13"
+			(uuid "41ceaf3e-df6e-4c0c-9f4b-6cc534f858dd")
+		)
+		(pin "14"
+			(uuid "7b1ec4f7-8c2d-42b5-89bb-c37a928d17ba")
+		)
+		(pin "15"
+			(uuid "15f16e02-4918-4661-a26d-c77f52e4cc6d")
+		)
+		(pin "16"
+			(uuid "4c5792cd-3ecd-46b1-801c-98d639f9d98b")
+		)
+		(pin "2"
+			(uuid "00a6c7ec-4d47-4bb6-a481-f400b0338b1c")
+		)
+		(pin "3"
+			(uuid "4a26cf49-a029-4f33-946c-5ce68a71f6ae")
+		)
+		(pin "4"
+			(uuid "58b33470-f094-455b-bf43-c77ff5684c56")
+		)
+		(pin "5"
+			(uuid "4c0dad35-ee6a-4c6d-b103-f9cda2e95c06")
+		)
+		(pin "6"
+			(uuid "b932a1d7-d993-4d0a-bc93-b7e42acf2000")
+		)
+		(pin "7"
+			(uuid "df3e88ad-6960-4f16-8862-8c11e61b7fda")
+		)
+		(pin "8"
+			(uuid "047b474f-85bd-44ba-864f-10d15f96e762")
+		)
+		(pin "9"
+			(uuid "7ac5cc11-b7cd-4665-ae8e-81bd46adb8c4")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/d1f4f23a-ba0b-4a7e-9ef5-2ae04815e6f6"
+					(reference "A1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_name "C")
+		(lib_id "Device:C")
+		(at 190.5 76.2 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "6e3dceb9-31a9-45bc-abb3-a273b0834250")
+		(property "Reference" "Cr1"
+			(at 195.072 76.2 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "100uF"
+			(at 190.5 80.01 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm"
+			(at 190.5 76.2 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 190.5 76.2 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 190.5 76.2 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "38059277-2a48-4cfe-8ae9-d291780ef62b")
+		)
+		(pin "2"
+			(uuid "8b0641fe-6518-4e50-b917-63ef24a669f6")
+		)
+		(instances
+			(project "drivers"
+				(path "/99e042aa-1352-41f9-ba3c-0069edf30160"
+					(reference "C31")
+					(unit 1)
+				)
+			)
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/d1f4f23a-ba0b-4a7e-9ef5-2ae04815e6f6"
+					(reference "Cr1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_name "C")
+		(lib_id "Device:C")
+		(at 190.5 38.1 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "715496a1-5821-49d1-b0a0-602ba96bd2ac")
+		(property "Reference" "C30"
+			(at 223.52 38.1 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "100uF"
+			(at 190.5 41.91 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm"
+			(at 190.5 38.1 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 190.5 38.1 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 190.5 38.1 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "8ed90bb4-eba8-4c35-ae6c-b72bda05526e")
+		)
+		(pin "2"
+			(uuid "9264338e-35a7-44c0-8007-924aa534140c")
+		)
+		(instances
+			(project "drivers"
+				(path "/99e042aa-1352-41f9-ba3c-0069edf30160"
+					(reference "C30")
+					(unit 1)
+				)
+			)
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/d1f4f23a-ba0b-4a7e-9ef5-2ae04815e6f6"
+					(reference "C30")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_name "C")
+		(lib_id "Device:C")
+		(at 191.77 146.05 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "8518f86b-ff22-443a-bc7d-7ab342eb5f8a")
+		(property "Reference" "C33"
+			(at 196.342 146.05 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "100uF"
+			(at 191.77 149.86 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm"
+			(at 191.77 146.05 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 191.77 146.05 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 191.77 146.05 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "7e469997-dd2f-42e5-b48c-591b86a46247")
+		)
+		(pin "2"
+			(uuid "04c5fd81-872e-4c4e-b9f1-3b025be4e76c")
+		)
+		(instances
+			(project "drivers"
+				(path "/99e042aa-1352-41f9-ba3c-0069edf30160"
+					(reference "C33")
+					(unit 1)
+				)
+			)
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/d1f4f23a-ba0b-4a7e-9ef5-2ae04815e6f6"
+					(reference "C33")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "SteppingMotorDriver_symbols:MOTOR_CONN_1X4")
+		(at 176.53 146.05 0)
+		(mirror x)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "927c2bfc-468a-4c29-b183-23fa42ea6be3")
+		(property "Reference" "J33"
+			(at 175.514 147.32 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "MOTOR_CH3"
+			(at 169.926 143.256 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Connector_JST:JST_XH_B4B-XH-A_1x04_P2.50mm_Vertical"
+			(at 176.53 146.05 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 176.53 146.05 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Motor output channel 3, pin order A1 A2 B1 B2"
+			(at 176.53 146.05 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Manufacturer" "JST"
+			(at 176.53 146.05 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "e5ecfa84-f99f-477f-b43a-bb538e880364")
+		)
+		(pin "2"
+			(uuid "f5d2b7c5-4374-4e6a-a497-0fcc5d1240a0")
+		)
+		(pin "3"
+			(uuid "48424977-b5c8-4056-b4c0-7868505f427a")
+		)
+		(pin "4"
+			(uuid "eafddb45-dc82-40ec-b226-6da959ae8713")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/d1f4f23a-ba0b-4a7e-9ef5-2ae04815e6f6"
+					(reference "J33")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "SteppingMotorDriver_symbols:MOTOR_CONN_1X4")
+		(at 175.26 36.83 0)
+		(mirror x)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "9430cd79-1e22-4966-96d0-2925ed51a965")
+		(property "Reference" "J30"
+			(at 175.26 40.64 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "MOTOR_CH0"
+			(at 167.64 34.544 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Connector_JST:JST_XH_B4B-XH-A_1x04_P2.50mm_Vertical"
+			(at 175.26 36.83 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 175.26 36.83 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Motor output channel 0, pin order A1 A2 B1 B2"
+			(at 175.26 36.83 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Manufacturer" "JST"
+			(at 175.26 36.83 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "4f3dfee1-9944-44bf-8b78-e0543f01296c")
+		)
+		(pin "2"
+			(uuid "c7089d6e-ae52-48dd-b181-1bbe9bce23b8")
+		)
+		(pin "3"
+			(uuid "33b3dce6-1247-41a2-98f1-0efa80cbd6aa")
+		)
+		(pin "4"
+			(uuid "8fb87d67-1458-4bb6-becb-7065ee032224")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/d1f4f23a-ba0b-4a7e-9ef5-2ae04815e6f6"
+					(reference "J30")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GNDPWR")
+		(at 191.77 113.03 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "9457e3ee-e091-483a-99fa-ab2695003e9c")
+		(property "Reference" "#PWR023"
+			(at 191.77 118.11 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GNDPWR"
+			(at 191.643 116.84 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 191.77 114.3 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 191.77 114.3 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GNDPWR\" , global ground"
+			(at 191.77 113.03 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "45031508-64b4-4d51-984a-0840cd37e60b")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/d1f4f23a-ba0b-4a7e-9ef5-2ae04815e6f6"
+					(reference "#PWR023")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GNDPWR")
+		(at 190.5 41.91 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "b1487b65-5c4e-4ed4-8aee-caeb96a50f89")
+		(property "Reference" "#PWR021"
+			(at 190.5 46.99 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GNDPWR"
+			(at 190.373 45.72 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 190.5 43.18 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 190.5 43.18 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GNDPWR\" , global ground"
+			(at 190.5 41.91 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "8289c2c5-9d0c-4d59-8ab7-6eb9c2d0b668")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/d1f4f23a-ba0b-4a7e-9ef5-2ae04815e6f6"
+					(reference "#PWR021")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_name "DRV8825_STEPSTICK_3")
+		(lib_id "SteppingMotorDriver_symbols:DRV8825_STEPSTICK")
+		(at 115.57 119.38 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "b6d3a94a-5a79-4fc5-abc8-7e7856326bbb")
+		(property "Reference" "A3"
+			(at 115.57 115.57 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "DRV8825_CH2"
+			(at 115.57 123.19 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Library:DRV8825_Driver"
+			(at 115.57 119.38 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" "https://www.pololu.com/product/2982"
+			(at 115.57 119.38 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Pololu Breakout Board, Stepper Driver DRV8825"
+			(at 115.57 119.38 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "MPN" "DRV8825 StepStick"
+			(at 115.57 119.38 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LibrarySymbol" "Driver_Motor:Pololu_Breakout_DRV8825"
+			(at 115.57 119.38 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "23ff7081-e138-440d-b704-1579a2c8d552")
+		)
+		(pin "10"
+			(uuid "809369ed-171c-4922-b135-d5bd6810054b")
+		)
+		(pin "11"
+			(uuid "52017b13-f02e-4887-8ff9-462994b147e8")
+		)
+		(pin "12"
+			(uuid "ade5b9a9-5201-405e-b921-d3e373afaa1a")
+		)
+		(pin "13"
+			(uuid "4d232b1c-c039-4bc5-950b-0126c9bc83bd")
+		)
+		(pin "14"
+			(uuid "b727ee40-8315-42f0-9791-03c4dcf587e0")
+		)
+		(pin "15"
+			(uuid "a316fd9c-b6b1-451b-ba6d-7211aecb0337")
+		)
+		(pin "16"
+			(uuid "29765b89-4c3e-4c59-be76-951ecb676904")
+		)
+		(pin "2"
+			(uuid "06215a18-d5f1-419e-bad3-bcc73ec0d7a0")
+		)
+		(pin "3"
+			(uuid "e316c986-070e-4807-826f-108622283abb")
+		)
+		(pin "4"
+			(uuid "129d5040-8d5c-4ca0-aaef-1fc73f6009d8")
+		)
+		(pin "5"
+			(uuid "2d879baa-b2b3-4a35-88f6-3ec70cc65fda")
+		)
+		(pin "6"
+			(uuid "2b37faac-ca9e-4888-8af2-68e3e55dde18")
+		)
+		(pin "7"
+			(uuid "a698112e-3f42-4242-8e9f-4f9cea0a09b1")
+		)
+		(pin "8"
+			(uuid "1cedcfd5-0560-41bf-953a-f5021f26f8eb")
+		)
+		(pin "9"
+			(uuid "a73c81f6-67d6-48ec-98e4-99fa102737a1")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/d1f4f23a-ba0b-4a7e-9ef5-2ae04815e6f6"
+					(reference "A3")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "SteppingMotorDriver_symbols:MOTOR_CONN_1X4")
+		(at 175.26 71.12 0)
+		(mirror x)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "be3470c5-8d66-48aa-8c28-d8a43a6a6343")
+		(property "Reference" "J31"
+			(at 175.26 74.93 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "MOTOR_CH1"
+			(at 167.894 68.326 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Connector_JST:JST_XH_B4B-XH-A_1x04_P2.50mm_Vertical"
+			(at 175.26 71.12 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 175.26 71.12 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Motor output channel 1, pin order A1 A2 B1 B2"
+			(at 175.26 71.12 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Manufacturer" "JST"
+			(at 175.26 71.12 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "9444596b-62c8-47da-86c2-20fcee6bdba3")
+		)
+		(pin "2"
+			(uuid "27ff6af9-81d9-46ad-8fbd-04348987ed53")
+		)
+		(pin "3"
+			(uuid "ebc13dd8-b721-4d42-a8eb-9dbb0aca91a1")
+		)
+		(pin "4"
+			(uuid "bf9c33b8-3b80-46f5-a4ad-2345138fc930")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/d1f4f23a-ba0b-4a7e-9ef5-2ae04815e6f6"
+					(reference "J31")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:+3V3")
+		(at 74.93 20.32 270)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "c1407cd1-3620-4d89-b361-a328feca5fe5")
+		(property "Reference" "#PWR025"
+			(at 71.12 20.32 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "+3V3"
+			(at 78.74 20.3199 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 74.93 20.32 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 74.93 20.32 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"+3V3\""
+			(at 74.93 20.32 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "eabfdf01-1bf7-4917-8096-941c1814acbc")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/d1f4f23a-ba0b-4a7e-9ef5-2ae04815e6f6"
+					(reference "#PWR025")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "SteppingMotorDriver_symbols:DRV8825_STEPSTICK")
+		(at 114.3 158.75 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "d0f05043-1a3a-4dd7-94a0-71da5fdb379d")
+		(property "Reference" "A4"
+			(at 114.3 154.94 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "DRV8825_CH3"
+			(at 114.3 162.56 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Library:DRV8825_Driver"
+			(at 114.3 158.75 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" "https://www.pololu.com/product/2982"
+			(at 114.3 158.75 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Pololu Breakout Board, Stepper Driver DRV8825"
+			(at 114.3 158.75 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "MPN" "DRV8825 StepStick"
+			(at 114.3 158.75 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LibrarySymbol" "Driver_Motor:Pololu_Breakout_DRV8825"
+			(at 114.3 158.75 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "9ca0e05c-e618-41e0-8c45-9a93e9a91029")
+		)
+		(pin "10"
+			(uuid "bf8c8f68-d0bd-494f-8fc9-dfbf0feeb9fd")
+		)
+		(pin "11"
+			(uuid "592587f3-ea3a-464f-ab65-43558a418d7f")
+		)
+		(pin "12"
+			(uuid "4148461c-5ed1-4f4a-b012-31f73c54d9e3")
+		)
+		(pin "13"
+			(uuid "39961a88-f9fa-4c96-b047-b8213c6e73e6")
+		)
+		(pin "14"
+			(uuid "96a42865-6ab5-4bab-be5a-37ea9d668cb2")
+		)
+		(pin "15"
+			(uuid "59334479-5a0e-4b55-bcb0-bf8fb4c5de92")
+		)
+		(pin "16"
+			(uuid "9e962965-c39f-4437-b889-e4de9a4cf27b")
+		)
+		(pin "2"
+			(uuid "7f6b1f71-8b93-4de5-a8b6-65a91b88ba22")
+		)
+		(pin "3"
+			(uuid "b790d7fc-f4f5-4f00-b2ef-db7acda10404")
+		)
+		(pin "4"
+			(uuid "a2093996-7fc8-4b36-912d-fb6e85f647be")
+		)
+		(pin "5"
+			(uuid "34d5b3c7-0562-44b1-a258-e5e48f285f7f")
+		)
+		(pin "6"
+			(uuid "2c3b2e50-486f-4348-b35d-848252e68dfa")
+		)
+		(pin "7"
+			(uuid "6c5b3155-abe0-418f-92f2-c4c50ce1b3f1")
+		)
+		(pin "8"
+			(uuid "5a780d2a-e11a-409e-8346-d0324317aefb")
+		)
+		(pin "9"
+			(uuid "478ee9f2-e818-4b29-acda-6255ac7d5e7c")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/d1f4f23a-ba0b-4a7e-9ef5-2ae04815e6f6"
+					(reference "A4")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GNDPWR")
+		(at 127 34.29 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "e1836c84-7702-4067-a2f8-96136e223f76")
+		(property "Reference" "#PWR047"
+			(at 132.08 34.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GNDPWR"
+			(at 130.81 34.4169 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" ""
+			(at 128.27 34.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 128.27 34.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GNDPWR\" , global ground"
+			(at 127 34.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "6998b6c3-6651-490b-9900-71a442a78420")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/d1f4f23a-ba0b-4a7e-9ef5-2ae04815e6f6"
+					(reference "#PWR047")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GNDPWR")
+		(at 127 68.58 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "e48655af-41d0-42ed-a97f-c85aa594b87e")
+		(property "Reference" "#PWR035"
+			(at 132.08 68.58 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GNDPWR"
+			(at 130.81 68.7069 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" ""
+			(at 128.27 68.58 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 128.27 68.58 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GNDPWR\" , global ground"
+			(at 127 68.58 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "fc9a3c57-9cf5-4c95-9cfa-7e3bd82b9fa1")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/d1f4f23a-ba0b-4a7e-9ef5-2ae04815e6f6"
+					(reference "#PWR035")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GNDPWR")
+		(at 128.27 119.38 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "f0d46dc3-7326-4f42-8587-24d4860a0568")
+		(property "Reference" "#PWR031"
+			(at 133.35 119.38 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GNDPWR"
+			(at 132.08 119.5069 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" ""
+			(at 129.54 119.38 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 129.54 119.38 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GNDPWR\" , global ground"
+			(at 128.27 119.38 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "3f378f8a-1025-4b1e-8abf-d9e147bc2c58")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/d1f4f23a-ba0b-4a7e-9ef5-2ae04815e6f6"
+					(reference "#PWR031")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GNDPWR")
+		(at 127 49.53 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "f1be8645-9b77-4143-95b4-23a1c271bcea")
+		(property "Reference" "#PWR032"
+			(at 132.08 49.53 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GNDPWR"
+			(at 130.81 49.6569 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" ""
+			(at 128.27 49.53 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 128.27 49.53 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GNDPWR\" , global ground"
+			(at 127 49.53 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "6098c828-6174-4f8f-a76c-022e3c8eaaf3")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/d1f4f23a-ba0b-4a7e-9ef5-2ae04815e6f6"
+					(reference "#PWR032")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GNDPWR")
+		(at 127 143.51 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "f66a0557-1c98-492c-b55b-2d5d5c4b1b42")
+		(property "Reference" "#PWR030"
+			(at 132.08 143.51 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GNDPWR"
+			(at 130.81 143.6369 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" ""
+			(at 128.27 143.51 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 128.27 143.51 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GNDPWR\" , global ground"
+			(at 127 143.51 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "ea6d3156-b80e-4f87-9f48-6ef7242f0c3c")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/d1f4f23a-ba0b-4a7e-9ef5-2ae04815e6f6"
+					(reference "#PWR030")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(sheet_instances
+		(path "/"
+			(page "1")
+		)
+	)
+	(embedded_fonts no)
+)

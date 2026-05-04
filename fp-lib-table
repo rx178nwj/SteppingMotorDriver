@@ -1,0 +1,7 @@
+(fp_lib_table
+	(version 7)
+	(lib (name "5077CR-16SMC2-BK-TR") (type "KiCad") (uri "${KIPRJMOD}/libraries/5077CR-16SMC2-BK-TR.pretty") (options "") (descr "Project local footprint library for 5077CR-16SMC2-BK-TR"))
+	(lib (name "Library") (type "KiCad") (uri "${KIPRJMOD}/libraries/Library.pretty") (options "") (descr ""))
+	(lib (name "SteppingMotorDriver") (type "KiCad") (uri "H:/OneDrive/CraftWork/RobotArm2/SteppingMotorDriver.pretty") (options "") (descr ""))
+	(lib (name "Library") (type "KiCad") (uri "${KIPRJMOD}/libraries/Library.pretty") (options "") (descr ""))
+)
