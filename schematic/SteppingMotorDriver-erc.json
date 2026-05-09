@@ -1,0 +1,890 @@
+{
+    "$schema": "https://schemas.kicad.org/erc.v1.json",
+    "coordinate_units": "mm",
+    "date": "2026-05-04T14:53:12",
+    "ignored_checks": [
+        {
+            "description": "Global label only appears once in the schematic",
+            "key": "single_global_label"
+        },
+        {
+            "description": "Four connection points are joined together",
+            "key": "four_way_junction"
+        },
+        {
+            "description": "SPICE model issue",
+            "key": "simulation_model_issue"
+        },
+        {
+            "description": "Assigned footprint doesn't match footprint filters",
+            "key": "footprint_filter"
+        }
+    ],
+    "included_severities": [
+        "error",
+        "warning",
+        "exclusion"
+    ],
+    "kicad_version": "10.0.1",
+    "sheets": [
+        {
+            "path": "/",
+            "uuid_path": "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9",
+            "violations": [
+                {
+                    "description": "Label not connected",
+                    "items": [
+                        {
+                            "description": "ラベル 'GND'",
+                            "pos": {
+                                "x": 0.2921,
+                                "y": 0.3429
+                            },
+                            "uuid": "fd1fb7d8-6b42-4930-b143-ea51b01e407f"
+                        }
+                    ],
+                    "severity": "error",
+                    "type": "label_dangling"
+                },
+                {
+                    "description": "Local and global labels have same name",
+                    "items": [
+                        {
+                            "description": "グローバル ラベル 'VIN_24V'",
+                            "pos": {
+                                "x": 0.6985,
+                                "y": 0.3175
+                            },
+                            "uuid": "4116396c-67ea-48e0-8494-26aecf79ac2c"
+                        },
+                        {
+                            "description": "ラベル 'VIN_24V'",
+                            "pos": {
+                                "x": 1.9177,
+                                "y": 0.9779
+                            },
+                            "uuid": "09b35c74-eb98-4710-b91f-41429392e37b"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "same_local_global_label"
+                },
+                {
+                    "description": "Local and global labels have same name",
+                    "items": [
+                        {
+                            "description": "グローバル ラベル 'GND'",
+                            "pos": {
+                                "x": 0.6604,
+                                "y": 0.6731
+                            },
+                            "uuid": "b728036d-6c1c-4d54-bc66-3677b4ae9f77"
+                        },
+                        {
+                            "description": "ラベル 'GND'",
+                            "pos": {
+                                "x": 0.2921,
+                                "y": 0.3429
+                            },
+                            "uuid": "fd1fb7d8-6b42-4930-b143-ea51b01e407f"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "same_local_global_label"
+                },
+                {
+                    "description": "Local and global labels have same name",
+                    "items": [
+                        {
+                            "description": "グローバル ラベル 'I2C_SDA'",
+                            "pos": {
+                                "x": 1.8542,
+                                "y": 0.2794
+                            },
+                            "uuid": "ed0c9d25-db0c-44d6-8ff9-3fac4139ce65"
+                        },
+                        {
+                            "description": "ラベル 'I2C_SDA'",
+                            "pos": {
+                                "x": 1.7653,
+                                "y": 1.2319
+                            },
+                            "uuid": "5691da63-8292-466a-a452-7a8466eb680f"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "same_local_global_label"
+                },
+                {
+                    "description": "Local and global labels have same name",
+                    "items": [
+                        {
+                            "description": "グローバル ラベル 'I2C_SCL'",
+                            "pos": {
+                                "x": 1.8542,
+                                "y": 0.3048
+                            },
+                            "uuid": "a58de83f-c7f1-4d36-8024-3056f562367c"
+                        },
+                        {
+                            "description": "ラベル 'I2C_SCL'",
+                            "pos": {
+                                "x": 1.778,
+                                "y": 1.1176
+                            },
+                            "uuid": "063092ef-3535-4a69-a0d1-fede29f049d0"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "same_local_global_label"
+                },
+                {
+                    "description": "Local and global labels have same name",
+                    "items": [
+                        {
+                            "description": "グローバル ラベル 'ENC0_A'",
+                            "pos": {
+                                "x": 1.8542,
+                                "y": 0.3302
+                            },
+                            "uuid": "09ef4111-a2de-4cae-99ba-42e0e28c0b47"
+                        },
+                        {
+                            "description": "ラベル 'ENC0_A'",
+                            "pos": {
+                                "x": 1.9304,
+                                "y": 0.8763
+                            },
+                            "uuid": "4b9e8105-709d-4cac-9f8a-0c92f6deaddf"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "same_local_global_label"
+                },
+                {
+                    "description": "Local and global labels have same name",
+                    "items": [
+                        {
+                            "description": "グローバル ラベル 'ENC1_A'",
+                            "pos": {
+                                "x": 1.8542,
+                                "y": 0.381
+                            },
+                            "uuid": "10a5cb04-6e13-4d33-a082-18edfe3a2cb1"
+                        },
+                        {
+                            "description": "ラベル 'ENC1_A'",
+                            "pos": {
+                                "x": 0.4953,
+                                "y": 0.5588
+                            },
+                            "uuid": "020d6ea2-ac56-42b1-9e7c-f29e6edd7cb4"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "same_local_global_label"
+                },
+                {
+                    "description": "Local and global labels have same name",
+                    "items": [
+                        {
+                            "description": "グローバル ラベル 'ENC1_B'",
+                            "pos": {
+                                "x": 1.8542,
+                                "y": 0.4064
+                            },
+                            "uuid": "27b48eb4-102c-499e-9329-df4986d934ea"
+                        },
+                        {
+                            "description": "ラベル 'ENC1_B'",
+                            "pos": {
+                                "x": 2.4638,
+                                "y": 0.5207
+                            },
+                            "uuid": "b0087b38-35b6-41d4-a9cc-59a8ade4b68e"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "same_local_global_label"
+                },
+                {
+                    "description": "Local and global labels have same name",
+                    "items": [
+                        {
+                            "description": "グローバル ラベル 'ENC2_B'",
+                            "pos": {
+                                "x": 1.8542,
+                                "y": 0.4572
+                            },
+                            "uuid": "d731c3ae-beda-4640-bb65-8d5eb257e8ca"
+                        },
+                        {
+                            "description": "ラベル 'ENC2_B'",
+                            "pos": {
+                                "x": 2.4638,
+                                "y": 0.6223
+                            },
+                            "uuid": "4628e40a-053c-4605-8128-b4c5c381249e"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "same_local_global_label"
+                },
+                {
+                    "description": "Local and global labels have same name",
+                    "items": [
+                        {
+                            "description": "グローバル ラベル 'ENC3_A'",
+                            "pos": {
+                                "x": 1.8542,
+                                "y": 0.4826
+                            },
+                            "uuid": "2b4b7d13-a0b1-4b50-acf9-c2d7af317bfc"
+                        },
+                        {
+                            "description": "ラベル 'ENC3_A'",
+                            "pos": {
+                                "x": 0.4953,
+                                "y": 0.762
+                            },
+                            "uuid": "0c878318-3313-4877-94ce-5423df9c52af"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "same_local_global_label"
+                },
+                {
+                    "description": "Local and global labels have same name",
+                    "items": [
+                        {
+                            "description": "グローバル ラベル 'ADC0'",
+                            "pos": {
+                                "x": 1.0033,
+                                "y": 1.651
+                            },
+                            "uuid": "4f4cfce7-68db-4761-b01a-074858642741"
+                        },
+                        {
+                            "description": "ラベル 'ADC0'",
+                            "pos": {
+                                "x": 1.9304,
+                                "y": 0.5207
+                            },
+                            "uuid": "e784853d-23da-4343-a041-01907deae437"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "same_local_global_label"
+                },
+                {
+                    "description": "Local and global labels have same name",
+                    "items": [
+                        {
+                            "description": "グローバル ラベル 'ADC1'",
+                            "pos": {
+                                "x": 1.8542,
+                                "y": 0.5588
+                            },
+                            "uuid": "a95017a9-d708-4f9d-ba36-2966fafe8243"
+                        },
+                        {
+                            "description": "ラベル 'ADC1'",
+                            "pos": {
+                                "x": 1.9304,
+                                "y": 0.5461
+                            },
+                            "uuid": "7cc27a83-a4d3-4353-89fe-dca04cf50ebd"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "same_local_global_label"
+                },
+                {
+                    "description": "Local and global labels have same name",
+                    "items": [
+                        {
+                            "description": "グローバル ラベル 'STEP0'",
+                            "pos": {
+                                "x": 1.8542,
+                                "y": 0.635
+                            },
+                            "uuid": "0b21ef2a-2843-4dc3-b416-febf30eca161"
+                        },
+                        {
+                            "description": "ラベル 'STEP0'",
+                            "pos": {
+                                "x": 1.9304,
+                                "y": 0.5969
+                            },
+                            "uuid": "6b8bc685-f44f-4523-80e7-3a567d38dfa6"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "same_local_global_label"
+                },
+                {
+                    "description": "Local and global labels have same name",
+                    "items": [
+                        {
+                            "description": "グローバル ラベル 'DIR0'",
+                            "pos": {
+                                "x": 1.8542,
+                                "y": 0.6604
+                            },
+                            "uuid": "81c0a3ef-29fb-4531-a54b-d877587607eb"
+                        },
+                        {
+                            "description": "ラベル 'DIR0'",
+                            "pos": {
+                                "x": 1.9304,
+                                "y": 0.6223
+                            },
+                            "uuid": "fd179b66-8a59-4508-a00b-ecdd54e766bf"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "same_local_global_label"
+                },
+                {
+                    "description": "Local and global labels have same name",
+                    "items": [
+                        {
+                            "description": "グローバル ラベル 'ADC2'",
+                            "pos": {
+                                "x": 1.0033,
+                                "y": 1.7018
+                            },
+                            "uuid": "73fd8621-8caa-4876-805f-ace7c235e9f3"
+                        },
+                        {
+                            "description": "ラベル 'ADC2'",
+                            "pos": {
+                                "x": 1.9304,
+                                "y": 0.5715
+                            },
+                            "uuid": "afdea454-fe91-4a32-b121-e83343dc4e5f"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "same_local_global_label"
+                },
+                {
+                    "description": "Local and global labels have same name",
+                    "items": [
+                        {
+                            "description": "グローバル ラベル 'STEP1'",
+                            "pos": {
+                                "x": 1.8542,
+                                "y": 0.6858
+                            },
+                            "uuid": "7130ec8b-4196-44f7-a1ed-532c5cb4438e"
+                        },
+                        {
+                            "description": "ラベル 'STEP1'",
+                            "pos": {
+                                "x": 1.9304,
+                                "y": 0.6477
+                            },
+                            "uuid": "31967109-4e10-48e2-a202-559abd257a36"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "same_local_global_label"
+                },
+                {
+                    "description": "Local and global labels have same name",
+                    "items": [
+                        {
+                            "description": "グローバル ラベル 'DIR1'",
+                            "pos": {
+                                "x": 1.8542,
+                                "y": 0.7112
+                            },
+                            "uuid": "696893f8-af31-4938-ba3e-d455464762c3"
+                        },
+                        {
+                            "description": "ラベル 'DIR1'",
+                            "pos": {
+                                "x": 2.5781,
+                                "y": 0.7493
+                            },
+                            "uuid": "8b0ceec5-70c2-46c9-8f02-7b4bdb8910b0"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "same_local_global_label"
+                },
+                {
+                    "description": "Local and global labels have same name",
+                    "items": [
+                        {
+                            "description": "グローバル ラベル 'STEP2'",
+                            "pos": {
+                                "x": 1.8542,
+                                "y": 0.7366
+                            },
+                            "uuid": "e36bba14-121a-4a69-ba43-0bf12fa8ee61"
+                        },
+                        {
+                            "description": "ラベル 'STEP2'",
+                            "pos": {
+                                "x": 2.5781,
+                                "y": 0.8001
+                            },
+                            "uuid": "674a6687-c57b-4ed6-bfa7-9eec8a79acc7"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "same_local_global_label"
+                },
+                {
+                    "description": "Local and global labels have same name",
+                    "items": [
+                        {
+                            "description": "グローバル ラベル 'ADC3'",
+                            "pos": {
+                                "x": 1.0033,
+                                "y": 1.7272
+                            },
+                            "uuid": "67567c20-2a9c-4503-bbfa-751fedc42cfd"
+                        },
+                        {
+                            "description": "ラベル 'ADC3'",
+                            "pos": {
+                                "x": 2.4638,
+                                "y": 0.7493
+                            },
+                            "uuid": "05d70c7c-8fde-401e-bf5b-665c4610cbe7"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "same_local_global_label"
+                },
+                {
+                    "description": "Local and global labels have same name",
+                    "items": [
+                        {
+                            "description": "グローバル ラベル 'DIR2'",
+                            "pos": {
+                                "x": 1.8542,
+                                "y": 0.762
+                            },
+                            "uuid": "0b507e15-6b1e-4e82-b76c-0094df1f1e1e"
+                        },
+                        {
+                            "description": "ラベル 'DIR2'",
+                            "pos": {
+                                "x": 2.5781,
+                                "y": 0.8509
+                            },
+                            "uuid": "26bc9325-43f7-4470-a82f-ec15e47f4573"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "same_local_global_label"
+                },
+                {
+                    "description": "Local and global labels have same name",
+                    "items": [
+                        {
+                            "description": "グローバル ラベル 'STEP3'",
+                            "pos": {
+                                "x": 1.8542,
+                                "y": 0.7874
+                            },
+                            "uuid": "83d300c4-f78a-45af-abf1-aa17d8470526"
+                        },
+                        {
+                            "description": "ラベル 'STEP3'",
+                            "pos": {
+                                "x": 2.5781,
+                                "y": 0.9017
+                            },
+                            "uuid": "15891a39-c7b6-464f-88de-d97b0a95fa49"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "same_local_global_label"
+                },
+                {
+                    "description": "Local and global labels have same name",
+                    "items": [
+                        {
+                            "description": "グローバル ラベル 'DIR3'",
+                            "pos": {
+                                "x": 1.8542,
+                                "y": 0.8128
+                            },
+                            "uuid": "5e2f564e-4d7b-4103-9bbd-0d7648559dd1"
+                        },
+                        {
+                            "description": "ラベル 'DIR3'",
+                            "pos": {
+                                "x": 2.5781,
+                                "y": 0.9525
+                            },
+                            "uuid": "0cbbc2ef-edf4-4985-b052-bc67eb1307ac"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "same_local_global_label"
+                },
+                {
+                    "description": "Local and global labels have same name",
+                    "items": [
+                        {
+                            "description": "グローバル ラベル 'DRV_EN'",
+                            "pos": {
+                                "x": 1.8542,
+                                "y": 0.8382
+                            },
+                            "uuid": "0928ed54-4bbd-44e1-a642-94b672898634"
+                        },
+                        {
+                            "description": "ラベル 'DRV_EN'",
+                            "pos": {
+                                "x": 0.8382,
+                                "y": 0.6604
+                            },
+                            "uuid": "06f9c053-45c7-4b35-85ce-f0befed8d258"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "same_local_global_label"
+                },
+                {
+                    "description": "Local and global labels have same name",
+                    "items": [
+                        {
+                            "description": "グローバル ラベル 'DRV_RESET'",
+                            "pos": {
+                                "x": 1.8542,
+                                "y": 0.8636
+                            },
+                            "uuid": "12a70d45-27e6-4262-bba1-589eb683cac3"
+                        },
+                        {
+                            "description": "ラベル 'DRV_RESET'",
+                            "pos": {
+                                "x": 0.2794,
+                                "y": 0.8636
+                            },
+                            "uuid": "064f0125-3106-4202-8507-aefd45f73462"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "same_local_global_label"
+                },
+                {
+                    "description": "Local and global labels have same name",
+                    "items": [
+                        {
+                            "description": "グローバル ラベル 'DRV_SLEEP'",
+                            "pos": {
+                                "x": 1.8542,
+                                "y": 0.889
+                            },
+                            "uuid": "6a0592ef-6245-4156-b320-85fd46be68ba"
+                        },
+                        {
+                            "description": "ラベル 'DRV_SLEEP'",
+                            "pos": {
+                                "x": 0.8382,
+                                "y": 1.143
+                            },
+                            "uuid": "925ec333-b697-47bd-8810-3e59d8c22a9e"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "same_local_global_label"
+                },
+                {
+                    "description": "Local and global labels have same name",
+                    "items": [
+                        {
+                            "description": "グローバル ラベル 'ENC0_B'",
+                            "pos": {
+                                "x": 2.0193,
+                                "y": 1.3335
+                            },
+                            "uuid": "348f1ba6-36c3-4305-acec-e502a52fccb2"
+                        },
+                        {
+                            "description": "ラベル 'ENC0_B'",
+                            "pos": {
+                                "x": 1.9304,
+                                "y": 0.9017
+                            },
+                            "uuid": "65fee2b2-d5a1-4541-979c-71ef388ee9e4"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "same_local_global_label"
+                },
+                {
+                    "description": "Local and global labels have same name",
+                    "items": [
+                        {
+                            "description": "グローバル ラベル 'ENC2_A'",
+                            "pos": {
+                                "x": 2.0193,
+                                "y": 1.4097
+                            },
+                            "uuid": "659b3bf5-4958-40b5-aff8-9f904a92007b"
+                        },
+                        {
+                            "description": "ラベル 'ENC2_A'",
+                            "pos": {
+                                "x": 0.4953,
+                                "y": 0.6604
+                            },
+                            "uuid": "f13236ef-d4ec-49f1-9d01-d12583dec7f6"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "same_local_global_label"
+                },
+                {
+                    "description": "Local and global labels have same name",
+                    "items": [
+                        {
+                            "description": "グローバル ラベル 'ENC3_B'",
+                            "pos": {
+                                "x": 2.0193,
+                                "y": 1.4859
+                            },
+                            "uuid": "9c1fbf8f-d4fe-4b66-be3a-bb67676a5144"
+                        },
+                        {
+                            "description": "ラベル 'ENC3_B'",
+                            "pos": {
+                                "x": 0.4953,
+                                "y": 0.8128
+                            },
+                            "uuid": "160f240e-cc51-4828-9b90-100bf2bb0380"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "same_local_global_label"
+                },
+                {
+                    "description": "シンボル 'MOTOR_CONN_1X4' が、ライブラリ 'SteppingMotorDriver_symbols' のコピーと一致しません",
+                    "items": [
+                        {
+                            "description": "シンボル J30 [MOTOR_CONN_1X4]",
+                            "pos": {
+                                "x": 1.7526,
+                                "y": 0.3683
+                            },
+                            "uuid": "9430cd79-1e22-4966-96d0-2925ed51a965"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_mismatch"
+                },
+                {
+                    "description": "シンボル 'MOTOR_CONN_1X4' が、ライブラリ 'SteppingMotorDriver_symbols' のコピーと一致しません",
+                    "items": [
+                        {
+                            "description": "シンボル J31 [MOTOR_CONN_1X4]",
+                            "pos": {
+                                "x": 1.7526,
+                                "y": 0.7112
+                            },
+                            "uuid": "be3470c5-8d66-48aa-8c28-d8a43a6a6343"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_mismatch"
+                },
+                {
+                    "description": "シンボル 'MOTOR_CONN_1X4' が、ライブラリ 'SteppingMotorDriver_symbols' のコピーと一致しません",
+                    "items": [
+                        {
+                            "description": "シンボル J32 [MOTOR_CONN_1X4]",
+                            "pos": {
+                                "x": 1.7526,
+                                "y": 1.0668
+                            },
+                            "uuid": "5c8f2e65-053a-480a-a399-61aab3484b0a"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_mismatch"
+                },
+                {
+                    "description": "シンボル 'MOTOR_CONN_1X4' が、ライブラリ 'SteppingMotorDriver_symbols' のコピーと一致しません",
+                    "items": [
+                        {
+                            "description": "シンボル J33 [MOTOR_CONN_1X4]",
+                            "pos": {
+                                "x": 1.7653,
+                                "y": 1.4605
+                            },
+                            "uuid": "927c2bfc-468a-4c29-b183-23fa42ea6be3"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_mismatch"
+                },
+                {
+                    "description": "未接続の配線終端",
+                    "items": [
+                        {
+                            "description": "水平ワイヤー, 長さ 0.1651 mm",
+                            "pos": {
+                                "x": 2.4003,
+                                "y": 1.397
+                            },
+                            "uuid": "5a05da0a-b5ad-4228-8800-f7b50517b868"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "unconnected_wire_endpoint"
+                },
+                {
+                    "description": "未接続の配線終端",
+                    "items": [
+                        {
+                            "description": "水平ワイヤー, 長さ 0.1651 mm",
+                            "pos": {
+                                "x": 2.4003,
+                                "y": 1.4478
+                            },
+                            "uuid": "422ded3a-840c-4c16-937f-35ab22d10f99"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "unconnected_wire_endpoint"
+                },
+                {
+                    "description": "シンボル 'ENCODER_CONN_1X5' が、ライブラリ 'SteppingMotorDriver_symbols' のコピーと一致しません",
+                    "items": [
+                        {
+                            "description": "シンボル J40 [ENCODER_CONN_1X5]",
+                            "pos": {
+                                "x": 0.8128,
+                                "y": 0.4953
+                            },
+                            "uuid": "6a9371f2-5814-4af8-82ef-9d87ab950473"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_mismatch"
+                },
+                {
+                    "description": "シンボル 'ENCODER_CONN_1X5' が、ライブラリ 'SteppingMotorDriver_symbols' のコピーと一致しません",
+                    "items": [
+                        {
+                            "description": "シンボル J41 [ENCODER_CONN_1X5]",
+                            "pos": {
+                                "x": 0.8128,
+                                "y": 0.6985
+                            },
+                            "uuid": "fc7e7475-6ad8-49cd-9f95-61a82accfa56"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_mismatch"
+                },
+                {
+                    "description": "シンボル 'ENCODER_CONN_1X5' が、ライブラリ 'SteppingMotorDriver_symbols' のコピーと一致しません",
+                    "items": [
+                        {
+                            "description": "シンボル J42 [ENCODER_CONN_1X5]",
+                            "pos": {
+                                "x": 0.8128,
+                                "y": 0.9144
+                            },
+                            "uuid": "8bc701f3-dd80-4a59-90bd-03cae5ddd5e8"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_mismatch"
+                },
+                {
+                    "description": "シンボル 'ENCODER_CONN_1X5' が、ライブラリ 'SteppingMotorDriver_symbols' のコピーと一致しません",
+                    "items": [
+                        {
+                            "description": "シンボル J43 [ENCODER_CONN_1X5]",
+                            "pos": {
+                                "x": 0.8128,
+                                "y": 1.1557
+                            },
+                            "uuid": "6c72ffc2-8b27-44cb-ae43-4be5b1449ec8"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "lib_symbol_mismatch"
+                },
+                {
+                    "comment": "",
+                    "description": "Local and global labels have same name",
+                    "excluded": true,
+                    "items": [
+                        {
+                            "description": "グローバル ラベル 'VIN_24V'",
+                            "pos": {
+                                "x": 0.6985,
+                                "y": 0.3175
+                            },
+                            "uuid": "4116396c-67ea-48e0-8494-26aecf79ac2c"
+                        },
+                        {
+                            "description": "ラベル 'VIN_24V'",
+                            "pos": {
+                                "x": 0.2921,
+                                "y": 0.2794
+                            },
+                            "uuid": "97b3db65-469f-4569-afed-ad3056fef15c"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "same_local_global_label"
+                }
+            ]
+        },
+        {
+            "path": "/Power/",
+            "uuid_path": "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/e9dcd4cb-01b6-474a-8864-8ad99ebe6173",
+            "violations": []
+        },
+        {
+            "path": "/Drivers/",
+            "uuid_path": "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/d1f4f23a-ba0b-4a7e-9ef5-2ae04815e6f6",
+            "violations": [
+                {
+                    "description": "Unconnected \"no connection\" flag",
+                    "items": [
+                        {
+                            "description": "未接続",
+                            "pos": {
+                                "x": 1.27,
+                                "y": 0.5207
+                            },
+                            "uuid": "90692433-3bcd-449a-9f61-5ba1d7eb7d59"
+                        }
+                    ],
+                    "severity": "warning",
+                    "type": "no_connect_dangling"
+                }
+            ]
+        },
+        {
+            "path": "/ADC_IO/",
+            "uuid_path": "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/756528f8-44f1-4388-a300-24a9d6f4668d",
+            "violations": []
+        },
+        {
+            "path": "/MCU_USB/",
+            "uuid_path": "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/b1af4238-a220-417e-b5e6-6e2e4eac7ac6",
+            "violations": []
+        },
+        {
+            "path": "/Encoders_IO/",
+            "uuid_path": "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/1400e290-4ee3-4b4b-b93d-0c6e2364744b",
+            "violations": []
+        }
+    ],
+    "source": "SteppingMotorDriver.kicad_sch"
+}

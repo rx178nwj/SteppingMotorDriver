@@ -1,0 +1,1087 @@
+{
+    "$schema": "https://schemas.kicad.org/drc.v1.json",
+    "coordinate_units": "mm",
+    "date": "2026-05-04T14:53:39",
+    "ignored_checks": [
+        {
+            "description": "Footprint has no courtyard defined",
+            "key": "missing_courtyard"
+        },
+        {
+            "description": "Track endpoint not centered on via",
+            "key": "track_not_centered_on_via"
+        },
+        {
+            "description": "Tuning profile track geometries",
+            "key": "tuning_profile_track_geometries"
+        },
+        {
+            "description": "Footprint doesn't match symbol's footprint filters",
+            "key": "footprint_filters_mismatch"
+        },
+        {
+            "description": "Footprint component type doesn't match footprint pads",
+            "key": "footprint_type_mismatch"
+        }
+    ],
+    "included_severities": [
+        "error",
+        "warning",
+        "exclusion"
+    ],
+    "kicad_version": "10.0.1",
+    "schematic_parity": [],
+    "source": "SteppingMotorDriver.kicad_pcb",
+    "unconnected_items": [],
+    "violations": [
+        {
+            "description": "基板端クリアランス違反 (基板の設定の基板端の制約 クリアランス 0.5000 mm; 現状 0.1750 mm)",
+            "items": [
+                {
+                    "description": "セグメント of U4 、Edge.Cuts 上",
+                    "pos": {
+                        "x": 165.525,
+                        "y": 43.525
+                    },
+                    "uuid": "63e850ce-aa4a-44a3-938e-9a9608914730"
+                },
+                {
+                    "description": "PTHパッド 1 [<no net>] (H3)",
+                    "pos": {
+                        "x": 165.5,
+                        "y": 46.5
+                    },
+                    "uuid": "4a45f86a-e8ca-49ae-b19a-023d6890ddc9"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "基板端クリアランス違反 (基板の設定の基板端の制約 クリアランス 0.5000 mm; 現状 0.1751 mm)",
+            "items": [
+                {
+                    "description": "セグメント of U4 、Edge.Cuts 上",
+                    "pos": {
+                        "x": 68.525,
+                        "y": 46.525
+                    },
+                    "uuid": "72012f2d-0073-4150-93a0-b2e712c3e4f1"
+                },
+                {
+                    "description": "PTHパッド 1 [<no net>] (H2)",
+                    "pos": {
+                        "x": 71.5,
+                        "y": 46.5
+                    },
+                    "uuid": "b697cd1d-22f9-490e-92c6-e9294bd1f74e"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "基板端クリアランス違反 (基板の設定の基板端の制約 クリアランス 0.5000 mm; 現状 0.1750 mm)",
+            "items": [
+                {
+                    "description": "セグメント of U4 、Edge.Cuts 上",
+                    "pos": {
+                        "x": 68.525,
+                        "y": 46.525
+                    },
+                    "uuid": "72012f2d-0073-4150-93a0-b2e712c3e4f1"
+                },
+                {
+                    "description": "PTHパッド 1 [<no net>] (H1)",
+                    "pos": {
+                        "x": 71.5,
+                        "y": 140.5
+                    },
+                    "uuid": "1b62523e-3931-465b-9452-bab7ce5f6c92"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "基板端クリアランス違反 (基板の設定の基板端の制約 クリアランス 0.5000 mm; 現状 0.2250 mm)",
+            "items": [
+                {
+                    "description": "セグメント of U4 、Edge.Cuts 上",
+                    "pos": {
+                        "x": 71.525,
+                        "y": 143.525
+                    },
+                    "uuid": "54937a06-44e7-4aec-86ee-aa27ef88ac86"
+                },
+                {
+                    "description": "PTHパッド 1 [<no net>] (H4)",
+                    "pos": {
+                        "x": 165.5,
+                        "y": 140.5
+                    },
+                    "uuid": "10626bdb-0e4f-4082-8188-1526048a72c0"
+                }
+            ],
+            "severity": "error",
+            "type": "copper_edge_clearance"
+        },
+        {
+            "description": "ゾーンへのサーマルリリーフ接続が不完全 (レイヤー B.Cu; 1 本の孤立した導体部分に接続するスポーク)",
+            "items": [
+                {
+                    "description": "ゾーン [GND] F.Cu と B.Cu 上, 優先度 0",
+                    "pos": {
+                        "x": 62.0,
+                        "y": 40.0
+                    },
+                    "uuid": "1323276f-0c43-4906-9863-80e8816ace35"
+                },
+                {
+                    "description": "PTHパッド 2 [GND] (J40)",
+                    "pos": {
+                        "x": 94.0,
+                        "y": 81.0
+                    },
+                    "uuid": "cd28bf82-238b-4f46-b31b-20113e2ffed5"
+                }
+            ],
+            "severity": "error",
+            "type": "starved_thermal"
+        },
+        {
+            "description": "ゾーンへのサーマルリリーフ接続が不完全 (レイヤー F.Cu; ゾーン 最小スポーク数: 2; 現状 1)",
+            "items": [
+                {
+                    "description": "ゾーン [GND] F.Cu と B.Cu 上, 優先度 0",
+                    "pos": {
+                        "x": 62.0,
+                        "y": 40.0
+                    },
+                    "uuid": "1323276f-0c43-4906-9863-80e8816ace35"
+                },
+                {
+                    "description": "パッド 2 [GND] - C19 ( F.Cu 上)",
+                    "pos": {
+                        "x": 147.78,
+                        "y": 64.8
+                    },
+                    "uuid": "567fc557-a000-4cb1-bc2b-db4b4f3e08a4"
+                }
+            ],
+            "severity": "error",
+            "type": "starved_thermal"
+        },
+        {
+            "description": "ゾーンへのサーマルリリーフ接続が不完全 (レイヤー B.Cu; ゾーン 最小スポーク数: 2; 現状 1)",
+            "items": [
+                {
+                    "description": "ゾーン [GND] F.Cu と B.Cu 上, 優先度 0",
+                    "pos": {
+                        "x": 62.0,
+                        "y": 40.0
+                    },
+                    "uuid": "1323276f-0c43-4906-9863-80e8816ace35"
+                },
+                {
+                    "description": "PTHパッド 2 [GND] (J8)",
+                    "pos": {
+                        "x": 154.0,
+                        "y": 88.0
+                    },
+                    "uuid": "b620054c-4494-44b4-80dd-6432ce7d9504"
+                }
+            ],
+            "severity": "error",
+            "type": "starved_thermal"
+        },
+        {
+            "description": "ゾーンへのサーマルリリーフ接続が不完全 (レイヤー F.Cu; ゾーン 最小スポーク数: 2; 現状 1)",
+            "items": [
+                {
+                    "description": "ゾーン [GND] F.Cu と B.Cu 上, 優先度 0",
+                    "pos": {
+                        "x": 62.0,
+                        "y": 40.0
+                    },
+                    "uuid": "1323276f-0c43-4906-9863-80e8816ace35"
+                },
+                {
+                    "description": "PTHパッド 2 [GND] (J8)",
+                    "pos": {
+                        "x": 154.0,
+                        "y": 88.0
+                    },
+                    "uuid": "b620054c-4494-44b4-80dd-6432ce7d9504"
+                }
+            ],
+            "severity": "error",
+            "type": "starved_thermal"
+        },
+        {
+            "description": "ゾーンへのサーマルリリーフ接続が不完全 (レイヤー B.Cu; ゾーン 最小スポーク数: 2; 現状 1)",
+            "items": [
+                {
+                    "description": "ゾーン [GND] F.Cu と B.Cu 上, 優先度 0",
+                    "pos": {
+                        "x": 62.0,
+                        "y": 40.0
+                    },
+                    "uuid": "1323276f-0c43-4906-9863-80e8816ace35"
+                },
+                {
+                    "description": "PTHパッド 2 [GND] (J41)",
+                    "pos": {
+                        "x": 113.0,
+                        "y": 81.0
+                    },
+                    "uuid": "04352340-7cf6-4a54-80a7-6674f90173aa"
+                }
+            ],
+            "severity": "error",
+            "type": "starved_thermal"
+        },
+        {
+            "description": "ゾーンへのサーマルリリーフ接続が不完全 (レイヤー F.Cu; ゾーン 最小スポーク数: 2; 現状 1)",
+            "items": [
+                {
+                    "description": "ゾーン [GND] F.Cu と B.Cu 上, 優先度 0",
+                    "pos": {
+                        "x": 62.0,
+                        "y": 40.0
+                    },
+                    "uuid": "1323276f-0c43-4906-9863-80e8816ace35"
+                },
+                {
+                    "description": "PTHパッド 2 [GND] (J43)",
+                    "pos": {
+                        "x": 153.0,
+                        "y": 81.0
+                    },
+                    "uuid": "6c34accb-1f78-436f-ab57-ac7e9de8f62a"
+                }
+            ],
+            "severity": "error",
+            "type": "starved_thermal"
+        },
+        {
+            "description": "ゾーンへのサーマルリリーフ接続が不完全 (レイヤー F.Cu; ゾーン 最小スポーク数: 2; 現状 1)",
+            "items": [
+                {
+                    "description": "ゾーン [GND] F.Cu と B.Cu 上, 優先度 0",
+                    "pos": {
+                        "x": 62.0,
+                        "y": 40.0
+                    },
+                    "uuid": "1323276f-0c43-4906-9863-80e8816ace35"
+                },
+                {
+                    "description": "PTHパッド 2 [GND] (J5)",
+                    "pos": {
+                        "x": 95.0,
+                        "y": 87.75
+                    },
+                    "uuid": "3a72121d-d645-494b-964a-0855bd3a7a3d"
+                }
+            ],
+            "severity": "error",
+            "type": "starved_thermal"
+        },
+        {
+            "description": "ゾーンへのサーマルリリーフ接続が不完全 (レイヤー F.Cu; 1 本の孤立した導体部分に接続するスポーク)",
+            "items": [
+                {
+                    "description": "ゾーン [GND] F.Cu と B.Cu 上, 優先度 0",
+                    "pos": {
+                        "x": 62.0,
+                        "y": 40.0
+                    },
+                    "uuid": "1323276f-0c43-4906-9863-80e8816ace35"
+                },
+                {
+                    "description": "PTHパッド 2 [GND] (J6)",
+                    "pos": {
+                        "x": 114.0,
+                        "y": 88.0
+                    },
+                    "uuid": "2f990e11-d797-4e82-9773-b204c1369f62"
+                }
+            ],
+            "severity": "error",
+            "type": "starved_thermal"
+        },
+        {
+            "description": "ゾーンへのサーマルリリーフ接続が不完全 (レイヤー F.Cu; ゾーン 最小スポーク数: 2; 現状 1)",
+            "items": [
+                {
+                    "description": "ゾーン [GND] F.Cu と B.Cu 上, 優先度 0",
+                    "pos": {
+                        "x": 62.0,
+                        "y": 40.0
+                    },
+                    "uuid": "1323276f-0c43-4906-9863-80e8816ace35"
+                },
+                {
+                    "description": "パッド A1_B12 [GND] - J1 ( F.Cu 上)",
+                    "pos": {
+                        "x": 76.0825,
+                        "y": 63.8157
+                    },
+                    "uuid": "7f309b44-dbb9-445f-be73-9f50201f6afd"
+                }
+            ],
+            "severity": "error",
+            "type": "starved_thermal"
+        },
+        {
+            "description": "ゾーンへのサーマルリリーフ接続が不完全 (レイヤー F.Cu; ゾーン 最小スポーク数: 2; 現状 1)",
+            "items": [
+                {
+                    "description": "ゾーン [GND] F.Cu と B.Cu 上, 優先度 0",
+                    "pos": {
+                        "x": 62.0,
+                        "y": 40.0
+                    },
+                    "uuid": "1323276f-0c43-4906-9863-80e8816ace35"
+                },
+                {
+                    "description": "パッド B1_A12 [GND] - J1 ( F.Cu 上)",
+                    "pos": {
+                        "x": 76.0825,
+                        "y": 70.2157
+                    },
+                    "uuid": "bc3f7fd9-c854-436a-94df-47cbad9c4869"
+                }
+            ],
+            "severity": "error",
+            "type": "starved_thermal"
+        },
+        {
+            "description": "異なるネットのアイテムが表面ハンダマスクのアパーチャで接続されている",
+            "items": [
+                {
+                    "description": "パッド A1_B12 [GND] - J1 ( F.Cu 上)",
+                    "pos": {
+                        "x": 76.0825,
+                        "y": 63.8157
+                    },
+                    "uuid": "7f309b44-dbb9-445f-be73-9f50201f6afd"
+                },
+                {
+                    "description": "パッド A4_B9 [/MCU_USB/USB_VBUS] - J1 ( F.Cu 上)",
+                    "pos": {
+                        "x": 76.0825,
+                        "y": 64.6157
+                    },
+                    "uuid": "72114b40-d4fa-4222-a6a6-732477e77d27"
+                }
+            ],
+            "severity": "error",
+            "type": "solder_mask_bridge"
+        },
+        {
+            "description": "異なるネットのアイテムが表面ハンダマスクのアパーチャで接続されている",
+            "items": [
+                {
+                    "description": "パッド A4_B9 [/MCU_USB/USB_VBUS] - J1 ( F.Cu 上)",
+                    "pos": {
+                        "x": 76.0825,
+                        "y": 64.6157
+                    },
+                    "uuid": "72114b40-d4fa-4222-a6a6-732477e77d27"
+                },
+                {
+                    "description": "パッド B8 [unconnected-(J1-SBU2-PadB8)] - J1 ( F.Cu 上)",
+                    "pos": {
+                        "x": 76.0825,
+                        "y": 65.2657
+                    },
+                    "uuid": "19ae0cf7-1dc6-4431-83c1-09c094bc3fac"
+                }
+            ],
+            "severity": "error",
+            "type": "solder_mask_bridge"
+        },
+        {
+            "description": "異なるネットのアイテムが表面ハンダマスクのアパーチャで接続されている",
+            "items": [
+                {
+                    "description": "パッド A5 [Net-(J1-CC1)] - J1 ( F.Cu 上)",
+                    "pos": {
+                        "x": 76.0825,
+                        "y": 65.7657
+                    },
+                    "uuid": "d8f16e83-eea0-4802-8cd3-1ef1e200aa7f"
+                },
+                {
+                    "description": "パッド B8 [unconnected-(J1-SBU2-PadB8)] - J1 ( F.Cu 上)",
+                    "pos": {
+                        "x": 76.0825,
+                        "y": 65.2657
+                    },
+                    "uuid": "19ae0cf7-1dc6-4431-83c1-09c094bc3fac"
+                }
+            ],
+            "severity": "error",
+            "type": "solder_mask_bridge"
+        },
+        {
+            "description": "異なるネットのアイテムが表面ハンダマスクのアパーチャで接続されている",
+            "items": [
+                {
+                    "description": "パッド A5 [Net-(J1-CC1)] - J1 ( F.Cu 上)",
+                    "pos": {
+                        "x": 76.0825,
+                        "y": 65.7657
+                    },
+                    "uuid": "d8f16e83-eea0-4802-8cd3-1ef1e200aa7f"
+                },
+                {
+                    "description": "パッド B7 [/MCU_USB/DN1] - J1 ( F.Cu 上)",
+                    "pos": {
+                        "x": 76.0825,
+                        "y": 66.2657
+                    },
+                    "uuid": "91697d7d-c952-4e82-8dc8-74ba2f753b81"
+                }
+            ],
+            "severity": "error",
+            "type": "solder_mask_bridge"
+        },
+        {
+            "description": "異なるネットのアイテムが表面ハンダマスクのアパーチャで接続されている",
+            "items": [
+                {
+                    "description": "パッド A6 [/MCU_USB/DP1] - J1 ( F.Cu 上)",
+                    "pos": {
+                        "x": 76.0825,
+                        "y": 66.7657
+                    },
+                    "uuid": "70c7f1b0-a2a5-44c9-9ad6-a515c23c4a39"
+                },
+                {
+                    "description": "パッド A7 [/MCU_USB/DN1] - J1 ( F.Cu 上)",
+                    "pos": {
+                        "x": 76.0825,
+                        "y": 67.2657
+                    },
+                    "uuid": "3f2f8925-3e6b-43ee-a7fa-29dfb487abb4"
+                }
+            ],
+            "severity": "error",
+            "type": "solder_mask_bridge"
+        },
+        {
+            "description": "異なるネットのアイテムが表面ハンダマスクのアパーチャで接続されている",
+            "items": [
+                {
+                    "description": "パッド A6 [/MCU_USB/DP1] - J1 ( F.Cu 上)",
+                    "pos": {
+                        "x": 76.0825,
+                        "y": 66.7657
+                    },
+                    "uuid": "70c7f1b0-a2a5-44c9-9ad6-a515c23c4a39"
+                },
+                {
+                    "description": "パッド B7 [/MCU_USB/DN1] - J1 ( F.Cu 上)",
+                    "pos": {
+                        "x": 76.0825,
+                        "y": 66.2657
+                    },
+                    "uuid": "91697d7d-c952-4e82-8dc8-74ba2f753b81"
+                }
+            ],
+            "severity": "error",
+            "type": "solder_mask_bridge"
+        },
+        {
+            "description": "異なるネットのアイテムが表面ハンダマスクのアパーチャで接続されている",
+            "items": [
+                {
+                    "description": "パッド A7 [/MCU_USB/DN1] - J1 ( F.Cu 上)",
+                    "pos": {
+                        "x": 76.0825,
+                        "y": 67.2657
+                    },
+                    "uuid": "3f2f8925-3e6b-43ee-a7fa-29dfb487abb4"
+                },
+                {
+                    "description": "パッド B6 [/MCU_USB/DP1] - J1 ( F.Cu 上)",
+                    "pos": {
+                        "x": 76.0825,
+                        "y": 67.7657
+                    },
+                    "uuid": "e2253849-0a5f-4e14-b89e-8843cada9915"
+                }
+            ],
+            "severity": "error",
+            "type": "solder_mask_bridge"
+        },
+        {
+            "description": "異なるネットのアイテムが表面ハンダマスクのアパーチャで接続されている",
+            "items": [
+                {
+                    "description": "パッド A8 [unconnected-(J1-SBU1-PadA8)] - J1 ( F.Cu 上)",
+                    "pos": {
+                        "x": 76.0825,
+                        "y": 68.2657
+                    },
+                    "uuid": "ef0ae7d8-6486-45cf-8dba-881415c911ef"
+                },
+                {
+                    "description": "パッド B5 [Net-(J1-CC2)] - J1 ( F.Cu 上)",
+                    "pos": {
+                        "x": 76.0825,
+                        "y": 68.7657
+                    },
+                    "uuid": "b9b8a0ec-8a8b-40be-b171-7f9cb1665bea"
+                }
+            ],
+            "severity": "error",
+            "type": "solder_mask_bridge"
+        },
+        {
+            "description": "異なるネットのアイテムが表面ハンダマスクのアパーチャで接続されている",
+            "items": [
+                {
+                    "description": "パッド A8 [unconnected-(J1-SBU1-PadA8)] - J1 ( F.Cu 上)",
+                    "pos": {
+                        "x": 76.0825,
+                        "y": 68.2657
+                    },
+                    "uuid": "ef0ae7d8-6486-45cf-8dba-881415c911ef"
+                },
+                {
+                    "description": "パッド B6 [/MCU_USB/DP1] - J1 ( F.Cu 上)",
+                    "pos": {
+                        "x": 76.0825,
+                        "y": 67.7657
+                    },
+                    "uuid": "e2253849-0a5f-4e14-b89e-8843cada9915"
+                }
+            ],
+            "severity": "error",
+            "type": "solder_mask_bridge"
+        },
+        {
+            "description": "異なるネットのアイテムが表面ハンダマスクのアパーチャで接続されている",
+            "items": [
+                {
+                    "description": "パッド B1_A12 [GND] - J1 ( F.Cu 上)",
+                    "pos": {
+                        "x": 76.0825,
+                        "y": 70.2157
+                    },
+                    "uuid": "bc3f7fd9-c854-436a-94df-47cbad9c4869"
+                },
+                {
+                    "description": "パッド B4_A9 [/MCU_USB/USB_VBUS] - J1 ( F.Cu 上)",
+                    "pos": {
+                        "x": 76.0825,
+                        "y": 69.4157
+                    },
+                    "uuid": "7b8ae315-e6e0-4c52-8f89-4d46fbcafe7d"
+                }
+            ],
+            "severity": "error",
+            "type": "solder_mask_bridge"
+        },
+        {
+            "description": "異なるネットのアイテムが表面ハンダマスクのアパーチャで接続されている",
+            "items": [
+                {
+                    "description": "パッド B4_A9 [/MCU_USB/USB_VBUS] - J1 ( F.Cu 上)",
+                    "pos": {
+                        "x": 76.0825,
+                        "y": 69.4157
+                    },
+                    "uuid": "7b8ae315-e6e0-4c52-8f89-4d46fbcafe7d"
+                },
+                {
+                    "description": "パッド B5 [Net-(J1-CC2)] - J1 ( F.Cu 上)",
+                    "pos": {
+                        "x": 76.0825,
+                        "y": 68.7657
+                    },
+                    "uuid": "b9b8a0ec-8a8b-40be-b171-7f9cb1665bea"
+                }
+            ],
+            "severity": "error",
+            "type": "solder_mask_bridge"
+        },
+        {
+            "description": "Silkscreen clipped by board edge",
+            "items": [
+                {
+                    "description": "セグメント of U4 、Edge.Cuts 上",
+                    "pos": {
+                        "x": 71.525,
+                        "y": 143.525
+                    },
+                    "uuid": "54937a06-44e7-4aec-86ee-aa27ef88ac86"
+                },
+                {
+                    "description": "セグメント of J2 、F.Silkscreen 上",
+                    "pos": {
+                        "x": 83.4,
+                        "y": 143.5
+                    },
+                    "uuid": "226e111c-e321-4f1a-99c3-5a9e78fa525e"
+                }
+            ],
+            "severity": "warning",
+            "type": "silk_edge_clearance"
+        },
+        {
+            "description": "Silkscreen clipped by board edge",
+            "items": [
+                {
+                    "description": "セグメント of U4 、Edge.Cuts 上",
+                    "pos": {
+                        "x": 71.525,
+                        "y": 143.525
+                    },
+                    "uuid": "54937a06-44e7-4aec-86ee-aa27ef88ac86"
+                },
+                {
+                    "description": "セグメント of J2 、F.Silkscreen 上",
+                    "pos": {
+                        "x": 92.6,
+                        "y": 134.9
+                    },
+                    "uuid": "04fc7e1a-3524-40e6-bfc5-ce8e112f8933"
+                }
+            ],
+            "severity": "warning",
+            "type": "silk_edge_clearance"
+        },
+        {
+            "description": "Silkscreen clipped by board edge",
+            "items": [
+                {
+                    "description": "セグメント of U4 、Edge.Cuts 上",
+                    "pos": {
+                        "x": 71.525,
+                        "y": 143.525
+                    },
+                    "uuid": "54937a06-44e7-4aec-86ee-aa27ef88ac86"
+                },
+                {
+                    "description": "セグメント of J2 、F.Silkscreen 上",
+                    "pos": {
+                        "x": 92.6,
+                        "y": 143.5
+                    },
+                    "uuid": "2094edcf-d842-4791-817d-2b352702badf"
+                }
+            ],
+            "severity": "warning",
+            "type": "silk_edge_clearance"
+        },
+        {
+            "description": "フットプリント 'ESP32-S3-WROOM-1' が、ライブラリ 'RF_Module' のコピーと一致しません",
+            "items": [
+                {
+                    "description": "フットプリント U2",
+                    "pos": {
+                        "x": 119.0,
+                        "y": 56.54
+                    },
+                    "uuid": "02a69721-cf84-43cd-abd4-e3e4f3e6662a"
+                }
+            ],
+            "severity": "warning",
+            "type": "lib_footprint_mismatch"
+        },
+        {
+            "description": "フットプリント 'DRV8825_Driver' が、ライブラリ 'Library' のコピーと一致しません",
+            "items": [
+                {
+                    "description": "フットプリント A4",
+                    "pos": {
+                        "x": 163.89,
+                        "y": 97.66
+                    },
+                    "uuid": "08788f7d-aba1-4470-a37a-96fd3cab627d"
+                }
+            ],
+            "severity": "warning",
+            "type": "lib_footprint_mismatch"
+        },
+        {
+            "description": "フットプリント 'CP_Radial_D8.0mm_P3.50mm' が、ライブラリ 'Capacitor_THT' のコピーと一致しません",
+            "items": [
+                {
+                    "description": "フットプリント C30",
+                    "pos": {
+                        "x": 78.0,
+                        "y": 118.3473
+                    },
+                    "uuid": "19abf24b-4b84-4d9f-851a-788b4008d7e8"
+                }
+            ],
+            "severity": "warning",
+            "type": "lib_footprint_mismatch"
+        },
+        {
+            "description": "フットプリント 'JST_PH_B5B-PH-K_1x05_P2.00mm_Vertical' が、ライブラリ 'Connector_JST' のコピーと一致しません",
+            "items": [
+                {
+                    "description": "フットプリント J40",
+                    "pos": {
+                        "x": 92.0,
+                        "y": 81.0
+                    },
+                    "uuid": "1ebeeebe-3d3f-44b1-a45b-61546ca1164b"
+                }
+            ],
+            "severity": "warning",
+            "type": "lib_footprint_mismatch"
+        },
+        {
+            "description": "フットプリント 'CP_Radial_D8.0mm_P3.50mm' が、ライブラリ 'Capacitor_THT' のコピーと一致しません",
+            "items": [
+                {
+                    "description": "フットプリント C32",
+                    "pos": {
+                        "x": 123.0,
+                        "y": 118.3473
+                    },
+                    "uuid": "201e462c-499f-4992-b5b4-e389fed6b2f2"
+                }
+            ],
+            "severity": "warning",
+            "type": "lib_footprint_mismatch"
+        },
+        {
+            "description": "フットプリント 'BarrelJack_GCT_DCJ200-10-A_Horizontal' が、ライブラリ 'Connector_BarrelJack' のコピーと一致しません",
+            "items": [
+                {
+                    "description": "フットプリント J2",
+                    "pos": {
+                        "x": 88.0,
+                        "y": 129.7
+                    },
+                    "uuid": "203f96c5-6f52-498b-9e7f-99b21cfdeeee"
+                }
+            ],
+            "severity": "warning",
+            "type": "lib_footprint_mismatch"
+        },
+        {
+            "description": "フットプリント 'MountingHole_3.2mm_M3_DIN965_Pad' が、ライブラリ 'MountingHole' のコピーと一致しません",
+            "items": [
+                {
+                    "description": "フットプリント H3",
+                    "pos": {
+                        "x": 165.5,
+                        "y": 46.5
+                    },
+                    "uuid": "252b0031-7cb6-43b8-8502-269b7d24f355"
+                }
+            ],
+            "severity": "warning",
+            "type": "lib_footprint_mismatch"
+        },
+        {
+            "description": "フットプリント 'MountingHole_3.2mm_M3_DIN965_Pad' が、ライブラリ 'MountingHole' のコピーと一致しません",
+            "items": [
+                {
+                    "description": "フットプリント H2",
+                    "pos": {
+                        "x": 71.5,
+                        "y": 46.5
+                    },
+                    "uuid": "253e642a-e729-4a74-8af7-df224b4f4201"
+                }
+            ],
+            "severity": "warning",
+            "type": "lib_footprint_mismatch"
+        },
+        {
+            "description": "フットプリント 'JST_PH_B4B-PH-K_1x04_P2.00mm_Vertical' が、ライブラリ 'Connector_JST' のコピーと一致しません",
+            "items": [
+                {
+                    "description": "フットプリント J8",
+                    "pos": {
+                        "x": 152.0,
+                        "y": 88.0
+                    },
+                    "uuid": "26a9d6d6-f1dc-4c4a-92c4-b5a16413e1b8"
+                }
+            ],
+            "severity": "warning",
+            "type": "lib_footprint_mismatch"
+        },
+        {
+            "description": "フットプリント 'JST_PH_B5B-PH-K_1x05_P2.00mm_Vertical' が、ライブラリ 'Connector_JST' のコピーと一致しません",
+            "items": [
+                {
+                    "description": "フットプリント J43",
+                    "pos": {
+                        "x": 151.0,
+                        "y": 81.0
+                    },
+                    "uuid": "336003dc-13d8-46a7-ae71-b69c91e63cd0"
+                }
+            ],
+            "severity": "warning",
+            "type": "lib_footprint_mismatch"
+        },
+        {
+            "description": "フットプリント 'JST_PH_B4B-PH-K_1x04_P2.00mm_Vertical' が、ライブラリ 'Connector_JST' のコピーと一致しません",
+            "items": [
+                {
+                    "description": "フットプリント J5",
+                    "pos": {
+                        "x": 93.0,
+                        "y": 87.75
+                    },
+                    "uuid": "48eb974a-2c01-4d9a-8ce6-f3351ca0337f"
+                }
+            ],
+            "severity": "warning",
+            "type": "lib_footprint_mismatch"
+        },
+        {
+            "description": "フットプリント 'JST_XH_B4B-XH-A_1x04_P2.50mm_Vertical' が、ライブラリ 'Connector_JST' のコピーと一致しません",
+            "items": [
+                {
+                    "description": "フットプリント J31",
+                    "pos": {
+                        "x": 116.0,
+                        "y": 136.0
+                    },
+                    "uuid": "4c316c79-e9e5-4c4b-8578-fa5c82dc1f30"
+                }
+            ],
+            "severity": "warning",
+            "type": "lib_footprint_mismatch"
+        },
+        {
+            "description": "フットプリント 'DRV8825_Driver' が、ライブラリ 'Library' のコピーと一致しません",
+            "items": [
+                {
+                    "description": "フットプリント A3",
+                    "pos": {
+                        "x": 140.575,
+                        "y": 97.795
+                    },
+                    "uuid": "62b0bf09-775f-4d22-8159-e5a1eae8f281"
+                }
+            ],
+            "severity": "warning",
+            "type": "lib_footprint_mismatch"
+        },
+        {
+            "description": "フットプリント 'DRV8825_Driver' が、ライブラリ 'Library' のコピーと一致しません",
+            "items": [
+                {
+                    "description": "フットプリント A2",
+                    "pos": {
+                        "x": 115.54,
+                        "y": 98.02
+                    },
+                    "uuid": "64e81962-87dd-4efd-bd80-6c7eab83e83e"
+                }
+            ],
+            "severity": "warning",
+            "type": "lib_footprint_mismatch"
+        },
+        {
+            "description": "フットプリント 'MountingHole_3.2mm_M3_DIN965_Pad' が、ライブラリ 'MountingHole' のコピーと一致しません",
+            "items": [
+                {
+                    "description": "フットプリント H1",
+                    "pos": {
+                        "x": 71.5,
+                        "y": 140.5
+                    },
+                    "uuid": "6cfcfca1-419e-4f91-a748-19aa8862dbae"
+                }
+            ],
+            "severity": "warning",
+            "type": "lib_footprint_mismatch"
+        },
+        {
+            "description": "フットプリント 'JST_XH_B4B-XH-A_1x04_P2.50mm_Vertical' が、ライブラリ 'Connector_JST' のコピーと一致しません",
+            "items": [
+                {
+                    "description": "フットプリント J30",
+                    "pos": {
+                        "x": 100.0,
+                        "y": 136.0
+                    },
+                    "uuid": "701a0d06-88d4-4089-83af-56d9f4595469"
+                }
+            ],
+            "severity": "warning",
+            "type": "lib_footprint_mismatch"
+        },
+        {
+            "description": "フットプリント 'JST_XH_B4B-XH-A_1x04_P2.50mm_Vertical' が、ライブラリ 'Connector_JST' のコピーと一致しません",
+            "items": [
+                {
+                    "description": "フットプリント J32",
+                    "pos": {
+                        "x": 132.0,
+                        "y": 136.0
+                    },
+                    "uuid": "77452593-295e-4fbd-a74d-4378a5e548ce"
+                }
+            ],
+            "severity": "warning",
+            "type": "lib_footprint_mismatch"
+        },
+        {
+            "description": "フットプリント 'JST_PH_B5B-PH-K_1x05_P2.00mm_Vertical' が、ライブラリ 'Connector_JST' のコピーと一致しません",
+            "items": [
+                {
+                    "description": "フットプリント J42",
+                    "pos": {
+                        "x": 131.0,
+                        "y": 81.0
+                    },
+                    "uuid": "82f81f7c-069a-4b0c-a4aa-c93dedee9e47"
+                }
+            ],
+            "severity": "warning",
+            "type": "lib_footprint_mismatch"
+        },
+        {
+            "description": "フットプリント 'DRV8825_Driver' が、ライブラリ 'Library' のコピーと一致しません",
+            "items": [
+                {
+                    "description": "フットプリント A1",
+                    "pos": {
+                        "x": 90.54,
+                        "y": 98.02
+                    },
+                    "uuid": "91a7a08d-0e17-4c0c-ac52-6d598d22113d"
+                }
+            ],
+            "severity": "warning",
+            "type": "lib_footprint_mismatch"
+        },
+        {
+            "description": "フットプリント 'MountingHole_3.2mm_M3_DIN965_Pad' が、ライブラリ 'MountingHole' のコピーと一致しません",
+            "items": [
+                {
+                    "description": "フットプリント H4",
+                    "pos": {
+                        "x": 165.5,
+                        "y": 140.5
+                    },
+                    "uuid": "9e1989d8-f62c-4c30-8079-4a04d8d2046e"
+                }
+            ],
+            "severity": "warning",
+            "type": "lib_footprint_mismatch"
+        },
+        {
+            "description": "フットプリント 'JST_PH_B4B-PH-K_1x04_P2.00mm_Vertical' が、ライブラリ 'Connector_JST' のコピーと一致しません",
+            "items": [
+                {
+                    "description": "フットプリント J6",
+                    "pos": {
+                        "x": 112.0,
+                        "y": 88.0
+                    },
+                    "uuid": "ad5465ab-de69-44ed-8091-44060b5094d7"
+                }
+            ],
+            "severity": "warning",
+            "type": "lib_footprint_mismatch"
+        },
+        {
+            "description": "フットプリント 'JST_PH_B5B-PH-K_1x05_P2.00mm_Vertical' が、ライブラリ 'Connector_JST' のコピーと一致しません",
+            "items": [
+                {
+                    "description": "フットプリント J41",
+                    "pos": {
+                        "x": 111.0,
+                        "y": 81.0
+                    },
+                    "uuid": "b9d582dd-cd0a-412c-88bc-40fad1bf5a23"
+                }
+            ],
+            "severity": "warning",
+            "type": "lib_footprint_mismatch"
+        },
+        {
+            "description": "フットプリント 'JST_PH_B4B-PH-K_1x04_P2.00mm_Vertical' が、ライブラリ 'Connector_JST' のコピーと一致しません",
+            "items": [
+                {
+                    "description": "フットプリント J7",
+                    "pos": {
+                        "x": 132.0,
+                        "y": 88.225
+                    },
+                    "uuid": "c8c0e9ac-24c2-47ac-ac89-c6710778bdaa"
+                }
+            ],
+            "severity": "warning",
+            "type": "lib_footprint_mismatch"
+        },
+        {
+            "description": "フットプリント 'JST_XH_B4B-XH-A_1x04_P2.50mm_Vertical' が、ライブラリ 'Connector_JST' のコピーと一致しません",
+            "items": [
+                {
+                    "description": "フットプリント J33",
+                    "pos": {
+                        "x": 148.0,
+                        "y": 136.0
+                    },
+                    "uuid": "d5c3aa5e-7f1a-4c09-948a-467781ea1348"
+                }
+            ],
+            "severity": "warning",
+            "type": "lib_footprint_mismatch"
+        },
+        {
+            "description": "フットプリント 'NELTRON_5077CR-16SMC2-BK-TR' が、ライブラリ '5077CR-16SMC2-BK-TR' のコピーと一致しません",
+            "items": [
+                {
+                    "description": "フットプリント J1",
+                    "pos": {
+                        "x": 75.0175,
+                        "y": 67.0157
+                    },
+                    "uuid": "fb57eadf-c154-404d-a46e-4c1cd26c7143"
+                }
+            ],
+            "severity": "warning",
+            "type": "lib_footprint_mismatch"
+        },
+        {
+            "description": "フットプリント 'CP_Radial_D8.0mm_P3.50mm' が、ライブラリ 'Capacitor_THT' のコピーと一致しません",
+            "items": [
+                {
+                    "description": "フットプリント C33",
+                    "pos": {
+                        "x": 146.0,
+                        "y": 118.3473
+                    },
+                    "uuid": "fbe8aed0-f363-49fa-9d86-6fa451ac19d3"
+                }
+            ],
+            "severity": "warning",
+            "type": "lib_footprint_mismatch"
+        },
+        {
+            "description": "フットプリント 'CP_Radial_D8.0mm_P3.50mm' が、ライブラリ 'Capacitor_THT' のコピーと一致しません",
+            "items": [
+                {
+                    "description": "フットプリント Cr1",
+                    "pos": {
+                        "x": 98.0,
+                        "y": 118.3473
+                    },
+                    "uuid": "fc3d12d3-3ecf-43fe-ac72-218242fe6038"
+                }
+            ],
+            "severity": "warning",
+            "type": "lib_footprint_mismatch"
+        }
+    ]
+}
