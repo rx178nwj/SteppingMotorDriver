@@ -212,10 +212,20 @@ ADC_IO:
 - `GPIO3` -> `ADC2`
 - `GPIO40` -> `ADC3`
 
-### Microstep default
+### Microstep control
 
-`MS0`, `MS1`, `MS2` are driven by a 3-position DIP switch bank that selects each net to either `GND` or `+3V3`.
-Default state is LOW via pull-down or direct switch-to-GND default orientation.
+**DECISION (firmware requirement 9.5 resolved): GPIO control only — DIP switch abolished.**
+
+`MS0`, `MS1`, `MS2` are driven directly by ESP32-S3 GPIO outputs:
+
+| Net | ESP32-S3 GPIO |
+|-----|---------------|
+| MS0 | GPIO22 |
+| MS1 | GPIO23 |
+| MS2 | GPIO24 |
+
+Add a 100Ω series resistor on each MS line for GPIO protection.
+Do NOT place a DIP switch. The 3-position DIP switch previously planned is removed.
 
 ## Sheet Plan: Drivers
 
@@ -322,7 +332,7 @@ Assign footprints during implementation:
 - Buck and LDO: choose footprints matching selected symbols
 - Encoder connectors: JST-XH or equivalent 2.54mm header if no exact connector constraint exists
 - Motor connectors: JST-VH or 5.08mm screw terminal, 4 positions
-- DIP switch: 3-position through-hole or SMD switch footprint
+- DIP switch: **REMOVED** (replaced by GPIO22/23/24 direct drive)
 - Electrolytic capacitor footprint sized for at least 100uF VMOT decoupling
 - Mounting holes: 3.2mm NPTH or mounting-hole footprint in PCB stage
 

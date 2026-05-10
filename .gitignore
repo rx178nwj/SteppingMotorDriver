@@ -1,0 +1,12 @@
+# KiCad lock files
+*-backups/
+*.lck
+~*.kicad_sch
+~*.kicad_pcb
+~*.kicad_pro
+
+# Editor history
+.history/
+
+# Build artifacts
+firmware/build/
