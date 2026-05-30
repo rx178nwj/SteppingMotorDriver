@@ -99,7 +99,9 @@ static esp_err_t rmt_kick(axis_t *ax)
 }
 
 /* ------------------------------------------------------------------ */
-/*  on_trans_done コールバック — ステップ計数 + 再キュー                 */
+/*  on_trans_done コールバック — ステップ計数のみ（ISR コンテキスト）    */
+/*  rmt_transmit() は ISR 非安全のため呼ばない。                        */
+/*  再キューは motor_control_task がタスクコンテキストから行う。         */
 /* ------------------------------------------------------------------ */
 static bool IRAM_ATTR on_trans_done(rmt_channel_handle_t tx_chan,
                                     const rmt_tx_done_event_data_t *edata,
@@ -114,13 +116,6 @@ static bool IRAM_ATTR on_trans_done(rmt_channel_handle_t tx_chan,
     } else {
         ax->step_pos -= (int32_t)RMT_LOOP_COUNT;
     }
-
-    const rmt_transmit_config_t cfg = {
-        .loop_count      = RMT_LOOP_COUNT,
-        .flags.eot_level = 0,
-    };
-    rmt_transmit(tx_chan, ax->copy_enc,
-                 &ax->sym, sizeof(rmt_symbol_word_t), &cfg);
     return false;
 }
 
@@ -192,8 +187,6 @@ static void motor_control_task(void *arg)
                 ax->current_vel -= (float)ax->decel * 0.001f;
                 if (ax->current_vel < 1.0f ||
                     (ax->pos_mode && remaining <= 0)) {
-                    /* 停止: running=false で on_trans_done が再キューしなくなり
-                     * RMT は eot_level=0 (LOW) で自然に終了する */
                     ax->current_vel = 0.0f;
                     ax->running = false;
                     ax->state   = AXIS_IDLE;
@@ -205,6 +198,12 @@ static void motor_control_task(void *arg)
 
             default:
                 break;
+            }
+
+            /* タスクコンテキストから次のバッチを再キュー。
+             * trans_queue_depth=4 なので満杯時は ESP_ERR_INVALID_STATE を返す — 無視して良い。 */
+            if (ax->running) {
+                rmt_kick(ax);
             }
         }
     }
@@ -294,6 +293,10 @@ void motor_disable(void)
 static bool start_motion(uint8_t axis, bool dir, int32_t target, bool pos_mode)
 {
     if (axis >= NUM_AXES) return false;
+    if (!s_drv_enabled) {
+        ESP_LOGW(TAG, "Axis %d: motion rejected — call ENABLE first", axis);
+        return false;
+    }
     axis_t *ax = &s_axes[axis];
     if (ax->state == AXIS_FAULT) return false;
 
