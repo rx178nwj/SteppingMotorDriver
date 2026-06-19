@@ -62,12 +62,11 @@ Use socket footprint:
 
 PinSocket_2x08_P2.54mm_Vertical
 
-4 modules total:
+3 modules total:
 
 DRV8825_CH0  
 DRV8825_CH1  
 DRV8825_CH2  
-DRV8825_CH3  
 
 ---
 
@@ -102,45 +101,60 @@ VDD
 
 # GPIO Assignment
 
-## STEP/DIR
+## ADC Inputs (all ADC1)
 
-STEP0 → GPIO4  
-DIR0  → GPIO5  
+POT0     → GPIO1  (ADC1_CH0)
+POT1     → GPIO2  (ADC1_CH1)
+POT2     → GPIO3  (ADC1_CH2)
+CURRENT  → GPIO4  (ADC1_CH3)
+VIN_MON → GPIO5  (ADC1_CH4)
 
-STEP1 → GPIO6  
-DIR1  → GPIO7  
+---
 
-STEP2 → GPIO8  
-DIR2  → GPIO9  
+## STEP/DIR (3 channels)
 
-STEP3 → GPIO10  
-DIR3  → GPIO11  
+STEP0 → GPIO6  
+DIR0  → GPIO7  
+
+STEP1 → GPIO8  
+DIR1  → GPIO9  
+
+STEP2 → GPIO10  
+DIR2  → GPIO11  
 
 ---
 
 ## Shared Control
 
-EN     → GPIO12  
-RESET  → GPIO13  
-SLEEP  → GPIO14  
+DRV_EN    → GPIO12  
+DRV_RESET → GPIO13  
+DRV_SLEEP → GPIO14  
 
 ---
 
-## Encoder Inputs
+## Microstep Selection
+
+M0 → GPIO41  
+M1 → GPIO42  
+M2 → GPIO45  
+
+---
+
+## Encoder Inputs (A/B/Z, 3ch)
 
 ENC0_A → GPIO15  
 ENC0_B → GPIO16  
+ENC0_Z → GPIO17  
 
-ENC1_A → GPIO17  
-ENC1_B → GPIO18  
+ENC1_A → GPIO18  
+ENC1_B → GPIO21  
+ENC1_Z → GPIO35  
 
-ENC2_A → GPIO21  
-ENC2_B → GPIO35  
+ENC2_A → GPIO36  
+ENC2_B → GPIO37  
+ENC2_Z → GPIO40  
 
-ENC3_A → GPIO36  
-ENC3_B → GPIO37  
-
-Quadrature encoder interface.
+Differential encoder input via AM26LV32 line receiver.
 
 ---
 
@@ -155,14 +169,16 @@ Add:
 
 ---
 
-## ADC Inputs
+## UART (debug)
 
-ADC0 → GPIO1  
-ADC1 → GPIO2  
-ADC2 → GPIO3  
-ADC3 → GPIO40  
+TX → GPIO43  
+RX → GPIO44  
 
-Add:
+---
+
+# ADC Inputs
+
+## Potentiometer (POT0, POT1, POT2)
 
 Voltage divider:
 
@@ -172,6 +188,20 @@ Voltage divider:
 RC filter:
 
 0.1µF to GND.
+
+---
+
+## Current Sense (CURRENT)
+
+Shunt resistor + op-amp gain stage.
+Output conditioned to 0–3.3V → GPIO4 (ADC1_CH3).
+
+---
+
+## Power Supply Monitor (VIN_MON)
+
+Voltage divider to scale 24V → 0–3.3V.
+RC filter: 0.1µF to GND → GPIO5 (ADC1_CH4).
 
 ---
 
@@ -193,9 +223,6 @@ VMOT
 GND  
 
 Must be placed close to module.
-
-DRV8825 requires local decoupling to avoid voltage spikes.  
-Source: https://www.pololu.com/product/2133 :contentReference[oaicite:1]{index=1}
 
 ---
 
@@ -219,34 +246,13 @@ or AMS1117-3.3
 
 ---
 
-# Microstep Selection
-
-Add DIP switch:
-
-M0  
-M1  
-M2  
-
-Connect to:
-
-GND or 3V3
-
-Default:
-
-All LOW (Full step).
-
-DRV8825 supports up to 1/32 microstep.  
-Source: https://www.pololu.com/product/2133 :contentReference[oaicite:2]{index=2}
-
----
-
 # Motor Connectors
 
 For each channel:
 
 Connector:
 
-4-pin
+4-pin JST-XH
 
 Pins:
 
@@ -255,33 +261,28 @@ A2
 B1  
 B2  
 
-Recommended:
-
-JST-VH  
-or Screw Terminal.
-
 ---
 
 # Encoder Connectors
 
 For each channel:
 
+Connector: JST-XH 6-pin
+
 Pins:
 
-VCC  
+VCC (5V)  
 GND  
-A  
-B  
+A+  
+A-  
+B+  
+B-  
+Z+  
+Z-  
 
-Add optional:
+Note: connector is 8-pin for full differential (A+/A-, B+/B-, Z+/Z-)
 
-Z pin (not connected initially).
-
-If encoder output is 5V:
-
-Add level shifter:
-
-74LVC14.
+Differential input through AM26LV32 line receiver IC.
 
 ---
 
@@ -293,15 +294,6 @@ Pins:
 GND  
 SDA  
 SCL  
-
----
-
-# ADC Connector
-
-Each ADC:
-
-AIN  
-GND  
 
 ---
 
@@ -388,7 +380,6 @@ Add silkscreen labels:
 CH0  
 CH1  
 CH2  
-CH3  
 
 Add:
 

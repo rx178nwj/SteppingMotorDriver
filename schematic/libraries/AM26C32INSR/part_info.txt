@@ -1,0 +1,9 @@
+Manufacturer=Texas Instruments
+PartNumber=AM26C32INSR
+PartCategory=Integrated Circuit
+PackageCategory=Small Outline Packages
+PinCount=16
+Version=1.1
+Released=2020-03-06 03:30:37
+Downloaded=2026-05-31 13:27:06
+3D=Y

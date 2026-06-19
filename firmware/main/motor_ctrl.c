@@ -79,7 +79,8 @@ static void set_rmt_freq(axis_t *ax, float freq_hz)
     uint32_t low    = (period > STEP_HIGH_TICKS) ? (period - STEP_HIGH_TICKS)
                                                   : STEP_LOW_MIN_TICKS;
     if (low < STEP_LOW_MIN_TICKS) low = STEP_LOW_MIN_TICKS;
-    if (low > 65535U)             low = 65535U;
+    /* duration フィールドは 15bit = 最大 32767 ticks (≈30 Hz 以上をサポート) */
+    if (low > 32767U)             low = 32767U;
 
     ax->sym.duration0 = (uint16_t)STEP_HIGH_TICKS;
     ax->sym.duration1 = (uint16_t)low;
@@ -151,10 +152,14 @@ static void motor_control_task(void *arg)
                                  (2.0f * (float)ax->decel);
 
             switch (ax->state) {
-            case AXIS_ACCEL:
+            case AXIS_ACCEL: {
                 ax->current_vel += (float)ax->accel * 0.001f;
-                if (ax->current_vel >= (float)ax->v_max) {
-                    ax->current_vel = (float)ax->v_max;
+                /* VEL モード: target_vel と v_max の小さい方で頭打ち */
+                float vel_cap = ax->pos_mode
+                    ? (float)ax->v_max
+                    : (ax->target_vel < (float)ax->v_max ? ax->target_vel : (float)ax->v_max);
+                if (ax->current_vel >= vel_cap) {
+                    ax->current_vel = vel_cap;
                     ax->state = AXIS_CRUISE;
                 }
                 if (ax->pos_mode && remaining <= (int32_t)decel_steps) {
@@ -162,6 +167,7 @@ static void motor_control_task(void *arg)
                 }
                 set_rmt_freq(ax, ax->current_vel);
                 break;
+            }
 
             case AXIS_CRUISE:
                 if (!ax->pos_mode) {
@@ -503,6 +509,7 @@ bool motor_test_pulse(uint8_t axis, uint32_t freq_hz)
     uint32_t period_ticks = RMT_RESOLUTION_HZ / freq_hz;
     uint32_t low_ticks    = period_ticks - STEP_HIGH_TICKS;
     if (low_ticks < STEP_LOW_MIN_TICKS) low_ticks = STEP_LOW_MIN_TICKS;
+    if (low_ticks > 32767U)             low_ticks = 32767U;
 
     if (ax->running) {
         ax->running = false;

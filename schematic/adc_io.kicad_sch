@@ -937,10 +937,28 @@
 		)
 	)
 	(junction
+		(at 68.58 34.29)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "03f4bd77-2df6-4aca-9195-965ff1a081e4")
+	)
+	(junction
 		(at 212.09 74.93)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "046bf4d8-991f-4601-8521-e218e9c77b1c")
+	)
+	(junction
+		(at 80.01 121.92)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "054b082e-d61d-42fe-a991-07f7ee43528c")
+	)
+	(junction
+		(at 58.42 34.29)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "065b4a55-78f3-476e-b759-e78e7b637169")
 	)
 	(junction
 		(at 180.34 107.95)
@@ -955,6 +973,24 @@
 		(uuid "1d42f620-707d-43f5-8389-7417d8235ea8")
 	)
 	(junction
+		(at 100.33 36.83)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "55b665b7-e758-4099-8e58-42c22d7f71d4")
+	)
+	(junction
+		(at 57.15 69.85)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "5d8343bf-4fb4-40de-8e2d-d849d8dffd6e")
+	)
+	(junction
+		(at 99.06 72.39)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "665c5c28-1bdd-44b0-9751-d73a86f5640e")
+	)
+	(junction
 		(at 171.45 36.83)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -965,6 +1001,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "700a11fa-e7de-4c6c-90db-b8f19665e9a7")
+	)
+	(junction
+		(at 67.31 69.85)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "70ee54fa-d1fc-4819-90e3-93ff93205173")
 	)
 	(junction
 		(at 170.18 143.51)
@@ -1052,6 +1094,16 @@
 	)
 	(wire
 		(pts
+			(xy 68.58 34.29) (xy 68.58 39.37)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "0bec282f-b6a9-4e22-8b99-71a706e1c721")
+	)
+	(wire
+		(pts
 			(xy 212.09 146.05) (xy 229.87 146.05)
 		)
 		(stroke
@@ -1089,6 +1141,36 @@
 			(type default)
 		)
 		(uuid "10ef3cdb-c9a3-4384-86cb-f9d7d7098d3e")
+	)
+	(wire
+		(pts
+			(xy 58.42 24.13) (xy 74.93 24.13)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "14e0986f-dc78-4050-81c5-c076c2b6f10d")
+	)
+	(wire
+		(pts
+			(xy 99.06 59.69) (xy 99.06 72.39)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "16e95dd9-59d5-4def-9fa9-119427de51dc")
+	)
+	(wire
+		(pts
+			(xy 29.21 69.85) (xy 48.26 69.85)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "17422258-5395-4147-8061-281b5081c2de")
 	)
 	(wire
 		(pts
@@ -1162,6 +1244,16 @@
 	)
 	(wire
 		(pts
+			(xy 80.01 39.37) (xy 80.01 46.99)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "29fcb08a-f0dc-4054-b854-b1d62180b3db")
+	)
+	(wire
+		(pts
 			(xy 193.04 49.53) (xy 213.36 49.53)
 		)
 		(stroke
@@ -1212,6 +1304,26 @@
 	)
 	(wire
 		(pts
+			(xy 81.28 74.93) (xy 78.74 74.93)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "37bd9754-cfae-4022-8b3d-2df2f28cc751")
+	)
+	(wire
+		(pts
+			(xy 57.15 69.85) (xy 60.96 69.85)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "387fe96e-26f7-4432-b68c-99d28ed1b8de")
+	)
+	(wire
+		(pts
 			(xy 166.37 143.51) (xy 170.18 143.51)
 		)
 		(stroke
@@ -1252,6 +1364,36 @@
 	)
 	(wire
 		(pts
+			(xy 57.15 69.85) (xy 57.15 59.69)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "4b8a4232-6872-4cc7-998d-9d2d224de2ba")
+	)
+	(wire
+		(pts
+			(xy 100.33 24.13) (xy 100.33 36.83)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "4ea0ca45-3499-4a4c-9263-02633f0adc29")
+	)
+	(wire
+		(pts
+			(xy 30.48 34.29) (xy 49.53 34.29)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "4f2ce723-de4c-4107-b161-f03ef588ea0e")
+	)
+	(wire
+		(pts
 			(xy 170.18 62.23) (xy 186.69 62.23)
 		)
 		(stroke
@@ -1279,6 +1421,16 @@
 			(type default)
 		)
 		(uuid "5324c195-4301-49de-afe1-59c8ad09009d")
+	)
+	(wire
+		(pts
+			(xy 100.33 36.83) (xy 97.79 36.83)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5682f5a7-d3c8-4638-9a00-b0d3048f4bc0")
 	)
 	(wire
 		(pts
@@ -1342,6 +1494,16 @@
 	)
 	(wire
 		(pts
+			(xy 66.04 69.85) (xy 67.31 69.85)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "62432342-54e6-4c9e-82ec-da19802766d7")
+	)
+	(wire
+		(pts
 			(xy 30.48 154.94) (xy 30.48 147.32)
 		)
 		(stroke
@@ -1352,6 +1514,26 @@
 	)
 	(wire
 		(pts
+			(xy 99.06 72.39) (xy 96.52 72.39)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "735e44d2-6005-4f71-a719-60b3ba9b7c23")
+	)
+	(wire
+		(pts
+			(xy 80.01 24.13) (xy 100.33 24.13)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "748122da-ddbb-4d87-8a27-e43f9c8345e0")
+	)
+	(wire
+		(pts
 			(xy 212.09 120.65) (xy 212.09 110.49)
 		)
 		(stroke
@@ -1359,6 +1541,16 @@
 			(type default)
 		)
 		(uuid "775c4ec2-52cb-466d-a4f7-e66e1ebf943f")
+	)
+	(wire
+		(pts
+			(xy 67.31 34.29) (xy 68.58 34.29)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "78c62169-ec00-457b-ab6d-82c849078a1e")
 	)
 	(wire
 		(pts
@@ -1399,6 +1591,16 @@
 			(type default)
 		)
 		(uuid "7c9afd3f-87b4-494e-a15e-a3b90b1b815b")
+	)
+	(wire
+		(pts
+			(xy 78.74 74.93) (xy 78.74 82.55)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7d89efee-f333-46bf-9e3a-ebe3dd6a87e6")
 	)
 	(wire
 		(pts
@@ -1452,6 +1654,16 @@
 	)
 	(wire
 		(pts
+			(xy 54.61 34.29) (xy 58.42 34.29)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8de37b54-37a3-465e-b3ff-18803320a514")
+	)
+	(wire
+		(pts
 			(xy 30.48 118.11) (xy 30.48 121.92)
 		)
 		(stroke
@@ -1472,6 +1684,16 @@
 	)
 	(wire
 		(pts
+			(xy 67.31 69.85) (xy 67.31 74.93)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "952a7330-a119-4035-b2fb-8bf4011c850d")
+	)
+	(wire
+		(pts
 			(xy 212.09 146.05) (xy 209.55 146.05)
 		)
 		(stroke
@@ -1479,6 +1701,16 @@
 			(type default)
 		)
 		(uuid "96495bbc-d086-4577-8d63-e3eff19a92a0")
+	)
+	(wire
+		(pts
+			(xy 57.15 59.69) (xy 73.66 59.69)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "96c88b19-63e6-45da-9dfd-43a7c3bee71c")
 	)
 	(wire
 		(pts
@@ -1522,6 +1754,26 @@
 	)
 	(wire
 		(pts
+			(xy 58.42 34.29) (xy 58.42 24.13)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a1a1fb5c-1a18-4e75-ad0e-d346eff231d4")
+	)
+	(wire
+		(pts
+			(xy 80.01 46.99) (xy 100.33 46.99)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a571f5a4-0bb4-4396-8473-5f1fd20a3734")
+	)
+	(wire
+		(pts
 			(xy 213.36 39.37) (xy 231.14 39.37)
 		)
 		(stroke
@@ -1542,6 +1794,16 @@
 	)
 	(wire
 		(pts
+			(xy 99.06 72.39) (xy 116.84 72.39)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b18facbc-8a2a-4d30-9b64-d607fcdd7de5")
+	)
+	(wire
+		(pts
 			(xy 191.77 62.23) (xy 212.09 62.23)
 		)
 		(stroke
@@ -1552,6 +1814,26 @@
 	)
 	(wire
 		(pts
+			(xy 53.34 69.85) (xy 57.15 69.85)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b4d40f13-ef1c-4b60-bdef-24482416c47a")
+	)
+	(wire
+		(pts
+			(xy 68.58 34.29) (xy 82.55 34.29)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b4fdfab9-a30e-4203-80b2-51f408ec464b")
+	)
+	(wire
+		(pts
 			(xy 191.77 120.65) (xy 212.09 120.65)
 		)
 		(stroke
@@ -1559,6 +1841,36 @@
 			(type default)
 		)
 		(uuid "b6099f11-da5f-4eb5-bc24-91cbc17daa93")
+	)
+	(wire
+		(pts
+			(xy 67.31 69.85) (xy 81.28 69.85)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b7a98721-4443-48d8-a31a-d5680c06f170")
+	)
+	(wire
+		(pts
+			(xy 99.06 82.55) (xy 99.06 72.39)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b909cf99-7aa6-4c4d-92c5-f3e7ae59ae90")
+	)
+	(wire
+		(pts
+			(xy 100.33 36.83) (xy 118.11 36.83)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "bc22c9af-8e3c-4ef1-b37d-7b339a29101c")
 	)
 	(wire
 		(pts
@@ -1592,6 +1904,36 @@
 	)
 	(wire
 		(pts
+			(xy 80.01 121.92) (xy 80.01 132.08)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d02fc96d-e6b6-49c7-8d1c-9e9014de6b8f")
+	)
+	(wire
+		(pts
+			(xy 82.55 39.37) (xy 80.01 39.37)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d4529ee0-eb1a-4d18-9a60-f3f7dfd82506")
+	)
+	(wire
+		(pts
+			(xy 58.42 34.29) (xy 62.23 34.29)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d8994da9-66bb-4fb8-9846-ddce56ce4592")
+	)
+	(wire
+		(pts
 			(xy 212.09 110.49) (xy 209.55 110.49)
 		)
 		(stroke
@@ -1599,6 +1941,16 @@
 			(type default)
 		)
 		(uuid "dd4ecfae-c81c-45d2-b7fc-11daee9f6f67")
+	)
+	(wire
+		(pts
+			(xy 78.74 59.69) (xy 99.06 59.69)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "dd76a959-b296-47f4-ac60-fa65cd98b521")
 	)
 	(wire
 		(pts
@@ -1612,6 +1964,16 @@
 	)
 	(wire
 		(pts
+			(xy 80.01 154.94) (xy 80.01 147.32)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e106d5d6-e9c7-4042-9cf3-4a07322cc900")
+	)
+	(wire
+		(pts
 			(xy 194.31 113.03) (xy 191.77 113.03)
 		)
 		(stroke
@@ -1619,6 +1981,26 @@
 			(type default)
 		)
 		(uuid "e4cadcb9-12c7-435a-a388-0637aded46da")
+	)
+	(wire
+		(pts
+			(xy 78.74 82.55) (xy 99.06 82.55)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e54ee129-b127-4235-bffb-7057f5f1ff39")
+	)
+	(wire
+		(pts
+			(xy 100.33 46.99) (xy 100.33 36.83)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e5f21d37-53a2-49d3-a7c4-b9020ef7b27d")
 	)
 	(wire
 		(pts
@@ -1639,6 +2021,16 @@
 			(type default)
 		)
 		(uuid "f00d9e26-fce9-4eb2-8209-c0b023b51fb0")
+	)
+	(wire
+		(pts
+			(xy 80.01 118.11) (xy 80.01 121.92)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f0b3bc99-9f73-4964-b217-5c2250dbe278")
 	)
 	(wire
 		(pts
@@ -1720,6 +2112,17 @@
 		)
 		(uuid "fffd8856-1443-42dc-9492-242c6d322429")
 	)
+	(hierarchical_label "AIN_5"
+		(shape input)
+		(at 29.21 69.85 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "24ba66f4-7f91-412a-abfb-93ffc0f023b7")
+	)
 	(hierarchical_label "ADC_2"
 		(shape output)
 		(at 229.87 110.49 0)
@@ -1730,6 +2133,17 @@
 			(justify left)
 		)
 		(uuid "252b7d09-dd97-489d-a00a-84cbea0e87cf")
+	)
+	(hierarchical_label "ADC_4"
+		(shape output)
+		(at 118.11 36.83 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "2de8e565-f471-4f71-80a5-461376d8e74e")
 	)
 	(hierarchical_label "AIN_2"
 		(shape input)
@@ -1764,6 +2178,17 @@
 		)
 		(uuid "647d17da-580e-430f-9618-2ce59da90f55")
 	)
+	(hierarchical_label "ADC_5"
+		(shape output)
+		(at 116.84 72.39 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "84bd0ccf-8890-4968-bddb-9e71b2e37519")
+	)
 	(hierarchical_label "AIN_0"
 		(shape input)
 		(at 143.51 36.83 180)
@@ -1796,6 +2221,17 @@
 			(justify right)
 		)
 		(uuid "acb2b417-cc60-4f2f-9fb7-39c2ac01582a")
+	)
+	(hierarchical_label "AIN_4"
+		(shape input)
+		(at 30.48 34.29 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "bbadba76-224f-4e97-adb3-365d1dd42f8f")
 	)
 	(hierarchical_label "ADC_0"
 		(shape output)
@@ -1883,6 +2319,186 @@
 			(project "SteppingMotorDriver"
 				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/756528f8-44f1-4388-a300-24a9d6f4668d"
 					(reference "R20")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Amplifier_Operational:NJM2114")
+		(at 90.17 36.83 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "03d9da76-19b9-46d8-837b-364bb709d2f4")
+		(property "Reference" "U8"
+			(at 90.17 26.67 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "NJM8532M"
+			(at 90.17 29.21 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Package_SO:SOP-8_3.76x4.96mm_P1.27mm"
+			(at 90.17 36.83 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" "http://www.njr.com/semicon/PDF/NJM2114_E.pdf"
+			(at 90.17 36.83 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Dual High Performance Low Noise Operational Amplifier, DIP-8/DMP-8/SIP-8"
+			(at 90.17 36.83 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "3"
+			(uuid "c49c7863-eee6-4a07-a8b9-9582bfe19a95")
+		)
+		(pin "8"
+			(uuid "7d6140ad-8d81-4e23-b5c3-ba2dee7d28ff")
+		)
+		(pin "5"
+			(uuid "239ece67-d6c6-4294-b860-3478c8e23caa")
+		)
+		(pin "1"
+			(uuid "cfbba746-dc3c-447a-bfc8-5fda88a12f1c")
+		)
+		(pin "2"
+			(uuid "188020d5-4ed7-4c67-a062-438b3e559c27")
+		)
+		(pin "6"
+			(uuid "46cee278-df45-421e-839f-366a3ff248e0")
+		)
+		(pin "7"
+			(uuid "ce8f1fd4-fc1c-4b92-afd7-a175c935d4ba")
+		)
+		(pin "4"
+			(uuid "980d545c-f3fc-4b08-8397-5f90dddf6525")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/756528f8-44f1-4388-a300-24a9d6f4668d"
+					(reference "U8")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:C_Small")
+		(at 68.58 41.91 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "08e6d25f-1f57-476d-a988-fdc8c36c51ce")
+		(property "Reference" "C22"
+			(at 71.12 40.6462 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "0.01u"
+			(at 71.12 43.1862 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
+			(at 68.58 41.91 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 68.58 41.91 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Unpolarized capacitor, small symbol"
+			(at 68.58 41.91 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "2"
+			(uuid "d1f0db67-58a2-4e6a-85e7-3ab2d4cffa94")
+		)
+		(pin "1"
+			(uuid "dedae86e-cd84-4391-933d-694095fd7502")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/756528f8-44f1-4388-a300-24a9d6f4668d"
+					(reference "C22")
 					(unit 1)
 				)
 			)
@@ -2231,7 +2847,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "NJM2114"
+		(property "Value" "NJM8532M"
 			(at 31.75 140.9699 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2570,7 +3186,7 @@
 				)
 			)
 		)
-		(property "Value" "NJM2114"
+		(property "Value" "NJM8532M"
 			(at 203.2 31.75 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2617,10 +3233,10 @@
 			(uuid "acc4d28f-3361-4dfe-adc0-60c89be1aa5e")
 		)
 		(pin "8"
-			(uuid "7d6140ad-8d81-4e23-b5c3-ba2dee7d28ff")
+			(uuid "7d6140ad-8d81-4e23-b5c3-ba2dee7d2900")
 		)
 		(pin "5"
-			(uuid "239ece67-d6c6-4294-b860-3478c8e23caa")
+			(uuid "239ece67-d6c6-4294-b860-3478c8e23cab")
 		)
 		(pin "1"
 			(uuid "7d1a7f56-4d0c-44dd-9269-ab962fa28ae5")
@@ -2629,13 +3245,13 @@
 			(uuid "40030f2c-e996-448c-a4de-1259acd826f1")
 		)
 		(pin "6"
-			(uuid "46cee278-df45-421e-839f-366a3ff248e0")
+			(uuid "46cee278-df45-421e-839f-366a3ff248e1")
 		)
 		(pin "7"
-			(uuid "ce8f1fd4-fc1c-4b92-afd7-a175c935d4ba")
+			(uuid "ce8f1fd4-fc1c-4b92-afd7-a175c935d4bb")
 		)
 		(pin "4"
-			(uuid "980d545c-f3fc-4b08-8397-5f90dddf6525")
+			(uuid "980d545c-f3fc-4b08-8397-5f90dddf6526")
 		)
 		(instances
 			(project "SteppingMotorDriver"
@@ -2668,7 +3284,7 @@
 				)
 			)
 		)
-		(property "Value" "NJM2114"
+		(property "Value" "NJM8532M"
 			(at 201.93 102.87 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -2715,10 +3331,10 @@
 			(uuid "e5f60f90-0698-4cf5-950e-f1b582fd134f")
 		)
 		(pin "8"
-			(uuid "7d6140ad-8d81-4e23-b5c3-ba2dee7d2900")
+			(uuid "7d6140ad-8d81-4e23-b5c3-ba2dee7d2901")
 		)
 		(pin "5"
-			(uuid "239ece67-d6c6-4294-b860-3478c8e23cab")
+			(uuid "239ece67-d6c6-4294-b860-3478c8e23cac")
 		)
 		(pin "1"
 			(uuid "f2d9f3ec-2b3d-455b-b7fa-f39f5ccfea17")
@@ -2727,18 +3343,174 @@
 			(uuid "bec61cf8-c733-42aa-b909-0d30d4102496")
 		)
 		(pin "6"
-			(uuid "46cee278-df45-421e-839f-366a3ff248e1")
+			(uuid "46cee278-df45-421e-839f-366a3ff248e2")
 		)
 		(pin "7"
-			(uuid "ce8f1fd4-fc1c-4b92-afd7-a175c935d4bb")
+			(uuid "ce8f1fd4-fc1c-4b92-afd7-a175c935d4bc")
 		)
 		(pin "4"
-			(uuid "980d545c-f3fc-4b08-8397-5f90dddf6526")
+			(uuid "980d545c-f3fc-4b08-8397-5f90dddf6527")
 		)
 		(instances
 			(project "SteppingMotorDriver"
 				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/756528f8-44f1-4388-a300-24a9d6f4668d"
 					(reference "U7")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:+3V3")
+		(at 80.01 118.11 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "5c0e8073-a371-4756-bd45-d7cf8b2ad8bb")
+		(property "Reference" "#PWR037"
+			(at 80.01 121.92 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "+3V3"
+			(at 80.01 113.03 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 80.01 118.11 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 80.01 118.11 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"+3V3\""
+			(at 80.01 118.11 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "ae19bebb-eefa-4abd-a26e-e5ce2c1b4565")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/756528f8-44f1-4388-a300-24a9d6f4668d"
+					(reference "#PWR037")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 80.01 154.94 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "5cbdb6eb-9e7f-4532-b80b-95e22b9e72c2")
+		(property "Reference" "#PWR0101"
+			(at 80.01 161.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 80.01 160.02 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 80.01 154.94 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 80.01 154.94 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 80.01 154.94 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "c28c0286-e44f-4547-91e2-2fa8c6071f40")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/756528f8-44f1-4388-a300-24a9d6f4668d"
+					(reference "#PWR0101")
 					(unit 1)
 				)
 			)
@@ -2820,6 +3592,184 @@
 				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/756528f8-44f1-4388-a300-24a9d6f4668d"
 					(reference "C19")
 					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small")
+		(at 63.5 69.85 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "607e6198-ca07-4595-b051-8e01d13ec944")
+		(property "Reference" "R27"
+			(at 63.5 64.77 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "16k"
+			(at 63.5 67.31 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+			(at 63.5 69.85 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 63.5 69.85 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 63.5 69.85 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "2"
+			(uuid "929b2c45-351b-4753-b601-91377e2b6ae2")
+		)
+		(pin "1"
+			(uuid "9c1313a4-3b79-45a6-a4e1-d971879d32eb")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/756528f8-44f1-4388-a300-24a9d6f4668d"
+					(reference "R27")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Amplifier_Operational:NJM2114")
+		(at 82.55 139.7 0)
+		(unit 3)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "6901ba66-f85d-4d2e-b528-d7597f9f2878")
+		(property "Reference" "U8"
+			(at 82.55 129.54 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "NJM8532M"
+			(at 82.55 132.08 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Package_SO:SOP-8_3.76x4.96mm_P1.27mm"
+			(at 82.55 139.7 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" "http://www.njr.com/semicon/PDF/NJM2114_E.pdf"
+			(at 82.55 139.7 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Dual High Performance Low Noise Operational Amplifier, DIP-8/DMP-8/SIP-8"
+			(at 82.55 139.7 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "3"
+			(uuid "536df50d-394b-4714-b1d7-6cb9eb9f1081")
+		)
+		(pin "8"
+			(uuid "426287f8-f6c5-4105-8715-623463ea6bb7")
+		)
+		(pin "5"
+			(uuid "c4e9625c-9d3f-418c-89fd-088dc067df16")
+		)
+		(pin "1"
+			(uuid "cb8b4d3e-94c9-4e35-bfa2-978631889e3d")
+		)
+		(pin "2"
+			(uuid "0a4016b2-69ec-4d07-8c59-b3f57f21d6e6")
+		)
+		(pin "6"
+			(uuid "9d7cd49f-82c3-40cf-8aec-79a5ee319adf")
+		)
+		(pin "7"
+			(uuid "c4d6b3ee-cf67-4052-913a-28a73ecba141")
+		)
+		(pin "4"
+			(uuid "01f96ac7-2596-4957-a1e6-ca8fa22b9bb3")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/756528f8-44f1-4388-a300-24a9d6f4668d"
+					(reference "U8")
+					(unit 3)
 				)
 			)
 		)
@@ -2908,6 +3858,88 @@
 	)
 	(symbol
 		(lib_id "Device:C_Small")
+		(at 67.31 77.47 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "747ff47e-160f-4dfe-ab82-d5be0269a860")
+		(property "Reference" "C21"
+			(at 69.85 76.2062 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "0.01u"
+			(at 69.85 78.7462 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
+			(at 67.31 77.47 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 67.31 77.47 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Unpolarized capacitor, small symbol"
+			(at 67.31 77.47 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "2"
+			(uuid "b7d29448-8008-4360-9c8f-c4a2d39cd550")
+		)
+		(pin "1"
+			(uuid "3b791482-3130-48c8-a3b7-dc25b347bd07")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/756528f8-44f1-4388-a300-24a9d6f4668d"
+					(reference "C21")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:C_Small")
 		(at 180.34 151.13 0)
 		(unit 1)
 		(body_style 1)
@@ -2983,6 +4015,244 @@
 			(project "SteppingMotorDriver"
 				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/756528f8-44f1-4388-a300-24a9d6f4668d"
 					(reference "C17")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 68.58 44.45 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "7c679577-335f-4acd-a43c-fcbb27fe1910")
+		(property "Reference" "#PWR095"
+			(at 68.58 50.8 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 68.58 49.53 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 68.58 44.45 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 68.58 44.45 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 68.58 44.45 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "af2943f2-ea65-476c-bc71-c6c46e328538")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/756528f8-44f1-4388-a300-24a9d6f4668d"
+					(reference "#PWR095")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small")
+		(at 52.07 34.29 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "83ef4e4e-fc33-49fd-baa8-f4d5051ace3d")
+		(property "Reference" "R26"
+			(at 52.07 29.21 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "16k"
+			(at 52.07 31.75 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+			(at 52.07 34.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 52.07 34.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 52.07 34.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "2"
+			(uuid "90892769-4933-430a-a806-084336824805")
+		)
+		(pin "1"
+			(uuid "5cf880ce-ebc8-4f4e-983c-f174e1200a62")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/756528f8-44f1-4388-a300-24a9d6f4668d"
+					(reference "R26")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:C_Small")
+		(at 77.47 24.13 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "907a320b-9978-4a4c-b773-0f4ed4a597cb")
+		(property "Reference" "C24"
+			(at 77.4763 17.78 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "0.01u"
+			(at 77.4763 20.32 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
+			(at 77.47 24.13 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 77.47 24.13 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Unpolarized capacitor, small symbol"
+			(at 77.47 24.13 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "2"
+			(uuid "bf282006-68d3-4fbe-9260-e48ad48c4f80")
+		)
+		(pin "1"
+			(uuid "4c3faeed-6ef1-426b-adb1-903a319749ef")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/756528f8-44f1-4388-a300-24a9d6f4668d"
+					(reference "C24")
 					(unit 1)
 				)
 			)
@@ -3306,6 +4576,86 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:R_Small")
+		(at 64.77 34.29 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "b9bd7dd8-5aff-4656-b1b9-ac3c4e37de26")
+		(property "Reference" "R28"
+			(at 64.77 29.21 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "16k"
+			(at 64.77 31.75 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+			(at 64.77 34.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 64.77 34.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 64.77 34.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "2"
+			(uuid "21885ee9-a339-41b0-aff2-290df8b9f0cd")
+		)
+		(pin "1"
+			(uuid "2fb98581-3120-4307-bc7d-2522bcd5652b")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/756528f8-44f1-4388-a300-24a9d6f4668d"
+					(reference "R28")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:GND")
 		(at 181.61 46.99 0)
 		(unit 1)
@@ -3405,7 +4755,7 @@
 				)
 			)
 		)
-		(property "Value" "NJM2114"
+		(property "Value" "NJM8532M"
 			(at 57.15 132.08 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3449,28 +4799,28 @@
 			)
 		)
 		(pin "3"
-			(uuid "536df50d-394b-4714-b1d7-6cb9eb9f1081")
+			(uuid "536df50d-394b-4714-b1d7-6cb9eb9f1082")
 		)
 		(pin "8"
-			(uuid "7d6140ad-8d81-4e23-b5c3-ba2dee7d2901")
+			(uuid "7d6140ad-8d81-4e23-b5c3-ba2dee7d2902")
 		)
 		(pin "5"
-			(uuid "c4e9625c-9d3f-418c-89fd-088dc067df16")
+			(uuid "c4e9625c-9d3f-418c-89fd-088dc067df17")
 		)
 		(pin "1"
-			(uuid "cb8b4d3e-94c9-4e35-bfa2-978631889e3d")
+			(uuid "cb8b4d3e-94c9-4e35-bfa2-978631889e3e")
 		)
 		(pin "2"
-			(uuid "0a4016b2-69ec-4d07-8c59-b3f57f21d6e6")
+			(uuid "0a4016b2-69ec-4d07-8c59-b3f57f21d6e7")
 		)
 		(pin "6"
-			(uuid "9d7cd49f-82c3-40cf-8aec-79a5ee319adf")
+			(uuid "9d7cd49f-82c3-40cf-8aec-79a5ee319ae0")
 		)
 		(pin "7"
-			(uuid "c4d6b3ee-cf67-4052-913a-28a73ecba141")
+			(uuid "c4d6b3ee-cf67-4052-913a-28a73ecba142")
 		)
 		(pin "4"
-			(uuid "980d545c-f3fc-4b08-8397-5f90dddf6527")
+			(uuid "980d545c-f3fc-4b08-8397-5f90dddf6528")
 		)
 		(instances
 			(project "SteppingMotorDriver"
@@ -3722,6 +5072,86 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:C_Small")
+		(at 76.2 59.69 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "d1cd3316-015f-4b4b-a23a-e05749ce5fab")
+		(property "Reference" "C23"
+			(at 76.2063 53.34 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "0.01u"
+			(at 76.2063 55.88 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
+			(at 76.2 59.69 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 76.2 59.69 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Unpolarized capacitor, small symbol"
+			(at 76.2 59.69 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "2"
+			(uuid "12cbd787-ada3-4d0b-865f-cdfa268377fb")
+		)
+		(pin "1"
+			(uuid "8bdf44c3-a6d7-4b75-95df-71046abad854")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/756528f8-44f1-4388-a300-24a9d6f4668d"
+					(reference "C23")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:+3V3")
 		(at 54.61 118.11 0)
 		(unit 1)
@@ -3821,7 +5251,7 @@
 				)
 			)
 		)
-		(property "Value" "NJM2114"
+		(property "Value" "NJM8532M"
 			(at 201.93 67.31 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3868,10 +5298,10 @@
 			(uuid "acc4d28f-3361-4dfe-adc0-60c89be1aa5f")
 		)
 		(pin "8"
-			(uuid "7d6140ad-8d81-4e23-b5c3-ba2dee7d2902")
+			(uuid "7d6140ad-8d81-4e23-b5c3-ba2dee7d2903")
 		)
 		(pin "5"
-			(uuid "239ece67-d6c6-4294-b860-3478c8e23cac")
+			(uuid "239ece67-d6c6-4294-b860-3478c8e23cad")
 		)
 		(pin "1"
 			(uuid "7d1a7f56-4d0c-44dd-9269-ab962fa28ae6")
@@ -3880,13 +5310,13 @@
 			(uuid "40030f2c-e996-448c-a4de-1259acd826f2")
 		)
 		(pin "6"
-			(uuid "46cee278-df45-421e-839f-366a3ff248e2")
+			(uuid "46cee278-df45-421e-839f-366a3ff248e3")
 		)
 		(pin "7"
-			(uuid "ce8f1fd4-fc1c-4b92-afd7-a175c935d4bc")
+			(uuid "ce8f1fd4-fc1c-4b92-afd7-a175c935d4bd")
 		)
 		(pin "4"
-			(uuid "980d545c-f3fc-4b08-8397-5f90dddf6528")
+			(uuid "980d545c-f3fc-4b08-8397-5f90dddf6529")
 		)
 		(instances
 			(project "SteppingMotorDriver"
@@ -4049,6 +5479,164 @@
 			(project "SteppingMotorDriver"
 				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/756528f8-44f1-4388-a300-24a9d6f4668d"
 					(reference "#PWR065")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R_Small")
+		(at 50.8 69.85 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "db001ba5-a3c0-4b23-a880-b3bd61ef80d3")
+		(property "Reference" "R25"
+			(at 50.8 64.77 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "16k"
+			(at 50.8 67.31 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+			(at 50.8 69.85 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 50.8 69.85 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Resistor, small symbol"
+			(at 50.8 69.85 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "2"
+			(uuid "d9b56df6-ba04-4195-b3e0-c851dc2c5e98")
+		)
+		(pin "1"
+			(uuid "b01e8747-46df-40ba-9e9d-893f64e70d8a")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/756528f8-44f1-4388-a300-24a9d6f4668d"
+					(reference "R25")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 67.31 80.01 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "dc31d23b-cc50-4e53-9cb2-e1a704325749")
+		(property "Reference" "#PWR094"
+			(at 67.31 86.36 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 67.31 85.09 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 67.31 80.01 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 67.31 80.01 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 67.31 80.01 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "d19662f2-b50f-46f9-9aee-d25e313c2749")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/756528f8-44f1-4388-a300-24a9d6f4668d"
+					(reference "#PWR094")
 					(unit 1)
 				)
 			)
@@ -4371,6 +5959,85 @@
 		)
 	)
 	(symbol
+		(lib_id "power:GND")
+		(at 85.09 121.92 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "eb884473-c190-4b76-8a2b-dd8aacb63c79")
+		(property "Reference" "#PWR0102"
+			(at 91.44 121.92 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 88.9 121.9199 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(property "Footprint" ""
+			(at 85.09 121.92 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 85.09 121.92 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 85.09 121.92 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "b2e78d96-ba37-43c5-a64e-db1bfa89e17e")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/756528f8-44f1-4388-a300-24a9d6f4668d"
+					(reference "#PWR0102")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Amplifier_Operational:NJM2114")
 		(at 201.93 146.05 0)
 		(unit 2)
@@ -4392,7 +6059,7 @@
 				)
 			)
 		)
-		(property "Value" "NJM2114"
+		(property "Value" "NJM8532M"
 			(at 201.93 138.43 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4436,34 +6103,212 @@
 			)
 		)
 		(pin "3"
-			(uuid "536df50d-394b-4714-b1d7-6cb9eb9f1082")
+			(uuid "536df50d-394b-4714-b1d7-6cb9eb9f1083")
 		)
 		(pin "8"
-			(uuid "7d6140ad-8d81-4e23-b5c3-ba2dee7d2903")
+			(uuid "7d6140ad-8d81-4e23-b5c3-ba2dee7d2904")
 		)
 		(pin "5"
-			(uuid "239ece67-d6c6-4294-b860-3478c8e23cad")
+			(uuid "239ece67-d6c6-4294-b860-3478c8e23cae")
 		)
 		(pin "1"
-			(uuid "cb8b4d3e-94c9-4e35-bfa2-978631889e3e")
+			(uuid "cb8b4d3e-94c9-4e35-bfa2-978631889e3f")
 		)
 		(pin "2"
-			(uuid "0a4016b2-69ec-4d07-8c59-b3f57f21d6e7")
+			(uuid "0a4016b2-69ec-4d07-8c59-b3f57f21d6e8")
 		)
 		(pin "6"
-			(uuid "46cee278-df45-421e-839f-366a3ff248e3")
+			(uuid "46cee278-df45-421e-839f-366a3ff248e4")
 		)
 		(pin "7"
-			(uuid "ce8f1fd4-fc1c-4b92-afd7-a175c935d4bd")
+			(uuid "ce8f1fd4-fc1c-4b92-afd7-a175c935d4be")
 		)
 		(pin "4"
-			(uuid "980d545c-f3fc-4b08-8397-5f90dddf6529")
+			(uuid "980d545c-f3fc-4b08-8397-5f90dddf652a")
 		)
 		(instances
 			(project "SteppingMotorDriver"
 				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/756528f8-44f1-4388-a300-24a9d6f4668d"
 					(reference "U7")
 					(unit 2)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Amplifier_Operational:NJM2114")
+		(at 88.9 72.39 0)
+		(unit 2)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "f27f852d-d11e-4d59-a27f-62476c19dcf8")
+		(property "Reference" "U8"
+			(at 88.9 62.23 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "NJM8532M"
+			(at 88.9 64.77 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Package_SO:SOP-8_3.76x4.96mm_P1.27mm"
+			(at 88.9 72.39 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" "http://www.njr.com/semicon/PDF/NJM2114_E.pdf"
+			(at 88.9 72.39 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Dual High Performance Low Noise Operational Amplifier, DIP-8/DMP-8/SIP-8"
+			(at 88.9 72.39 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "3"
+			(uuid "acc4d28f-3361-4dfe-adc0-60c89be1aa60")
+		)
+		(pin "8"
+			(uuid "7d6140ad-8d81-4e23-b5c3-ba2dee7d2905")
+		)
+		(pin "5"
+			(uuid "b0bf86d6-4253-43db-b142-e2c3f96cc8b6")
+		)
+		(pin "1"
+			(uuid "7d1a7f56-4d0c-44dd-9269-ab962fa28ae7")
+		)
+		(pin "2"
+			(uuid "40030f2c-e996-448c-a4de-1259acd826f3")
+		)
+		(pin "6"
+			(uuid "a9d7c7fc-50d4-41c9-a1ac-521bfd092143")
+		)
+		(pin "7"
+			(uuid "4bc50861-8cda-4953-9be2-39b0a938e267")
+		)
+		(pin "4"
+			(uuid "980d545c-f3fc-4b08-8397-5f90dddf652b")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/756528f8-44f1-4388-a300-24a9d6f4668d"
+					(reference "U8")
+					(unit 2)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:C_Small")
+		(at 82.55 121.92 90)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "f3180610-98e5-4604-ae23-928fddb63cad")
+		(property "Reference" "C25"
+			(at 82.5563 115.57 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "0.1uF"
+			(at 82.5563 118.11 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
+			(at 82.55 121.92 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 82.55 121.92 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Unpolarized capacitor, small symbol"
+			(at 82.55 121.92 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "2"
+			(uuid "a1ef366b-0def-445d-aad6-577296c6d1da")
+		)
+		(pin "1"
+			(uuid "2c75d939-5801-4aa4-8602-f085f771b80a")
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9/756528f8-44f1-4388-a300-24a9d6f4668d"
+					(reference "C25")
+					(unit 1)
 				)
 			)
 		)

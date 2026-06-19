@@ -74,13 +74,16 @@ static void dispatch(const char *line)
 
     unsigned axis;
 
-    /* ---------- 有効化 / 無効化 ---------- */
-    if (strcmp(line, "ENABLE") == 0) {
+    /* ---------- 有効化 / 無効化 ----------
+     * DRV_EN は全軸共通のため ENABLE <axis> も ENABLE ALL も同等  */
+    if (strcmp(line, "ENABLE") == 0 ||
+        strncmp(line, "ENABLE ", 7) == 0) {
         motor_enable();
         comm_send("OK\n");
         return;
     }
-    if (strcmp(line, "DISABLE") == 0) {
+    if (strcmp(line, "DISABLE") == 0 ||
+        strncmp(line, "DISABLE ", 8) == 0) {
         motor_disable();
         comm_send("OK\n");
         return;
@@ -112,6 +115,14 @@ static void dispatch(const char *line)
     }
     if (strcmp(line, "STOP ALL") == 0) {
         for (uint8_t i = 0; i < NUM_AXES; i++) motor_stop(i);
+        comm_send("OK\n");
+        return;
+    }
+    /* STOP_FREE: 停止後にコイル解除 (DRV_EN=High)
+     * DRV_EN は全軸共通のため全軸解除。Phase 1 では即時停止 */
+    if (sscanf(line, "STOP_FREE %u", &axis) == 1 ||
+        strcmp(line, "STOP_FREE ALL") == 0) {
+        motor_disable();
         comm_send("OK\n");
         return;
     }

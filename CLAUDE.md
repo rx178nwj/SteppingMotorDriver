@@ -18,40 +18,60 @@ SteppingMotorDriver/
 | 項目 | 仕様 |
 |------|------|
 | MCU | ESP32-S3-WROOM-1 |
-| モータードライバ | DRV8825 StepStick 互換モジュール × 4 |
-| エンコーダ | 4ch（A/B/Z 相、JST-XH 5 ピン） |
-| ADC | 4ch（NJM2114 オペアンプ経由） |
+| モータードライバ | DRV8825 StepStick 互換モジュール × **3** |
+| エンコーダ | **3ch**（A/B/Z 相、差動入力、AM26LV32 経由） |
+| ADC | **5ch**（POT×3 + 電流×1 + 電源電圧×1、すべて ADC1） |
 | 通信 | USB Type-C（USB-CDC） |
 | I2C | SDA=GPIO38 / SCL=GPIO39（拡張用） |
 | 電源 | 24V モーター入力 → Buck → 5V → LDO → 3.3V |
 
 ### GPIO マッピング（確定）
 
-| GPIO | 信号 | GPIO | 信号 |
+| GPIO | 信号 | 種別 | 備考 |
 |------|------|------|------|
-| GPIO4 | STEP0 | GPIO5 | DIR0 |
-| GPIO6 | STEP1 | GPIO7 | DIR1 |
-| GPIO8 | STEP2 | GPIO9 | DIR2 |
-| GPIO10 | STEP3 | GPIO11 | DIR3 |
-| GPIO12 | DRV_EN（全軸共通） | GPIO13 | DRV_RESET（全軸共通） |
-| GPIO14 | DRV_SLEEP（全軸共通） | | |
-| GPIO41 | M0/MS0（マイクロステップ） | GPIO42 | M1/MS1（マイクロステップ） |
-| GPIO45 | M2/MS2（マイクロステップ） | | |
-| GPIO15 | ENC0_A | GPIO16 | ENC0_B |
-| GPIO17 | ENC1_A | GPIO18 | ENC1_B |
-| GPIO21 | ENC2_A | GPIO35 | ENC2_B |
-| GPIO36 | ENC3_A | GPIO37 | ENC3_B |
-| GPIO19 | USB_D- | GPIO20 | USB_D+ |
-| GPIO38 | I2C_SDA | GPIO39 | I2C_SCL |
-| GPIO1 | ADC0 | GPIO2 | ADC1 |
-| GPIO3 | ADC2 | GPIO40 | ADC3 |
+| GPIO1 | POT0 | ADC1_CH0 | ポテンショメーター ch0 |
+| GPIO2 | POT1 | ADC1_CH1 | ポテンショメーター ch1 |
+| GPIO3 | POT2 | ADC1_CH2 | ポテンショメーター ch2 |
+| GPIO4 | MOT_V | ADC1_CH3 | モーター電源電圧モニタ（24V分圧） |
+| GPIO5 | CURRENT | ADC1_CH4 | 電流センス（100mΩシャント + 20倍アンプ） |
+| GPIO6 | STEP0 | Digital Out | CH0 ステップ |
+| GPIO7 | DIR0 | Digital Out | CH0 方向 |
+| GPIO8 | STEP1 | Digital Out | CH1 ステップ |
+| GPIO9 | DIR1 | Digital Out | CH1 方向 |
+| GPIO10 | STEP2 | Digital Out | CH2 ステップ |
+| GPIO11 | DIR2 | Digital Out | CH2 方向 |
+| GPIO12 | DRV_EN | Digital Out | 全軸共通 |
+| GPIO13 | DRV_RESET | Digital Out | 全軸共通 |
+| GPIO14 | DRV_SLEEP | Digital Out | 全軸共通 |
+| GPIO15 | ENC0_A | Digital In | エンコーダ0 A相 |
+| GPIO16 | ENC0_B | Digital In | エンコーダ0 B相 |
+| GPIO17 | ENC0_Z | Digital In | エンコーダ0 Z相（インデックス） |
+| GPIO18 | ENC1_A | Digital In | エンコーダ1 A相 |
+| GPIO19 | USB_D- | USB | 固定 |
+| GPIO20 | USB_D+ | USB | 固定 |
+| GPIO21 | ENC1_B | Digital In | エンコーダ1 B相 |
+| GPIO35 | ENC1_Z | Digital In | エンコーダ1 Z相 |
+| GPIO36 | ENC2_A | Digital In | エンコーダ2 A相 |
+| GPIO37 | ENC2_B | Digital In | エンコーダ2 B相 |
+| GPIO38 | I2C_SDA | I2C | 固定 |
+| GPIO39 | I2C_SCL | I2C | 固定 |
+| GPIO40 | ENC2_Z | Digital In | エンコーダ2 Z相 |
+| GPIO41 | M0 | Digital Out | マイクロステップ MS0 |
+| GPIO42 | M1 | Digital Out | マイクロステップ MS1 |
+| GPIO43 | UART_TX | UART | デバッグ用 |
+| GPIO44 | UART_RX | UART | デバッグ用 |
+| GPIO45 | M2 | Digital Out | マイクロステップ MS2 |
 
 ### 重要なハードウェア制約
 
-- **DRV_EN / DRV_SLEEP / DRV_RESET は全 4 軸共通の単一 GPIO**。軸単位の独立制御は不可能
+- **DRV_EN / DRV_SLEEP / DRV_RESET は全 3 軸共通の単一 GPIO**。軸単位の独立制御は不可能
 - **DRV8825 の FAULT ピンは ESP32 に未接続**（回路図上 no-connect）。ハードウェア FAULT を直接検出できない
-- **M0/MS0=GPIO41、M1/MS1=GPIO42、M2/MS2=GPIO45** で ESP32-S3 が GPIO 出力制御（GPIO22/23/24 は ESP32-S3 内部 SPI Flash 専用ピンのため使用不可）
+- **M0=GPIO41、M1=GPIO42、M2=GPIO45**（GPIO22/23/24 は ESP32-S3 内部 SPI Flash 専用ピンのため使用不可）
+- **ADC はすべて ADC1（GPIO1〜GPIO5）に集約**。ADC2 は WiFi と共有のため使用しない
 - ESP32-S3 の ADC は非線形特性あり → 必ず `esp_adc_cal` でキャリブレーション適用
+- **ポテンショメーター（POT0/1/2）**：分圧回路（20kΩ/10kΩ）＋ RC フィルタ（0.1µF）経由
+- **電流センス（CURRENT = GPIO5/ADC4）**：100 mΩ シャント抵抗 + 20倍アンプ経由。V_adc = I[A]×2 → I[mA] = V_adc[mV]/2
+- **電源電圧モニタ（MOT_V = GPIO4/ADC3）**：分圧回路（24V→3.3V 範囲）経由
 
 ---
 
@@ -116,7 +136,7 @@ SteppingMotorDriver/
   5. DRV_SLEEP → High（動作可能状態）
   6. 待機 1 ms（内部チャージポンプ安定待ち）
   7. NVS から設定を読み込む（失敗時はデフォルト値を使用しログに記録）
-  8. M0（GPIO22）/ M1（GPIO23）/ M2（GPIO24）を NVS 設定値に応じて出力
+  8. M0（GPIO41）/ M1（GPIO42）/ M2（GPIO45）を NVS 設定値に応じて出力
   9. DRV_EN は ENABLE コマンドまで High を維持（起動直後は励磁しない）
 ```
 
@@ -170,7 +190,7 @@ SteppingMotorDriver/
 
 | Phase | 内容 | 状態 |
 |-------|------|------|
-| 1 | ESP-IDF セットアップ・USB-CDC・1 軸 RMT パルス生成・起動シーケンス | 未着手 |
+| 1 | ESP-IDF セットアップ・USB-CDC・1 軸 RMT パルス生成・起動シーケンス | 実装済み（要ハードウェア検証） |
 | 2 | 4 軸制御・台形プロファイル・状態機械・FAULT/CLEAR_FAULT | 未着手 |
 | 3 | PCNT エンコーダ・Z 相ホーミング・脱調検出 | 未着手 |
 | 4 | ADC 電流モニタリング・過電流保護 | 未着手 |

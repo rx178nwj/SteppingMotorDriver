@@ -1,0 +1,16 @@
+.AM26LV32IDR :1 ;Low-Voltage High-Speed Quadruple Differential Line Receiver
+SOIC127P600X175-16N
+*STM IC
+*NGS
+*PLB 1="1B" 2="1A" 3="1Y" 4="G" 5="2Y" 6="2A" 7="2B" 8="GND" 9="3B" 10="3A" 11="3Y" 12="'G'" 13="4Y" 14="4A" 15="4B" 16="VCC"
+*MXP 16
+*DFN AM26LV32IDR
+~!Mouser Part Number (595-AM26LV32IDR)
+~!Link Mouser Price/Stock (https://www.mouser.co.uk/ProductDetail/Texas-Instruments/AM26LV32IDR?qs=LgZHeZZt5MUs9Gd%252Bon%252BZ5w%3D%3D)
+~!Manufacturer_Name (Texas Instruments)
+~!Manufacturer_Part_Number (AM26LV32IDR)
+~!Link Datasheet (http://www.ti.com/lit/gpn/am26lv32)
+~!Height (1.75mm)
+~!3D_Model (AM26LV32IDR)
+AM26LV32IDR
+1.1!U 2.1!U 3.1!U 4.1!U 5.1!U 6.1!U 7.1!U 8.1!U 16.1!U 15.1!U 14.1!U 13.1!U 12.1!U 11.1!U 10.1!U 9.1!U 

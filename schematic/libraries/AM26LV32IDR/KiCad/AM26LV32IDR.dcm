@@ -1,0 +1,9 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP AM26LV32IDR
+D Low-Voltage High-Speed Quadruple Differential Line Receiver
+K
+F http://www.ti.com/lit/gpn/am26lv32
+$ENDCMP
+#
+#End Doc Library

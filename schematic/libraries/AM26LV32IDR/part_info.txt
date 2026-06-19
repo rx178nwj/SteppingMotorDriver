@@ -1,0 +1,9 @@
+Manufacturer=Texas Instruments
+PartNumber=AM26LV32IDR
+PartCategory=Integrated Circuit
+PackageCategory=Small Outline Packages
+PinCount=16
+Version=1.1
+Released=2019-12-20 05:16:06
+Downloaded=2026-05-31 13:37:56
+3D=Y

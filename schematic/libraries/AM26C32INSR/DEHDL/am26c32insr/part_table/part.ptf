@@ -1,0 +1,11 @@
+FILE_TYPE = MULTI_PHYS_TABLE;
+
+PART 'AM26C32INSR'
+CLASS = IC
+{========================================================================================}
+:"MANUFACTURER_NAME", "MANUFACTURER_PART_NUMBER"= "PART_NUMBER", "JEDEC_TYPE", "PACK_TYPE", "MOUSER_PART_NUMBER", "MOUSER_PRICE/STOCK", "DESCRIPTION", "DATASHEET", "HEIGHT";
+{========================================================================================}
+ "Texas Instruments", "AM26C32INSR" (!) = "", "SOIC127P780X200-16N", "Small Outline Packages", "595-AM26C32INSR", "https://www.mouser.co.uk/ProductDetail/Texas-Instruments/AM26C32INSR?qs=LgZHeZZt5MXqnYrD9y7CsA%3D%3D", "Quadruple Differential Line Receiver", "http://www.ti.com/lit/gpn/am26c32", "2 mm"
+END_PART
+
+END.

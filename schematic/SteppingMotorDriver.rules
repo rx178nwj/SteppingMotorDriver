@@ -6,9 +6,13 @@
   (rule
     (width 200.0)
     (clearance 200.0)
-    (clearance -0.1 (type smd_to_turn_gap))
+    (clearance 100.0 (type smd_to_turn_gap))
     (clearance 50.0 (type smd))
     (clearance 200.0 (type "kicad_default"))
+    (clearance 200.0 (type "Analog Signal,Default"))
+    (clearance 130.0 (type "Digital Signal,Default"))
+    (clearance 200.0 (type "I2C Signal,Default"))
+    (clearance 300.0 (type Motor,Default))
   )
   (padstack "Via[0-1]_600:300_um"
     (shape
@@ -16,6 +20,33 @@
     )
     (shape
       (circle B.Cu 600.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (padstack "Via[0-1]_600:400_um"
+    (shape
+      (circle F.Cu 600.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 600.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (padstack "Via[0-1]_500:300_um"
+    (shape
+      (circle F.Cu 500.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 500.0 0.0 0.0)
+    )
+    (attach off)
+  )
+  (padstack "Via[0-1]_1000:600_um"
+    (shape
+      (circle F.Cu 1000.0 0.0 0.0)
+    )
+    (shape
+      (circle B.Cu 1000.0 0.0 0.0)
     )
     (attach off)
   )
@@ -28,38 +59,113 @@
     )
     (attach off)
   )
-  (padstack "Via[0-1]_800:500_um"
-    (shape
-      (circle F.Cu 800.0 0.0 0.0)
-    )
-    (shape
-      (circle B.Cu 800.0 0.0 0.0)
-    )
-    (attach off)
-  )
   (via 
     "Via[0-1]_600:300_um" "Via[0-1]_600:300_um" default
+  )
+  (via 
+    "Via[0-1]_600:400_um" "Via[0-1]_600:400_um" default
+  )
+  (via 
+    "Via[0-1]_500:300_um" "Via[0-1]_500:300_um" default
+  )
+  (via 
+    "Via[0-1]_1000:600_um" "Via[0-1]_1000:600_um" default
   )
   (via 
     "Via[0-1]_700:400_um" "Via[0-1]_700:400_um" default
   )
   (via 
-    "Via[0-1]_800:500_um" "Via[0-1]_800:500_um" default
+    "Via[0-1]_600:300_um-kicad_default" "Via[0-1]_600:300_um" "kicad_default"
   )
   (via 
-    "Via[0-1]_600:300_um-kicad_default" "Via[0-1]_600:300_um" "kicad_default"
+    "Via[0-1]_600:400_um-kicad_default" "Via[0-1]_600:400_um" "kicad_default"
+  )
+  (via 
+    "Via[0-1]_500:300_um-kicad_default" "Via[0-1]_500:300_um" "kicad_default"
+  )
+  (via 
+    "Via[0-1]_1000:600_um-kicad_default" "Via[0-1]_1000:600_um" "kicad_default"
   )
   (via 
     "Via[0-1]_700:400_um-kicad_default" "Via[0-1]_700:400_um" "kicad_default"
   )
   (via 
-    "Via[0-1]_800:500_um-kicad_default" "Via[0-1]_800:500_um" "kicad_default"
+    "Via[0-1]_600:300_um-Analog Signal,Default" "Via[0-1]_600:300_um" "Analog Signal,Default"
+  )
+  (via 
+    "Via[0-1]_600:400_um-Analog Signal,Default" "Via[0-1]_600:400_um" "Analog Signal,Default"
+  )
+  (via 
+    "Via[0-1]_500:300_um-Analog Signal,Default" "Via[0-1]_500:300_um" "Analog Signal,Default"
+  )
+  (via 
+    "Via[0-1]_1000:600_um-Analog Signal,Default" "Via[0-1]_1000:600_um" "Analog Signal,Default"
+  )
+  (via 
+    "Via[0-1]_700:400_um-Analog Signal,Default" "Via[0-1]_700:400_um" "Analog Signal,Default"
+  )
+  (via 
+    "Via[0-1]_600:300_um-Digital Signal,Default" "Via[0-1]_600:300_um" "Digital Signal,Default"
+  )
+  (via 
+    "Via[0-1]_600:400_um-Digital Signal,Default" "Via[0-1]_600:400_um" "Digital Signal,Default"
+  )
+  (via 
+    "Via[0-1]_500:300_um-Digital Signal,Default" "Via[0-1]_500:300_um" "Digital Signal,Default"
+  )
+  (via 
+    "Via[0-1]_1000:600_um-Digital Signal,Default" "Via[0-1]_1000:600_um" "Digital Signal,Default"
+  )
+  (via 
+    "Via[0-1]_700:400_um-Digital Signal,Default" "Via[0-1]_700:400_um" "Digital Signal,Default"
+  )
+  (via 
+    "Via[0-1]_600:300_um-I2C Signal,Default" "Via[0-1]_600:300_um" "I2C Signal,Default"
+  )
+  (via 
+    "Via[0-1]_600:400_um-I2C Signal,Default" "Via[0-1]_600:400_um" "I2C Signal,Default"
+  )
+  (via 
+    "Via[0-1]_500:300_um-I2C Signal,Default" "Via[0-1]_500:300_um" "I2C Signal,Default"
+  )
+  (via 
+    "Via[0-1]_1000:600_um-I2C Signal,Default" "Via[0-1]_1000:600_um" "I2C Signal,Default"
+  )
+  (via 
+    "Via[0-1]_700:400_um-I2C Signal,Default" "Via[0-1]_700:400_um" "I2C Signal,Default"
+  )
+  (via 
+    "Via[0-1]_600:300_um-Motor,Default" "Via[0-1]_600:300_um" Motor,Default
+  )
+  (via 
+    "Via[0-1]_600:400_um-Motor,Default" "Via[0-1]_600:400_um" Motor,Default
+  )
+  (via 
+    "Via[0-1]_500:300_um-Motor,Default" "Via[0-1]_500:300_um" Motor,Default
+  )
+  (via 
+    "Via[0-1]_1000:600_um-Motor,Default" "Via[0-1]_1000:600_um" Motor,Default
+  )
+  (via 
+    "Via[0-1]_700:400_um-Motor,Default" "Via[0-1]_700:400_um" Motor,Default
   )
   (via_rule
-    default "Via[0-1]_600:300_um"
+    default "Via[0-1]_500:300_um"
   )
   (via_rule
     "kicad_default" "Via[0-1]_600:300_um-kicad_default"
+  )
+  (via_rule
+    "Analog Signal,Default" "Via[0-1]_600:400_um-Analog Signal,Default"
+  )
+  (via_rule
+    "Digital Signal,Default" "Via[0-1]_500:300_um-Digital Signal,Default"
+  )
+  (via_rule
+    "I2C Signal,Default" "Via[0-1]_500:300_um-I2C Signal,Default"
+  )
+  (via_rule
+    Motor,Default "Via[0-1]_1000:600_um-Motor,Default"
   )
   (class default
     (clearance_class default)
@@ -72,21 +178,68 @@
     )
   )
   (class "kicad_default"
-    "/MCU_USB/USB_5V" GNDPWR GND "VIN_24V" +3V3 "/MCU_USB/CHIP_EN" STEP0 DIR0
-    STEP1 DIR1 "ENC0_A" "ENC0_B" "ENC1_A" "ENC1_B" STEP2 "/MCU_USB/USB_D-"
-    "/MCU_USB/USB_D+" ADC2 "unconnected-(U2-IO46-Pad16)" DIR2 STEP3 DIR3 "DRV_EN" "DRV_RESET"
-    "DRV_SLEEP" "ENC2_A" "unconnected-(U2-IO47-Pad24)" "unconnected-(U2-IO48-Pad25)" MS2 "/MCU_USB/BOOT" "ENC2_B" "ENC3_A"
-    "ENC3_B" "I2C_SDA" "I2C_SCL" ADC3 MS0 MS1 "unconnected-(U2-RXD0-Pad36)" "unconnected-(U2-TXD0-Pad37)"
-    ADC1 ADC0 "unconnected-(A4-FAULT-Pad10)" "Net-(A4-A2)" "Net-(A4-A1)" "Net-(A4-B1)" "Net-(A4-B2)" AIN0
-    "Net-(J1-CC2)" "Net-(U7A-+)" "Net-(U7B-+)" "unconnected-(A3-FAULT-Pad10)" "Net-(A3-A2)" "Net-(A3-A1)" "Net-(A3-B1)" "Net-(A3-B2)"
-    "Net-(J1-CC1)" AIN3 "Net-(U6A-+)" "Net-(U6B-+)" "Net-(A2-A1)" "Net-(A2-A2)" "Net-(A2-B1)" "Net-(A2-B2)"
-    "Net-(C14-Pad1)" "unconnected-(A2-FAULT-Pad10)" "Net-(A1-A1)" "Net-(A1-A2)" "Net-(A1-B1)" "Net-(A1-B2)" AIN2 "/MCU_USB/USB_VBUS"
-    "unconnected-(U1-~{FLAG}-Pad4)" "unconnected-(A1-FAULT-Pad10)" "Net-(C11-Pad1)" "Net-(C18-Pad1)" "unconnected-(U3-BP-Pad4)" "/MCU_USB/DN1" AIN1 "Net-(C16-Pad1)"
-    "/MCU_USB/DP1" "unconnected-(J1-SBU1-PadA8)" "unconnected-(J1-SBU2-PadB8)"
+    "/MCU_USB/USB_5V" GNDPWR GND "VIN_24V" +3V3 DIR0 DIR1 "/MCU_USB/USB_D-"
+    "/MCU_USB/USB_D+" DIR2 "unconnected-(U2-IO48-Pad25)" "unconnected-(U2-RXD0-Pad36)" "unconnected-(U2-TXD0-Pad37)" "Net-(D2-A)" "Net-(D1-A)" "Net-(J1-CC2)"
+    "Net-(D7-A)" "Net-(J1-CC1)" "Net-(D4-A)" "Net-(D3-A)" "Net-(D5-A)" "Net-(D6-A)" "Net-(D8-A)" "/MCU_USB/USB_VBUS"
+    "unconnected-(U1-~{FLAG}-Pad4)" "unconnected-(U3-BP-Pad4)" "/MCU_USB/DN1" "/MCU_USB/DP1" "unconnected-(J1-SBU1-PadA8)" "unconnected-(J1-SBU2-PadB8)" "Net-(U8B-+)" "Net-(U8A-+)"
+    "/ADC_IO/ADC_5" "Net-(C23-Pad1)" "Net-(C24-Pad1)" "unconnected-(IC1-4B-Pad15)" "unconnected-(IC1-4Y-Pad13)" "unconnected-(IC1-4A-Pad14)" "unconnected-(IC2-4Y-Pad13)" "unconnected-(IC2-4A-Pad14)"
+    "unconnected-(IC2-4B-Pad15)" "unconnected-(IC3-4B-Pad15)" "unconnected-(IC3-4A-Pad14)" "unconnected-(IC3-4Y-Pad13)" "/Power/MOT_POWER_IN" "MOV_V" "/ADC_IO/AIN_5" "Net-(U5--)"
     (clearance_class "kicad_default")
     (via_rule "kicad_default")
     (rule
       (width 200.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class "Analog Signal,Default"
+    ADC2 ADC3 ADC1 ADC0 "Net-(U7A-+)" "Net-(U7B-+)" "Net-(U6A-+)" "Net-(U6B-+)"
+    AIN0 "Net-(C14-Pad1)" AIN2 "Net-(C11-Pad1)" "Net-(C18-Pad1)" "Net-(C16-Pad1)" AIN1 ADC4
+    "CURRENT_V"
+    (clearance_class "Analog Signal,Default")
+    (via_rule "Analog Signal,Default")
+    (rule
+      (width 250.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class "Digital Signal,Default"
+    "/MCU_USB/CHIP_EN" STEP0 STEP1 "ENC0_A" "ENC0_B" "ENC1_A" "ENC1_B" STEP2
+    "/MCU_USB/LED_RED" STEP3 "DRV_EN" "DRV_RESET" "DRV_SLEEP" "ENC2_A" "/MCU_USB/LED_YELLOW" MS2
+    "/MCU_USB/BOOT" "ENC2_B" MS0 MS1 "/Encoders_IO/ENC_1_EA+" "/Encoders_IO/ENC_1_EB+" "/Encoders_IO/ENC_1_EZ+" "/Encoders_IO/ENC_1_EA-"
+    "/Encoders_IO/ENC_1_EB-" "/Encoders_IO/ENC_1_EZ-" "/Encoders_IO/ENC_0_EA+" "/Encoders_IO/ENC_0_EB+" "/Encoders_IO/ENC_0_EZ+" "/Encoders_IO/ENC_2_EB-" "/Encoders_IO/ENC_2_EB+" "/Encoders_IO/ENC_2_EA+"
+    "/Encoders_IO/ENC_2_EA-" "/Encoders_IO/ENC_0_EA-" "/Encoders_IO/ENC_0_EB-" "/Encoders_IO/ENC_0_EZ-" "/Encoders_IO/ENC_2_EZ-" "/Encoders_IO/ENC_2_EZ+" "ENC0_Z" "ENC1_Z"
+    "ENC2_Z"
+    (clearance_class "Digital Signal,Default")
+    (via_rule "Digital Signal,Default")
+    (rule
+      (width 150.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class "I2C Signal,Default"
+    "I2C_SDA" "I2C_SCL"
+    (clearance_class "I2C Signal,Default")
+    (via_rule "I2C Signal,Default")
+    (rule
+      (width 150.0)
+    )
+    (circuit 
+      (use_layer F.Cu B.Cu)
+    )
+  )
+  (class Motor,Default
+    "Net-(A2-A1)" "Net-(A2-A2)" "Net-(A2-B1)" "Net-(A2-B2)" "Net-(A3-A2)" "Net-(A3-A1)" "Net-(A3-B1)" "Net-(A3-B2)"
+    "Net-(A1-A1)" "Net-(A1-A2)" "Net-(A1-B1)" "Net-(A1-B2)"
+    (clearance_class Motor,Default)
+    (via_rule Motor,Default)
+    (rule
+      (width 1000.0)
     )
     (circuit 
       (use_layer F.Cu B.Cu)
