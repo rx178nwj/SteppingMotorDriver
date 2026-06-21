@@ -4,6 +4,7 @@ idf_component_register(
         "comm.c"
         "motor_ctrl.c"
         "config.c"
+        "motor_specs.c"
     INCLUDE_DIRS
         "."
     REQUIRES

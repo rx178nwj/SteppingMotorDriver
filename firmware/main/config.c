@@ -1,5 +1,7 @@
 #include "config.h"
 #include "motor_ctrl.h"
+#include "motor_specs.h"
+#include "gpio_config.h"
 
 #include "nvs_flash.h"
 #include "nvs.h"
@@ -7,15 +9,29 @@
 #include "esp_log.h"
 
 static const char *TAG    = "config";
-static const char *NVS_NS = "motor_cfg";
+static const char *NVS_NS = "motor_config";
 
-/* デフォルト値 */
-#define DEF_VMAX       1000U
-#define DEF_ACCEL       500U
-#define DEF_DECEL       500U
-#define DEF_MICROSTEP    32U
+/* ------------------------------------------------------------------ */
+/*  共通デフォルト値                                                     */
+/* ------------------------------------------------------------------ */
+#define DEF_MICROSTEP          32U
+#define DEF_IDLE_TIMEOUT_MS  2000U
+#define DEF_COMM_TIMEOUT_MS  5000U
 
-static microstep_t s_microstep = MICROSTEP_32;
+/* 軸ごとのデフォルトプロファイル ID */
+static const motor_profile_id_t DEF_PROFILE_PER_AXIS[NUM_AXES] = {
+    MOTOR_CH0_DEFAULT_PROFILE,   /* CH0: 17HS08-1004-ME1K */
+    MOTOR_CH1_DEFAULT_PROFILE,   /* CH1: 17HS15-1504-ME1K */
+    MOTOR_CH2_DEFAULT_PROFILE,   /* CH2: 17HS15-1504-ME1K */
+};
+
+/* ------------------------------------------------------------------ */
+/*  モジュール変数                                                       */
+/* ------------------------------------------------------------------ */
+static microstep_t         s_microstep           = MICROSTEP_32;
+static uint32_t            s_idle_timeout_ms     = DEF_IDLE_TIMEOUT_MS;
+static uint32_t            s_comm_timeout_ms     = DEF_COMM_TIMEOUT_MS;
+static motor_profile_id_t  s_profile[NUM_AXES];
 
 /* ------------------------------------------------------------------ */
 /*  マイクロステップ → M2/M1/M0 GPIO 出力                               */
@@ -38,6 +54,21 @@ static void apply_microstep_gpio(microstep_t div)
 }
 
 /* ------------------------------------------------------------------ */
+/*  内部: プロファイルの vmax/accel/decel を motor_ctrl へ適用           */
+/* ------------------------------------------------------------------ */
+static void apply_profile_params(uint8_t axis, const motor_profile_t *p)
+{
+    motor_set_vmax(axis,  p->vmax_default);
+    motor_set_accel(axis, p->accel_default);
+    motor_set_decel(axis, p->decel_default);
+    ESP_LOGI(TAG, "Axis %d [%s]: vmax=%lu accel=%lu decel=%lu",
+             axis, p->model,
+             (unsigned long)p->vmax_default,
+             (unsigned long)p->accel_default,
+             (unsigned long)p->decel_default);
+}
+
+/* ------------------------------------------------------------------ */
 /*  config_init — NVS から読み込んで適用                                */
 /* ------------------------------------------------------------------ */
 void config_init(void)
@@ -45,24 +76,50 @@ void config_init(void)
     nvs_handle_t h;
     esp_err_t    err = nvs_open(NVS_NS, NVS_READONLY, &h);
 
-    uint32_t ms = DEF_MICROSTEP;
+    uint32_t ms      = DEF_MICROSTEP;
+    uint32_t idle_ms = DEF_IDLE_TIMEOUT_MS;
+    uint32_t comm_ms = DEF_COMM_TIMEOUT_MS;
+
     if (err == ESP_OK) {
-        nvs_get_u32(h, "microstep", &ms);
+        nvs_get_u32(h, "microstep",    &ms);
+        nvs_get_u32(h, "idle_timeout", &idle_ms);
+        nvs_get_u32(h, "comm_timeout", &comm_ms);
     }
 
-    /* 軸ごとに保存値を読み込む (存在しない場合はデフォルト値を使用) */
     for (uint8_t i = 0; i < NUM_AXES; i++) {
-        char     key[12];
-        uint32_t av = DEF_VMAX, aa = DEF_ACCEL, ad = DEF_DECEL;
+        char key[16];
+
+        /* プロファイル ID を NVS から復元 */
+        uint32_t prof_id = (uint32_t)DEF_PROFILE_PER_AXIS[i];
+        if (err == ESP_OK) {
+            snprintf(key, sizeof(key), "mprof%d", i);
+            nvs_get_u32(h, key, &prof_id);
+        }
+        /* 範囲外は デフォルトに戻す */
+        if (prof_id == MOTOR_PROFILE_NONE || prof_id >= MOTOR_PROFILE_COUNT) {
+            prof_id = (uint32_t)DEF_PROFILE_PER_AXIS[i];
+        }
+        s_profile[i] = (motor_profile_id_t)prof_id;
+
+        /* vmax / accel / decel: NVS 保存値があれば優先、なければプロファイル既定値 */
+        const motor_profile_t *p = motor_spec_get_profile(s_profile[i]);
+        uint32_t av = p ? p->vmax_default  : 10000U;
+        uint32_t aa = p ? p->accel_default : 50000U;
+        uint32_t ad = p ? p->decel_default : 50000U;
+
         if (err == ESP_OK) {
             snprintf(key, sizeof(key), "vmax%d",  i); nvs_get_u32(h, key, &av);
             snprintf(key, sizeof(key), "accel%d", i); nvs_get_u32(h, key, &aa);
             snprintf(key, sizeof(key), "decel%d", i); nvs_get_u32(h, key, &ad);
         }
+
         motor_set_vmax(i, av);
         motor_set_accel(i, aa);
         motor_set_decel(i, ad);
-        ESP_LOGI(TAG, "Axis %d: vmax=%lu accel=%lu decel=%lu", i,
+
+        ESP_LOGI(TAG, "Axis %d profile=%lu [%s] vmax=%lu accel=%lu decel=%lu",
+                 i, (unsigned long)s_profile[i],
+                 p ? p->model : "NONE",
                  (unsigned long)av, (unsigned long)aa, (unsigned long)ad);
     }
 
@@ -72,12 +129,19 @@ void config_init(void)
         ESP_LOGI(TAG, "NVS not found, using defaults");
     }
 
-    s_microstep = (microstep_t)ms;
+    s_microstep       = (microstep_t)ms;
+    s_idle_timeout_ms = idle_ms;
+    s_comm_timeout_ms = comm_ms;
+
     apply_microstep_gpio(s_microstep);
+    motor_set_idle_timeout(s_idle_timeout_ms);
+
+    ESP_LOGI(TAG, "idle_timeout=%lums comm_timeout=%lums",
+             (unsigned long)idle_ms, (unsigned long)comm_ms);
 }
 
 /* ------------------------------------------------------------------ */
-/*  config_save — 現在の軸0パラメータを NVS へ書き込み                  */
+/*  config_save — 現在の設定を NVS へ書き込み                           */
 /* ------------------------------------------------------------------ */
 bool config_save(void)
 {
@@ -87,12 +151,16 @@ bool config_save(void)
     for (uint8_t i = 0; i < NUM_AXES; i++) {
         axis_status_t st;
         if (!motor_get_status(i, &st)) continue;
-        char key[12];
+        char key[16];
         snprintf(key, sizeof(key), "vmax%d",  i); nvs_set_u32(h, key, st.v_max);
         snprintf(key, sizeof(key), "accel%d", i); nvs_set_u32(h, key, st.accel);
         snprintf(key, sizeof(key), "decel%d", i); nvs_set_u32(h, key, st.decel);
+        snprintf(key, sizeof(key), "mprof%d", i); nvs_set_u32(h, key, (uint32_t)s_profile[i]);
     }
-    nvs_set_u32(h, "microstep", (uint32_t)s_microstep);
+    nvs_set_u32(h, "microstep",    (uint32_t)s_microstep);
+    nvs_set_u32(h, "idle_timeout", s_idle_timeout_ms);
+    nvs_set_u32(h, "comm_timeout", s_comm_timeout_ms);
+
     esp_err_t err = nvs_commit(h);
     nvs_close(h);
 
@@ -105,7 +173,34 @@ bool config_save(void)
 }
 
 /* ------------------------------------------------------------------ */
-/*  config_set_microstep                                               */
+/*  config_reset — デフォルト値に戻して NVS をクリア                     */
+/* ------------------------------------------------------------------ */
+void config_reset(void)
+{
+    nvs_handle_t h;
+    if (nvs_open(NVS_NS, NVS_READWRITE, &h) == ESP_OK) {
+        nvs_erase_all(h);
+        nvs_commit(h);
+        nvs_close(h);
+    }
+
+    s_microstep       = MICROSTEP_32;
+    s_idle_timeout_ms = DEF_IDLE_TIMEOUT_MS;
+    s_comm_timeout_ms = DEF_COMM_TIMEOUT_MS;
+
+    for (uint8_t i = 0; i < NUM_AXES; i++) {
+        s_profile[i] = DEF_PROFILE_PER_AXIS[i];
+        const motor_profile_t *p = motor_spec_get_profile(s_profile[i]);
+        if (p) apply_profile_params(i, p);
+    }
+    apply_microstep_gpio(s_microstep);
+    motor_set_idle_timeout(s_idle_timeout_ms);
+
+    ESP_LOGI(TAG, "Config reset to defaults");
+}
+
+/* ------------------------------------------------------------------ */
+/*  マイクロステップ                                                     */
 /* ------------------------------------------------------------------ */
 bool config_set_microstep(microstep_t div)
 {
@@ -119,7 +214,61 @@ bool config_set_microstep(microstep_t div)
     return true;
 }
 
-microstep_t config_get_microstep(void)
+microstep_t config_get_microstep(void) { return s_microstep; }
+
+/* ------------------------------------------------------------------ */
+/*  アイドルタイムアウト                                                 */
+/* ------------------------------------------------------------------ */
+void     config_set_idle_timeout(uint32_t ms) { s_idle_timeout_ms = ms; }
+uint32_t config_get_idle_timeout(void)        { return s_idle_timeout_ms; }
+
+/* ------------------------------------------------------------------ */
+/*  通信ウォッチドッグタイムアウト                                        */
+/* ------------------------------------------------------------------ */
+void     config_set_comm_timeout(uint32_t ms) { s_comm_timeout_ms = ms; }
+uint32_t config_get_comm_timeout(void)        { return s_comm_timeout_ms; }
+
+/* ------------------------------------------------------------------ */
+/*  モータープロファイル                                                  */
+/* ------------------------------------------------------------------ */
+bool config_set_motor_profile(uint8_t axis, motor_profile_id_t id)
 {
-    return s_microstep;
+    if (axis >= NUM_AXES) return false;
+
+    const motor_profile_t *p = motor_spec_get_profile(id);
+    if (!p) return false;
+
+    s_profile[axis] = id;
+    apply_profile_params(axis, p);
+
+    /* NVS へ即時保存 (プロファイルと連動パラメータを同時に書く) */
+    nvs_handle_t h;
+    if (nvs_open(NVS_NS, NVS_READWRITE, &h) == ESP_OK) {
+        char key[16];
+        snprintf(key, sizeof(key), "mprof%d", axis);
+        nvs_set_u32(h, key, (uint32_t)id);
+        snprintf(key, sizeof(key), "vmax%d",  axis);
+        nvs_set_u32(h, key, p->vmax_default);
+        snprintf(key, sizeof(key), "accel%d", axis);
+        nvs_set_u32(h, key, p->accel_default);
+        snprintf(key, sizeof(key), "decel%d", axis);
+        nvs_set_u32(h, key, p->decel_default);
+        nvs_commit(h);
+        nvs_close(h);
+    }
+
+    ESP_LOGI(TAG, "Axis %d motor profile → %s", axis, p->model);
+    return true;
+}
+
+motor_profile_id_t config_get_motor_profile(uint8_t axis)
+{
+    if (axis >= NUM_AXES) return MOTOR_PROFILE_NONE;
+    return s_profile[axis];
+}
+
+const motor_profile_t *config_get_motor_profile_data(uint8_t axis)
+{
+    if (axis >= NUM_AXES) return NULL;
+    return motor_spec_get_profile(s_profile[axis]);
 }
