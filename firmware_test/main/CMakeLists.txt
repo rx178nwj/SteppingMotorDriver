@@ -1,0 +1,10 @@
+idf_component_register(
+    SRCS
+        "board_test.c"
+    INCLUDE_DIRS
+        "."
+    REQUIRES
+        driver
+        esp_adc
+        esp_rom
+)

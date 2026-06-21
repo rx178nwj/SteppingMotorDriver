@@ -26,11 +26,9 @@ static void gpio_safe_init(void)
                         (1ULL << GPIO_STEP0)      |
                         (1ULL << GPIO_STEP1)      |
                         (1ULL << GPIO_STEP2)      |
-                        (1ULL << GPIO_STEP3)      |
                         (1ULL << GPIO_DIR0)       |
                         (1ULL << GPIO_DIR1)       |
                         (1ULL << GPIO_DIR2)       |
-                        (1ULL << GPIO_DIR3)       |
                         (1ULL << GPIO_M0)         |
                         (1ULL << GPIO_M1)         |
                         (1ULL << GPIO_M2),
@@ -48,11 +46,9 @@ static void gpio_safe_init(void)
     gpio_set_level(GPIO_STEP0, 0);
     gpio_set_level(GPIO_STEP1, 0);
     gpio_set_level(GPIO_STEP2, 0);
-    gpio_set_level(GPIO_STEP3, 0);
     gpio_set_level(GPIO_DIR0, 0);
     gpio_set_level(GPIO_DIR1, 0);
     gpio_set_level(GPIO_DIR2, 0);
-    gpio_set_level(GPIO_DIR3, 0);
     /* マイクロステップ: デフォルト 1/32 (M2=H, M1=L, M0=H) */
     gpio_set_level(GPIO_M0, 1);
     gpio_set_level(GPIO_M1, 0);

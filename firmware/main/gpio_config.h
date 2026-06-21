@@ -1,17 +1,15 @@
 #pragma once
 
 /* ------------------------------------------------------------------ */
-/*  STEP / DIR per axis                                                 */
+/*  STEP / DIR per axis  (3ch)                                         */
 /* ------------------------------------------------------------------ */
-#define GPIO_STEP0   4
-#define GPIO_STEP1   6
-#define GPIO_STEP2   8
-#define GPIO_STEP3  10
+#define GPIO_STEP0   6
+#define GPIO_STEP1   8
+#define GPIO_STEP2  10
 
-#define GPIO_DIR0    5
-#define GPIO_DIR1    7
-#define GPIO_DIR2    9
-#define GPIO_DIR3   11
+#define GPIO_DIR0    7
+#define GPIO_DIR1    9
+#define GPIO_DIR2   11
 
 /* ------------------------------------------------------------------ */
 /*  DRV8825 共通制御 (全軸共通)                                          */
@@ -22,33 +20,37 @@
 
 /* ------------------------------------------------------------------ */
 /*  マイクロステップ (全軸共通)                                           */
-/*  NOTE: GPIO22/23/24 は ESP32-S3 内部 SPI Flash 専用のため使用不可。    */
+/*  NOTE: GPIO22/23/24 は ESP32-S3 内部 SPI Flash 専用ピンのため使用不可。 */
 /*  回路図変更により GPIO41/42/45 に再アサイン済み。                       */
-/*  GPIO45 はストラップピンだが起動後は通常 GPIO として使用可能。           */
+/*  GPIO45 はストラップピンだが起動後は通常 GPIO として使用可能。            */
 /* ------------------------------------------------------------------ */
 #define GPIO_M0  41
 #define GPIO_M1  42
 #define GPIO_M2  45
 
 /* ------------------------------------------------------------------ */
-/*  エンコーダ A/B 相                                                   */
+/*  エンコーダ A/B/Z 相  (3ch)                                          */
 /* ------------------------------------------------------------------ */
 #define GPIO_ENC0_A  15
 #define GPIO_ENC0_B  16
-#define GPIO_ENC1_A  17
-#define GPIO_ENC1_B  18
-#define GPIO_ENC2_A  21
-#define GPIO_ENC2_B  35
-#define GPIO_ENC3_A  36
-#define GPIO_ENC3_B  37
+#define GPIO_ENC0_Z  17   /* Z相 (インデックスパルス・原点検出) */
+
+#define GPIO_ENC1_A  18
+#define GPIO_ENC1_B  21
+#define GPIO_ENC1_Z  35   /* Z相 */
+
+#define GPIO_ENC2_A  36
+#define GPIO_ENC2_B  37
+#define GPIO_ENC2_Z  40   /* Z相 */
 
 /* ------------------------------------------------------------------ */
-/*  ADC チャンネル                                                      */
+/*  ADC チャンネル (すべて ADC1)                                        */
 /* ------------------------------------------------------------------ */
-#define GPIO_ADC0   1
-#define GPIO_ADC1   2
-#define GPIO_ADC2   3
-#define GPIO_ADC3  40
+#define GPIO_ADC0   1   /* POT0    — ポテンショメーター ch0 */
+#define GPIO_ADC1   2   /* POT1    — ポテンショメーター ch1 */
+#define GPIO_ADC2   3   /* POT2    — ポテンショメーター ch2 */
+#define GPIO_ADC3   4   /* MOT_V   — モーター電源電圧モニタ (24V 分圧) */
+#define GPIO_ADC4   5   /* CURRENT — 電流センス (100mΩ + 20倍アンプ) */
 
 /* ------------------------------------------------------------------ */
 /*  USB D- / D+                                                        */
@@ -65,8 +67,8 @@
 /* ------------------------------------------------------------------ */
 /*  軸数                                                               */
 /* ------------------------------------------------------------------ */
-#define NUM_AXES  4
+#define NUM_AXES  3
 
 /* GPIO 配列 (軸番号でインデックス) */
-#define STEP_GPIOS  { GPIO_STEP0, GPIO_STEP1, GPIO_STEP2, GPIO_STEP3 }
-#define DIR_GPIOS   { GPIO_DIR0,  GPIO_DIR1,  GPIO_DIR2,  GPIO_DIR3  }
+#define STEP_GPIOS  { GPIO_STEP0, GPIO_STEP1, GPIO_STEP2 }
+#define DIR_GPIOS   { GPIO_DIR0,  GPIO_DIR1,  GPIO_DIR2  }

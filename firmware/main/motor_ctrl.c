@@ -6,26 +6,29 @@
 #include "driver/rmt_tx.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
+#include "esp_timer.h"
+#include "freertos/portmacro.h"
 
 static const char *TAG = "motor_ctrl";
 
 /* ------------------------------------------------------------------ */
 /*  RMT 設定定数                                                        */
 /* ------------------------------------------------------------------ */
-#define RMT_RESOLUTION_HZ   1000000UL
-#define STEP_HIGH_TICKS     2U
-#define STEP_LOW_MIN_TICKS  2U
-/* バッチを小さくして速度更新の応答性を確保する */
-#define RMT_LOOP_COUNT      5U
+#define RMT_RESOLUTION_HZ   1000000UL   /* 1 MHz → 1 µs/tick */
+#define STEP_HIGH_TICKS     2U           /* 2 µs HIGH (DRV8825 最小 1.9 µs) */
+#define STEP_LOW_MIN_TICKS  2U           /* 2 µs LOW  (DRV8825 最小 1.9 µs) */
+#define RMT_LOOP_COUNT      5U           /* バッチサイズ: 速度更新応答性確保 */
 
 /* ------------------------------------------------------------------ */
-/*  モーションデフォルト                                                 */
+/*  モーションデフォルト (config.c の DEF_* と合わせる)                  */
 /* ------------------------------------------------------------------ */
-#define DEFAULT_VMAX    1000UL   /* steps/sec */
-#define DEFAULT_ACCEL    500UL   /* steps/sec² */
-#define DEFAULT_DECEL    500UL   /* steps/sec² */
-/* 起動初速: 最初のRMTバッチを短時間で終わらせるための最低速度 */
-#define START_VEL_MIN    50.0f   /* steps/sec */
+#define DEFAULT_VMAX    10000UL   /* steps/sec  */
+#define DEFAULT_ACCEL   50000UL   /* steps/sec² */
+#define DEFAULT_DECEL   50000UL   /* steps/sec² */
+#define DEFAULT_IDLE_TIMEOUT_MS  2000U
+
+/* 起動初速: 最初の RMT バッチを短時間で完了させる最低速度 */
+#define START_VEL_MIN    50.0f
 #define START_VEL_MAX   200.0f
 
 /* ------------------------------------------------------------------ */
@@ -51,6 +54,7 @@ typedef struct {
     /* モーション目標 */
     int32_t              target_pos;
     bool                 pos_mode;      /* true = MOVE/MOVETO, false = VEL */
+    bool                 disable_on_stop; /* true = STOP_FREE: 停止後コイル解除 */
 
     /* 速度プロファイル [steps/sec] */
     float                current_vel;
@@ -62,10 +66,24 @@ typedef struct {
     /* ソフトリミット */
     int32_t              min_pos;
     int32_t              max_pos;
+
+    /* アイドルタイムアウト */
+    uint32_t             idle_counter_ms;
 } axis_t;
 
-static axis_t s_axes[NUM_AXES];
-static bool   s_drv_enabled = false;
+static axis_t   s_axes[NUM_AXES];
+static bool     s_drv_enabled = false;
+static uint32_t s_idle_timeout_ms = DEFAULT_IDLE_TIMEOUT_MS;
+
+/* step_pos の ISR ↔ タスク競合を防ぐスピンロック (F-MOT-05 / 9.8) */
+static portMUX_TYPE s_step_pos_mux = portMUX_INITIALIZER_UNLOCKED;
+
+/* フォルト情報（最後の FAULT を記録） */
+static fault_info_t     s_last_fault   = { FAULT_NONE, 0, 0 };
+
+/* イベントコールバック */
+static motor_event_cb_t  s_move_done_cb = NULL;
+static motor_fault_cb_t  s_fault_cb     = NULL;
 
 /* ------------------------------------------------------------------ */
 /*  ヘルパー: sym の周波数更新                                           */
@@ -100,9 +118,19 @@ static esp_err_t rmt_kick(axis_t *ax)
 }
 
 /* ------------------------------------------------------------------ */
-/*  on_trans_done コールバック — ステップ計数のみ（ISR コンテキスト）    */
-/*  rmt_transmit() は ISR 非安全のため呼ばない。                        */
-/*  再キューは motor_control_task がタスクコンテキストから行う。         */
+/*  ヘルパー: RMT 停止（ISR 非安全 → タスクコンテキストからのみ呼ぶ）     */
+/* ------------------------------------------------------------------ */
+static void rmt_stop_channel(axis_t *ax)
+{
+    ax->running = false;
+    rmt_disable(ax->tx_chan);
+    rmt_enable(ax->tx_chan);
+}
+
+/* ------------------------------------------------------------------ */
+/*  on_trans_done コールバック（ISR コンテキスト）                        */
+/*  rmt_transmit() は ISR 非安全のため呼ばない。                         */
+/*  再キューは motor_control_task がタスクコンテキストから行う。           */
 /* ------------------------------------------------------------------ */
 static bool IRAM_ATTR on_trans_done(rmt_channel_handle_t tx_chan,
                                     const rmt_tx_done_event_data_t *edata,
@@ -111,12 +139,14 @@ static bool IRAM_ATTR on_trans_done(rmt_channel_handle_t tx_chan,
     axis_t *ax = (axis_t *)user_ctx;
     if (!ax->running) return false;
 
-    /* バッチ分のステップを位置に反映 */
+    /* バッチ分のステップを位置に反映 (F-MOT-05: ISR↔タスク競合防止) */
+    taskENTER_CRITICAL_ISR(&s_step_pos_mux);
     if (ax->dir) {
         ax->step_pos += (int32_t)RMT_LOOP_COUNT;
     } else {
         ax->step_pos -= (int32_t)RMT_LOOP_COUNT;
     }
+    taskEXIT_CRITICAL_ISR(&s_step_pos_mux);
     return false;
 }
 
@@ -130,21 +160,56 @@ static void motor_control_task(void *arg)
     for (;;) {
         vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(1));
 
+        /* --- アイドルタイムアウト監視 --- */
+        bool any_active = false;
+        for (int i = 0; i < NUM_AXES; i++) {
+            axis_state_t st = s_axes[i].state;
+            if (st == AXIS_ACCEL || st == AXIS_CRUISE ||
+                st == AXIS_DECEL || st == AXIS_HOMING) {
+                any_active = true;
+                break;
+            }
+        }
+
         for (int i = 0; i < NUM_AXES; i++) {
             axis_t *ax = &s_axes[i];
 
+            /* --- アイドルカウンタ --- */
+            if (ax->state == AXIS_IDLE) {
+                ax->idle_counter_ms++;
+                if (s_idle_timeout_ms > 0 &&
+                    ax->idle_counter_ms >= s_idle_timeout_ms &&
+                    !any_active) {
+                    /* 全軸アイドル到達 → スリープ遷移（全軸共通信号は1回だけ操作） */
+                    if (s_drv_enabled) {
+                        gpio_set_level(GPIO_DRV_EN, 1);     /* コイル解除 */
+                        gpio_set_level(GPIO_DRV_SLEEP, 0);  /* スリープ   */
+                        s_drv_enabled = false;
+                    }
+                    ax->state = AXIS_SLEEP;
+                    ax->idle_counter_ms = 0;
+                    ESP_LOGI(TAG, "Axis %d: idle timeout → SLEEP", i);
+                }
+            } else if (ax->state != AXIS_SLEEP && ax->state != AXIS_FAULT) {
+                ax->idle_counter_ms = 0;
+            }
+
+            /* --- 速度プロファイル更新 --- */
             if (ax->state != AXIS_ACCEL &&
                 ax->state != AXIS_CRUISE &&
                 ax->state != AXIS_DECEL) {
                 continue;
             }
 
-            /* 残りステップ (位置モード) */
+            /* 残りステップ (位置モード) — step_pos は ISR と共有 */
             int32_t remaining = 0;
             if (ax->pos_mode) {
+                taskENTER_CRITICAL(&s_step_pos_mux);
+                int32_t pos = ax->step_pos;
+                taskEXIT_CRITICAL(&s_step_pos_mux);
                 remaining = ax->dir
-                    ? (ax->target_pos - ax->step_pos)
-                    : (ax->step_pos  - ax->target_pos);
+                    ? (ax->target_pos - pos)
+                    : (pos - ax->target_pos);
             }
 
             /* 現在速度で停止するのに必要なステップ数 */
@@ -154,7 +219,6 @@ static void motor_control_task(void *arg)
             switch (ax->state) {
             case AXIS_ACCEL: {
                 ax->current_vel += (float)ax->accel * 0.001f;
-                /* VEL モード: target_vel と v_max の小さい方で頭打ち */
                 float vel_cap = ax->pos_mode
                     ? (float)ax->v_max
                     : (ax->target_vel < (float)ax->v_max ? ax->target_vel : (float)ax->v_max);
@@ -196,7 +260,21 @@ static void motor_control_task(void *arg)
                     ax->current_vel = 0.0f;
                     ax->running = false;
                     ax->state   = AXIS_IDLE;
+                    ax->idle_counter_ms = 0;
+
+                    /* STOP_FREE: コイル解除 */
+                    if (ax->disable_on_stop) {
+                        ax->disable_on_stop = false;
+                        gpio_set_level(GPIO_DRV_EN, 1);
+                        s_drv_enabled = false;
+                    }
+
                     ESP_LOGI(TAG, "Axis %d: done, pos=%ld", i, (long)ax->step_pos);
+
+                    /* EVT MOVE_DONE コールバック（位置モードのみ） */
+                    if (ax->pos_mode && s_move_done_cb) {
+                        s_move_done_cb((uint8_t)i);
+                    }
                 } else {
                     set_rmt_freq(ax, ax->current_vel);
                 }
@@ -207,7 +285,7 @@ static void motor_control_task(void *arg)
             }
 
             /* タスクコンテキストから次のバッチを再キュー。
-             * trans_queue_depth=4 なので満杯時は ESP_ERR_INVALID_STATE を返す — 無視して良い。 */
+             * trans_queue_depth=4 なので満杯時は ESP_ERR_INVALID_STATE を返す — 無視してよい。 */
             if (ax->running) {
                 rmt_kick(ax);
             }
@@ -246,19 +324,21 @@ void motor_ctrl_init(void)
 
         ESP_ERROR_CHECK(rmt_enable(ax->tx_chan));
 
-        ax->running     = false;
-        ax->state       = AXIS_IDLE;
-        ax->dir         = true;
-        ax->step_pos    = 0;
-        ax->target_pos  = 0;
-        ax->pos_mode    = true;
-        ax->current_vel = 0.0f;
-        ax->target_vel  = 0.0f;
-        ax->v_max       = DEFAULT_VMAX;
-        ax->accel       = DEFAULT_ACCEL;
-        ax->decel       = DEFAULT_DECEL;
-        ax->min_pos     = INT32_MIN / 2;
-        ax->max_pos     = INT32_MAX / 2;
+        ax->running         = false;
+        ax->state           = AXIS_IDLE;
+        ax->dir             = true;
+        ax->step_pos        = 0;
+        ax->target_pos      = 0;
+        ax->pos_mode        = true;
+        ax->disable_on_stop = false;
+        ax->current_vel     = 0.0f;
+        ax->target_vel      = 0.0f;
+        ax->v_max           = DEFAULT_VMAX;
+        ax->accel           = DEFAULT_ACCEL;
+        ax->decel           = DEFAULT_DECEL;
+        ax->min_pos         = -2000000;
+        ax->max_pos         =  2000000;
+        ax->idle_counter_ms = 0;
 
         ESP_LOGI(TAG, "Axis %d RMT init OK (GPIO %d)", i, s_step_gpios[i]);
     }
@@ -268,12 +348,28 @@ void motor_ctrl_init(void)
 }
 
 /* ------------------------------------------------------------------ */
+/*  コールバック登録                                                      */
+/* ------------------------------------------------------------------ */
+void motor_register_move_done_cb(motor_event_cb_t cb) { s_move_done_cb = cb; }
+void motor_register_fault_cb(motor_fault_cb_t cb)     { s_fault_cb = cb; }
+
+/* ------------------------------------------------------------------ */
 /*  motor_enable / motor_disable                                        */
 /* ------------------------------------------------------------------ */
 void motor_enable(void)
 {
-    gpio_set_level(GPIO_DRV_EN, 0);   /* アクティブ Low */
+    gpio_set_level(GPIO_DRV_SLEEP, 1);   /* スリープ解除 */
+    vTaskDelay(pdMS_TO_TICKS(1));         /* チャージポンプ安定待ち */
+    gpio_set_level(GPIO_DRV_EN, 0);       /* アクティブ Low: 励磁 */
     s_drv_enabled = true;
+
+    /* SLEEP 状態の軸を IDLE に戻す */
+    for (int i = 0; i < NUM_AXES; i++) {
+        if (s_axes[i].state == AXIS_SLEEP) {
+            s_axes[i].state = AXIS_IDLE;
+            s_axes[i].idle_counter_ms = 0;
+        }
+    }
     ESP_LOGI(TAG, "DRV enabled");
 }
 
@@ -284,8 +380,7 @@ void motor_disable(void)
         ax->running     = false;
         ax->current_vel = 0.0f;
         ax->state       = AXIS_IDLE;
-        rmt_disable(ax->tx_chan);
-        rmt_enable(ax->tx_chan);
+        rmt_stop_channel(ax);
         gpio_set_level(s_step_gpios[i], 0);
     }
     gpio_set_level(GPIO_DRV_EN, 1);
@@ -306,19 +401,14 @@ static bool start_motion(uint8_t axis, bool dir, int32_t target, bool pos_mode)
     axis_t *ax = &s_axes[axis];
     if (ax->state == AXIS_FAULT) return false;
 
-    /* 既存モーション停止 */
-    if (ax->running) {
-        ax->running = false;
-        rmt_tx_wait_all_done(ax->tx_chan, pdMS_TO_TICKS(200));
-        rmt_disable(ax->tx_chan);
-        rmt_enable(ax->tx_chan);
-    }
-
     /* 位置モード: ソフトリミット & 同一位置チェック */
     if (pos_mode) {
         if (target > ax->max_pos) target = ax->max_pos;
         if (target < ax->min_pos) target = ax->min_pos;
-        if (target == ax->step_pos) return true;
+        taskENTER_CRITICAL(&s_step_pos_mux);
+        int32_t cur_pos = ax->step_pos;
+        taskEXIT_CRITICAL(&s_step_pos_mux);
+        if (target == cur_pos) return true;
     }
 
     /* DIR 設定 (STEP 開始前に 650ns 以上確保 — 1ms delay で十分) */
@@ -326,10 +416,12 @@ static bool start_motion(uint8_t axis, bool dir, int32_t target, bool pos_mode)
     gpio_set_level(s_dir_gpios[axis], dir ? 1 : 0);
     vTaskDelay(pdMS_TO_TICKS(1));
 
-    ax->target_pos  = target;
-    ax->pos_mode    = pos_mode;
+    ax->target_pos      = target;
+    ax->pos_mode        = pos_mode;
+    ax->disable_on_stop = false;
+    ax->idle_counter_ms = 0;
 
-    /* 初速: 最初のバッチ (RMT_LOOP_COUNT パルス) を短時間で完了させる最低速度 */
+    /* 初速: 最初のバッチを短時間で完了させる最低速度 */
     float sv = (float)ax->v_max * 0.1f;
     if (sv < START_VEL_MIN) sv = START_VEL_MIN;
     if (sv > START_VEL_MAX) sv = START_VEL_MAX;
@@ -355,14 +447,24 @@ static bool start_motion(uint8_t axis, bool dir, int32_t target, bool pos_mode)
 bool motor_move(uint8_t axis, int32_t steps)
 {
     if (axis >= NUM_AXES || steps == 0) return (steps == 0);
-    int32_t target = s_axes[axis].step_pos + steps;
+    /* E008: モーション実行中は拒否 */
+    if (motor_is_moving(axis)) return false;
+    taskENTER_CRITICAL(&s_step_pos_mux);
+    int32_t cur = s_axes[axis].step_pos;
+    taskEXIT_CRITICAL(&s_step_pos_mux);
+    int32_t target = cur + steps;
     return start_motion(axis, steps > 0, target, true);
 }
 
 bool motor_moveto(uint8_t axis, int32_t pos)
 {
     if (axis >= NUM_AXES) return false;
-    int32_t steps = pos - s_axes[axis].step_pos;
+    /* E008: モーション実行中は拒否 */
+    if (motor_is_moving(axis)) return false;
+    taskENTER_CRITICAL(&s_step_pos_mux);
+    int32_t cur = s_axes[axis].step_pos;
+    taskEXIT_CRITICAL(&s_step_pos_mux);
+    int32_t steps = pos - cur;
     if (steps == 0) return true;
     return start_motion(axis, steps > 0, pos, true);
 }
@@ -381,33 +483,32 @@ bool motor_vel(uint8_t axis, int32_t vel_signed)
     if (speed > 200000.0f) speed = 200000.0f;
 
     if (ax->running && ax->state != AXIS_FAULT) {
-        /* 既存 VEL モード: 目標速度だけ更新 (方向変更は再起動) */
-        if (ax->dir == dir) {
+        /* 既存 VEL モード（同方向）: 目標速度だけ更新 */
+        if (!ax->pos_mode && ax->dir == dir) {
             ax->target_vel = speed;
             if (speed > (float)ax->v_max) ax->target_vel = (float)ax->v_max;
             ax->state = AXIS_CRUISE;
             return true;
         }
-        /* 方向変更: 一旦停止してから再起動 */
-        ax->running = false;
-        rmt_tx_wait_all_done(ax->tx_chan, pdMS_TO_TICKS(200));
-        rmt_disable(ax->tx_chan);
-        rmt_enable(ax->tx_chan);
+        /* MOVE/MOVETO 実行中: 減速停止後に VEL モードへ移行 (VEL 割り込みシーケンス) */
+        ax->pos_mode   = false;
+        ax->target_vel = speed;
+        ax->state      = AXIS_DECEL;
+        /* DECEL 完了後に再起動は行わない — 現実装では IDLE になる。
+         * VEL 割り込みシーケンスの完全実装は Phase 2 で対応。 */
+        return true;
     }
 
     ax->target_vel = speed;
-    /* VEL モードでは target_pos は使わない */
     bool ok = start_motion(axis, dir, 0, false);
     if (ok) {
-        /* start_motion は ACCEL で開始するが v_max を上書きしないため
-         * target_vel に向けて CRUISE フェーズで到達する */
         ax->target_vel = speed;
     }
     return ok;
 }
 
 /* ------------------------------------------------------------------ */
-/*  motor_stop / motor_estop                                           */
+/*  motor_stop / motor_stop_free / motor_estop                         */
 /* ------------------------------------------------------------------ */
 bool motor_stop(uint8_t axis)
 {
@@ -415,54 +516,128 @@ bool motor_stop(uint8_t axis)
     axis_t *ax = &s_axes[axis];
     if (!ax->running) return true;
 
-    ax->pos_mode = false;   /* 位置目標を解除して DECEL → IDLE */
-    ax->state    = AXIS_DECEL;
+    ax->pos_mode        = false;
+    ax->disable_on_stop = false;
+    ax->state           = AXIS_DECEL;
     ESP_LOGI(TAG, "Axis %d: STOP (decel)", axis);
     return true;
 }
 
-void motor_estop(void)
+bool motor_stop_free(uint8_t axis)
 {
+    if (axis >= NUM_AXES) return false;
+    axis_t *ax = &s_axes[axis];
+
+    if (!ax->running) {
+        /* 既に停止中: 即時コイル解除 */
+        gpio_set_level(GPIO_DRV_EN, 1);
+        s_drv_enabled = false;
+        return true;
+    }
+
+    ax->pos_mode        = false;
+    ax->disable_on_stop = true;   /* DECEL 完了後にコイル解除 */
+    ax->state           = AXIS_DECEL;
+    ESP_LOGI(TAG, "Axis %d: STOP_FREE (decel then disable)", axis);
+    return true;
+}
+
+void motor_estop(fault_reason_t reason)
+{
+    uint8_t mask = 0;
     for (int i = 0; i < NUM_AXES; i++) {
         axis_t *ax = &s_axes[i];
+        if (ax->state != AXIS_SLEEP) {
+            mask |= (1u << i);
+        }
         ax->running     = false;
         ax->current_vel = 0.0f;
         ax->state       = AXIS_FAULT;
-        rmt_disable(ax->tx_chan);
-        rmt_enable(ax->tx_chan);
+        rmt_stop_channel(ax);
         gpio_set_level(s_step_gpios[i], 0);
     }
-    ESP_LOGE(TAG, "ESTOP: all axes faulted");
+
+    /* DRV_EN → High（コイル励磁解除）: FAULT 遷移処理 手順2 */
+    gpio_set_level(GPIO_DRV_EN, 1);
+    s_drv_enabled = false;
+
+    /* フォルト情報記録 */
+    s_last_fault.reason       = reason;
+    s_last_fault.axis_mask    = mask;
+    s_last_fault.timestamp_us = esp_timer_get_time();
+
+    ESP_LOGE(TAG, "ESTOP: reason=%d mask=0x%02x", (int)reason, mask);
+
+    /* EVT FAULT コールバック */
+    if (s_fault_cb) {
+        s_fault_cb(reason, mask);
+    }
 }
 
 /* ------------------------------------------------------------------ */
-/*  motor_clear_fault                                                  */
+/*  motor_clear_fault  (F-MOT-07b)                                     */
 /* ------------------------------------------------------------------ */
-void motor_clear_fault(void)
+bool motor_clear_fault(void)
 {
-    /* DRV8825 リセットパルス (最小 10µs、ここでは 1ms) */
+    /* 全軸が FAULT 状態であることを確認 */
+    bool any_fault = false;
+    for (int i = 0; i < NUM_AXES; i++) {
+        if (s_axes[i].state == AXIS_FAULT) {
+            any_fault = true;
+            break;
+        }
+    }
+    if (!any_fault) return false;   /* ERR E010: 非 FAULT 状態 */
+
+    /* 1. DRV_EN → High（念のため確認） */
+    gpio_set_level(GPIO_DRV_EN, 1);
+    s_drv_enabled = false;
+
+    /* 2-3. DRV_RESET パルス（最低 10 µs、ここでは 1 ms） */
     gpio_set_level(GPIO_DRV_RESET, 0);
     vTaskDelay(pdMS_TO_TICKS(1));
     gpio_set_level(GPIO_DRV_RESET, 1);
+
+    /* 4. 内部初期化完了待ち */
     vTaskDelay(pdMS_TO_TICKS(1));
 
+    /* 5-6. DRV_SLEEP → High（動作可能状態）＋チャージポンプ安定待ち */
+    gpio_set_level(GPIO_DRV_SLEEP, 1);
+    vTaskDelay(pdMS_TO_TICKS(1));
+
+    /* 7. DRV_EN は High のまま維持（励磁は ENABLE コマンドで別途行う） */
+
+    /* 8. 全軸状態を SLEEP に遷移 */
     for (int i = 0; i < NUM_AXES; i++) {
         if (s_axes[i].state == AXIS_FAULT) {
-            s_axes[i].state = AXIS_IDLE;
+            s_axes[i].state = AXIS_SLEEP;
+            s_axes[i].idle_counter_ms = 0;
         }
     }
-    ESP_LOGI(TAG, "FAULT cleared");
+
+    ESP_LOGI(TAG, "FAULT cleared → SLEEP");
+    return true;
 }
 
 /* ------------------------------------------------------------------ */
-/*  motor_get_status                                                   */
+/*  motor_get_fault_info  (F-MOT-07c)                                  */
+/* ------------------------------------------------------------------ */
+void motor_get_fault_info(fault_info_t *out)
+{
+    if (out) *out = s_last_fault;
+}
+
+/* ------------------------------------------------------------------ */
+/*  motor_get_status / motor_is_moving                                 */
 /* ------------------------------------------------------------------ */
 bool motor_get_status(uint8_t axis, axis_status_t *out)
 {
     if (axis >= NUM_AXES || !out) return false;
     axis_t *ax = &s_axes[axis];
     out->state = ax->state;
-    out->pos   = ax->step_pos;
+    taskENTER_CRITICAL(&s_step_pos_mux);
+    out->pos = ax->step_pos;
+    taskEXIT_CRITICAL(&s_step_pos_mux);
     out->vel   = ax->dir
         ?  (int32_t)ax->current_vel
         : -(int32_t)ax->current_vel;
@@ -470,6 +645,14 @@ bool motor_get_status(uint8_t axis, axis_status_t *out)
     out->accel = ax->accel;
     out->decel = ax->decel;
     return true;
+}
+
+bool motor_is_moving(uint8_t axis)
+{
+    if (axis >= NUM_AXES) return false;
+    axis_state_t st = s_axes[axis].state;
+    return (st == AXIS_ACCEL || st == AXIS_CRUISE ||
+            st == AXIS_DECEL || st == AXIS_HOMING);
 }
 
 /* ------------------------------------------------------------------ */
@@ -496,8 +679,14 @@ bool motor_set_decel(uint8_t axis, uint32_t decel_val)
     return true;
 }
 
+bool motor_set_idle_timeout(uint32_t timeout_ms)
+{
+    s_idle_timeout_ms = timeout_ms;
+    return true;
+}
+
 /* ================================================================== */
-/*  Phase 1 テスト API — デバッグ用 (以下変更なし)                      */
+/*  Phase 1 テスト API — デバッグ用                                     */
 /* ================================================================== */
 
 bool motor_test_pulse(uint8_t axis, uint32_t freq_hz)
@@ -514,8 +703,7 @@ bool motor_test_pulse(uint8_t axis, uint32_t freq_hz)
     if (ax->running) {
         ax->running = false;
         rmt_tx_wait_all_done(ax->tx_chan, pdMS_TO_TICKS(500));
-        rmt_disable(ax->tx_chan);
-        rmt_enable(ax->tx_chan);
+        rmt_stop_channel(ax);
     }
 
     ax->sym.level0    = 1;
@@ -547,8 +735,7 @@ bool motor_stop_immediate(uint8_t axis)
     ax->running     = false;
     ax->current_vel = 0.0f;
     ax->state       = AXIS_IDLE;
-    rmt_disable(ax->tx_chan);
-    rmt_enable(ax->tx_chan);
+    rmt_stop_channel(ax);
     gpio_set_level(s_step_gpios[axis], 0);
 
     ESP_LOGI(TAG, "Axis %d: stopped", axis);

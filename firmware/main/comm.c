@@ -34,9 +34,34 @@ static const char *state_name(axis_state_t s)
     case AXIS_ACCEL:  return "ACCEL";
     case AXIS_CRUISE: return "CRUISE";
     case AXIS_DECEL:  return "DECEL";
+    case AXIS_HOMING: return "HOMING";
     case AXIS_FAULT:  return "FAULT";
     default:          return "UNKNOWN";
     }
+}
+
+static const char *fault_reason_name(fault_reason_t r)
+{
+    switch (r) {
+    case FAULT_ESTOP:       return "ESTOP";
+    case FAULT_OVERCURRENT: return "OVERCURRENT";
+    case FAULT_STALL:       return "STALL";
+    default:                return "NONE";
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/*  イベントコールバック（motor_ctrl → comm）                            */
+/* ------------------------------------------------------------------ */
+static void on_move_done(uint8_t axis)
+{
+    comm_sendf("EVT MOVE_DONE %u\n", (unsigned)axis);
+}
+
+static void on_fault(fault_reason_t reason, uint8_t axis_mask)
+{
+    comm_sendf("EVT FAULT %s 0x%02x\n",
+               fault_reason_name(reason), (unsigned)axis_mask);
 }
 
 /* ------------------------------------------------------------------ */
@@ -54,7 +79,6 @@ static void watchdog_task(void *arg)
         if (elapsed_ms >= (int64_t)s_wdog_ms) {
             ESP_LOGW(TAG, "COMM_TIMEOUT: %lld ms, stopping all axes", elapsed_ms);
             for (uint8_t i = 0; i < NUM_AXES; i++) motor_stop(i);
-            /* タイムアウト後は再受信まで発火しないようにリセット */
             s_last_rx_us = 0;
             comm_send("EVT COMM_TIMEOUT\n");
         }
@@ -74,8 +98,7 @@ static void dispatch(const char *line)
 
     unsigned axis;
 
-    /* ---------- 有効化 / 無効化 ----------
-     * DRV_EN は全軸共通のため ENABLE <axis> も ENABLE ALL も同等  */
+    /* ---------- 有効化 / 無効化 ---------- */
     if (strcmp(line, "ENABLE") == 0 ||
         strncmp(line, "ENABLE ", 7) == 0) {
         motor_enable();
@@ -92,25 +115,46 @@ static void dispatch(const char *line)
     /* ---------- モーション ---------- */
     int steps;
     if (sscanf(line, "MOVE %u %d", &axis, &steps) == 2) {
-        comm_send(motor_move((uint8_t)axis, steps) ? "OK\n" : "ERR E003 INVALID_AXIS\n");
+        if (axis >= NUM_AXES) {
+            comm_send("ERR E003 INVALID_AXIS\n");
+        } else if (motor_is_moving((uint8_t)axis)) {
+            comm_send("ERR E008 MOTION_IN_PROGRESS\n");
+        } else {
+            comm_send(motor_move((uint8_t)axis, steps) ? "OK\n" : "ERR E006 SOFT_LIMIT\n");
+        }
         return;
     }
 
     int pos;
     if (sscanf(line, "MOVETO %u %d", &axis, &pos) == 2) {
-        comm_send(motor_moveto((uint8_t)axis, pos) ? "OK\n" : "ERR E003 INVALID_AXIS\n");
+        if (axis >= NUM_AXES) {
+            comm_send("ERR E003 INVALID_AXIS\n");
+        } else if (motor_is_moving((uint8_t)axis)) {
+            comm_send("ERR E008 MOTION_IN_PROGRESS\n");
+        } else {
+            comm_send(motor_moveto((uint8_t)axis, pos) ? "OK\n" : "ERR E006 SOFT_LIMIT\n");
+        }
         return;
     }
 
     int vel;
     if (sscanf(line, "VEL %u %d", &axis, &vel) == 2) {
-        comm_send(motor_vel((uint8_t)axis, vel) ? "OK\n" : "ERR E003 INVALID_AXIS\n");
+        if (axis >= NUM_AXES) {
+            comm_send("ERR E003 INVALID_AXIS\n");
+        } else {
+            comm_send(motor_vel((uint8_t)axis, vel) ? "OK\n" : "ERR E005 FAULT\n");
+        }
         return;
     }
 
     /* ---------- 停止 ---------- */
     if (sscanf(line, "STOP %u", &axis) == 1) {
-        comm_send(motor_stop((uint8_t)axis) ? "OK\n" : "ERR E003 INVALID_AXIS\n");
+        if (axis >= NUM_AXES) {
+            comm_send("ERR E003 INVALID_AXIS\n");
+        } else {
+            motor_stop((uint8_t)axis);
+            comm_send("OK\n");
+        }
         return;
     }
     if (strcmp(line, "STOP ALL") == 0) {
@@ -118,24 +162,36 @@ static void dispatch(const char *line)
         comm_send("OK\n");
         return;
     }
-    /* STOP_FREE: 停止後にコイル解除 (DRV_EN=High)
-     * DRV_EN は全軸共通のため全軸解除。Phase 1 では即時停止 */
-    if (sscanf(line, "STOP_FREE %u", &axis) == 1 ||
-        strcmp(line, "STOP_FREE ALL") == 0) {
-        motor_disable();
+
+    /* STOP_FREE: 台形減速後にコイル解除 */
+    if (sscanf(line, "STOP_FREE %u", &axis) == 1) {
+        if (axis >= NUM_AXES) {
+            comm_send("ERR E003 INVALID_AXIS\n");
+        } else {
+            motor_stop_free((uint8_t)axis);
+            comm_send("OK\n");
+        }
+        return;
+    }
+    if (strcmp(line, "STOP_FREE ALL") == 0) {
+        for (uint8_t i = 0; i < NUM_AXES; i++) motor_stop_free(i);
         comm_send("OK\n");
         return;
     }
+
     if (strcmp(line, "ESTOP") == 0) {
-        motor_estop();
+        motor_estop(FAULT_ESTOP);
         comm_send("OK\n");
         return;
     }
 
     /* ---------- フォルト ---------- */
     if (strcmp(line, "CLEAR_FAULT") == 0) {
-        motor_clear_fault();
-        comm_send("OK\n");
+        if (motor_clear_fault()) {
+            comm_send("OK\n");
+        } else {
+            comm_send("ERR E010 NOT_IN_FAULT\n");
+        }
         return;
     }
 
@@ -145,7 +201,7 @@ static void dispatch(const char *line)
         if (!motor_get_status((uint8_t)axis, &st)) {
             comm_send("ERR E003 INVALID_AXIS\n");
         } else {
-            comm_sendf("OK STATE %s\n", state_name(st.state));
+            comm_sendf("OK %s\n", state_name(st.state));
         }
         return;
     }
@@ -154,7 +210,7 @@ static void dispatch(const char *line)
         if (!motor_get_status((uint8_t)axis, &st)) {
             comm_send("ERR E003 INVALID_AXIS\n");
         } else {
-            comm_sendf("OK POS %ld\n", (long)st.pos);
+            comm_sendf("OK %ld\n", (long)st.pos);
         }
         return;
     }
@@ -163,55 +219,106 @@ static void dispatch(const char *line)
         if (!motor_get_status((uint8_t)axis, &st)) {
             comm_send("ERR E003 INVALID_AXIS\n");
         } else {
-            comm_sendf("OK VEL %ld\n", (long)st.vel);
+            comm_sendf("OK %ld\n", (long)st.vel);
         }
+        return;
+    }
+
+    /* GET FAULT_INFO (F-MOT-07c) */
+    if (strcmp(line, "GET FAULT_INFO") == 0) {
+        fault_info_t fi;
+        motor_get_fault_info(&fi);
+        comm_sendf("OK %s 0x%02x %lld\n",
+                   fault_reason_name(fi.reason),
+                   (unsigned)fi.axis_mask,
+                   (long long)fi.timestamp_us);
         return;
     }
 
     /* STATUS — 全軸サマリー */
     if (strcmp(line, "STATUS") == 0) {
-        comm_sendf("OK STATUS microstep=1/%d\n", (int)config_get_microstep());
+        comm_sendf("{\"microstep\":\"1/%d\",\"axes\":[",
+                   (int)config_get_microstep());
         for (uint8_t i = 0; i < NUM_AXES; i++) {
             axis_status_t st;
             motor_get_status(i, &st);
-            comm_sendf("  axis%d state=%s pos=%ld vel=%ld vmax=%lu accel=%lu decel=%lu\n",
-                       i, state_name(st.state),
+            comm_sendf("%s{\"id\":%u,\"state\":\"%s\",\"pos\":%ld,"
+                       "\"vel\":%ld,\"vmax\":%lu,\"accel\":%lu,\"decel\":%lu}",
+                       (i > 0 ? "," : ""),
+                       (unsigned)i, state_name(st.state),
                        (long)st.pos, (long)st.vel,
                        (unsigned long)st.v_max,
                        (unsigned long)st.accel,
                        (unsigned long)st.decel);
         }
+        comm_send("]}\n");
         return;
     }
 
     /* ---------- SET ---------- */
     unsigned val;
-    if (sscanf(line, "SET VMAX %u %u", &axis, &val) == 2) {
-        comm_send(motor_set_vmax((uint8_t)axis, val) ? "OK\n" : "ERR E006 INVALID_PARAM\n");
-        return;
-    }
-    if (sscanf(line, "SET ACCEL %u %u", &axis, &val) == 2) {
-        comm_send(motor_set_accel((uint8_t)axis, val) ? "OK\n" : "ERR E006 INVALID_PARAM\n");
-        return;
-    }
-    if (sscanf(line, "SET DECEL %u %u", &axis, &val) == 2) {
-        comm_send(motor_set_decel((uint8_t)axis, val) ? "OK\n" : "ERR E006 INVALID_PARAM\n");
-        return;
-    }
-    if (sscanf(line, "SET MICROSTEP %u", &val) == 1) {
-        comm_send(config_set_microstep((microstep_t)val) ? "OK\n" : "ERR E006 INVALID_PARAM\n");
-        return;
-    }
-    if (sscanf(line, "SET COMM_TIMEOUT %u", &val) == 1) {
-        s_wdog_ms      = val;
-        s_wdog_enabled = (val > 0);
-        comm_send("OK\n");
+    /* モーション中の SET は拒否 */
+    if (strncmp(line, "SET ", 4) == 0) {
+        /* COMM_TIMEOUT と ADC_FILTER はモーション中でも変更可 — 先に処理 */
+        if (sscanf(line, "SET COMM_TIMEOUT %u", &val) == 1) {
+            s_wdog_ms      = val;
+            s_wdog_enabled = (val > 0);
+            s_last_rx_us   = esp_timer_get_time();   /* タイマーリセット */
+            config_set_comm_timeout(val);
+            comm_send("OK\n");
+            return;
+        }
+        if (sscanf(line, "SET IDLE_TIMEOUT %u", &val) == 1) {
+            motor_set_idle_timeout(val);
+            config_set_idle_timeout(val);
+            comm_send("OK\n");
+            return;
+        }
+
+        /* 上記以外の SET はモーション中に拒否 */
+        bool any_moving = false;
+        for (uint8_t i = 0; i < NUM_AXES; i++) {
+            if (motor_is_moving(i)) { any_moving = true; break; }
+        }
+        if (any_moving) {
+            comm_send("ERR E004 MOTION_IN_PROGRESS\n");
+            return;
+        }
+
+        if (sscanf(line, "SET VMAX %u %u", &axis, &val) == 2) {
+            comm_send(motor_set_vmax((uint8_t)axis, val) ? "OK\n" : "ERR E002 INVALID_PARAM\n");
+            return;
+        }
+        if (sscanf(line, "SET ACCEL %u %u", &axis, &val) == 2) {
+            comm_send(motor_set_accel((uint8_t)axis, val) ? "OK\n" : "ERR E002 INVALID_PARAM\n");
+            return;
+        }
+        if (sscanf(line, "SET DECEL %u %u", &axis, &val) == 2) {
+            comm_send(motor_set_decel((uint8_t)axis, val) ? "OK\n" : "ERR E002 INVALID_PARAM\n");
+            return;
+        }
+        if (sscanf(line, "SET MICROSTEP %u", &val) == 1) {
+            comm_send(config_set_microstep((microstep_t)val) ? "OK\n" : "ERR E002 INVALID_PARAM\n");
+            return;
+        }
+
+        comm_send("ERR E001 UNKNOWN_CMD\n");
         return;
     }
 
     /* ---------- NVS 永続化 ---------- */
     if (strcmp(line, "SAVE") == 0) {
         comm_send(config_save() ? "OK\n" : "ERR E007 NVS_FAIL\n");
+        return;
+    }
+    if (strcmp(line, "LOAD") == 0) {
+        config_init();
+        comm_send("OK\n");
+        return;
+    }
+    if (strcmp(line, "RESET_CONFIG") == 0) {
+        config_reset();
+        comm_send("OK\n");
         return;
     }
 
@@ -273,9 +380,21 @@ static void comm_task(void *arg)
 void comm_init(void)
 {
     s_tx_mutex = xSemaphoreCreateMutex();
+
+    /* motor_ctrl のイベントコールバックを登録 */
+    motor_register_move_done_cb(on_move_done);
+    motor_register_fault_cb(on_fault);
+
+    /* ウォッチドッグ初期値を config から取得 */
+    s_wdog_ms      = config_get_comm_timeout();
+    s_wdog_enabled = (s_wdog_ms > 0);
+
+    /* アイドルタイムアウトを config から取得して motor_ctrl へ適用 */
+    motor_set_idle_timeout(config_get_idle_timeout());
+
     ESP_LOGI(TAG, "CommTask starting (USB Serial/JTAG via VFS)");
-    xTaskCreate(comm_task,     "CommTask",  4096, NULL, 10, NULL);
-    xTaskCreate(watchdog_task, "WatchdogTask", 2048, NULL, 5, NULL);
+    xTaskCreate(comm_task,     "CommTask",     4096, NULL, 10, NULL);
+    xTaskCreate(watchdog_task, "WatchdogTask", 2048, NULL,  5, NULL);
 }
 
 void comm_send(const char *msg)
