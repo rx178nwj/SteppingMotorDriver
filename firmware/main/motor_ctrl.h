@@ -112,5 +112,26 @@ bool motor_test_gpio_toggle(uint8_t axis, uint32_t count);
 bool motor_home(uint8_t axis);
 bool motor_set_stall_fault_th(uint8_t axis, uint32_t th);
 bool motor_set_home_dir(uint8_t axis, int8_t dir);
+bool motor_set_home_params(uint8_t axis, uint32_t v_coarse, uint32_t v_fine,
+                            int32_t back_off, int32_t home_offset);
 void motor_register_home_done_cb(motor_event_cb_t cb);
 void motor_register_home_timeout_cb(motor_event_cb_t cb);
+
+/* ------------------------------------------------------------------ */
+/*  Phase 5: SYNC_MOVE (F-MOT-11)                                      */
+/* ------------------------------------------------------------------ */
+typedef void (*motor_sync_cb_t)(uint8_t axis_mask);
+void motor_register_sync_done_cb(motor_sync_cb_t cb);
+void motor_register_sync_aborted_cb(motor_sync_cb_t cb);
+bool motor_sync_move(uint8_t n, const uint8_t *axes, const int32_t *steps);
+
+/* ------------------------------------------------------------------ */
+/*  追加ゲッター（NVS 永続化・状態確認用）                               */
+/* ------------------------------------------------------------------ */
+uint32_t motor_get_stall_fault_th(uint8_t axis);
+bool     motor_get_soft_limit(uint8_t axis, int32_t *out_min, int32_t *out_max);
+uint32_t motor_get_v_home_coarse(uint8_t axis);
+uint32_t motor_get_v_home_fine(uint8_t axis);
+int32_t  motor_get_back_off_steps(uint8_t axis);
+int32_t  motor_get_home_offset_steps(uint8_t axis);
+int8_t   motor_get_home_dir(uint8_t axis);

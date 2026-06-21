@@ -880,14 +880,13 @@ void motor_control_1ms_tick(axis_t *ax) {
 - [ ] 過電流保護・緊急停止連動（F-ADC-03）
 
 ### Phase 5：コマンドセット・設定管理・統合
-- [ ] コマンドセット完全実装（Section 4 全コマンド）
-- [ ] エラーコード・非同期イベント通知実装
-- [ ] NVS 設定保存・読み込み（全 F-MOT-10 パラメータ）
-- [ ] 通信ウォッチドッグ実装（F-COM-04：タイムアウト減速停止・USB 切断コールバック）
-- [ ] ウォッチドッグタイマ設定
-- [ ] STATUS コマンドの JSON 応答フォーマット実装
-- [ ] ハートビート（StatusTask）
-- [ ] 多軸同期移動実装（F-MOT-11 SYNC_MOVE：速度スケーリング・START タイミング同期・STOP 連動）
+- [x] コマンドセット完全実装（Section 4 全コマンド）
+- [x] エラーコード・非同期イベント通知実装
+- [x] NVS 設定保存・読み込み（全 F-MOT-10 パラメータ：vmax/accel/decel/stall_th/soft_limit/home 各軸）
+- [x] 通信ウォッチドッグ実装（F-COM-04：タイムアウト減速停止・EVT COMM_TIMEOUT）
+- [x] STATUS コマンドの JSON 応答フォーマット実装
+- [x] ハートビート（StatusTask 100ms、HEARTBEAT ON/OFF で切替）
+- [x] 多軸同期移動実装（F-MOT-11 SYNC_MOVE：速度スケーリング・同一ティック START・STOP/ESTOP/リミット連動・EVT SYNC_DONE/SYNC_ABORTED）
 - [ ] 総合テスト（3 軸同時動作、ホーミング、脱調検出、フォルト復帰、SYNC_MOVE 直線補間確認）
 
 ---

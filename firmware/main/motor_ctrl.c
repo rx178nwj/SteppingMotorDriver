@@ -86,6 +86,9 @@ typedef struct {
     /* 脱調検出 */
     uint32_t             stall_fault_th;   /* |enc_pos - step_pos| > this → FAULT_STALL */
 
+    /* SYNC_MOVE (F-MOT-11) */
+    bool                 sync_pending;     /* true = CommTask がパラメータ設定済み・MotorControlTask の START 待ち */
+
     /* ホーミング */
     uint8_t              home_phase;       /* 0=coarse, 1=backoff, 2=fine, 3=done */
     int8_t               home_dir;         /* +1 or -1 */
@@ -114,6 +117,13 @@ static motor_event_cb_t  s_limit_hit_cb      = NULL;
 static motor_fault_cb_t  s_fault_cb          = NULL;
 static motor_event_cb_t  s_home_done_cb      = NULL;
 static motor_event_cb_t  s_home_timeout_cb   = NULL;
+
+/* SYNC_MOVE グループ状態 (F-MOT-11) */
+static volatile uint8_t  s_sync_group_mask    = 0;    /* 同期軸ビットマスク */
+static volatile bool     s_sync_start_pending = false; /* 開始待ちフラグ */
+static volatile bool     s_sync_active        = false; /* 同期実行中 */
+static motor_sync_cb_t   s_sync_done_cb       = NULL;
+static motor_sync_cb_t   s_sync_aborted_cb    = NULL;
 
 /* ------------------------------------------------------------------ */
 /*  ヘルパー: sym の周波数更新                                           */
@@ -195,6 +205,19 @@ static void motor_control_task(void *arg)
         if (++enc_tick >= 10) {
             enc_tick = 0;
             encoder_update_10ms();
+        }
+
+        /* --- SYNC_MOVE 開始フェーズ（F-MOT-11）: 同一ティック先頭で全 RMT を同時 enable --- */
+        if (s_sync_start_pending) {
+            s_sync_start_pending = false;
+            s_sync_active        = true;
+            for (int i = 0; i < NUM_AXES; i++) {
+                if (s_axes[i].sync_pending) {
+                    s_axes[i].sync_pending = false;
+                    s_axes[i].running      = true;
+                    rmt_kick(&s_axes[i]);
+                }
+            }
         }
 
         /* --- アイドルタイムアウト監視 --- */
@@ -359,9 +382,25 @@ static void motor_control_task(void *arg)
                 ax->state != AXIS_DECEL && ax->state != AXIS_FAULT) {
                 if ((ax->dir  && cur_pos >= ax->max_pos) ||
                     (!ax->dir && cur_pos <= ax->min_pos)) {
-                    ax->state    = AXIS_DECEL;
-                    ax->pos_mode = false;
                     ESP_LOGW(TAG, "Axis %d: soft limit at pos=%ld", i, (long)cur_pos);
+                    if (s_sync_active && (s_sync_group_mask & (1u << i))) {
+                        /* SYNC_MOVE 中: グループ全軸を台形減速停止 (F-MOT-11) */
+                        uint8_t mask = s_sync_group_mask;
+                        for (int j = 0; j < NUM_AXES; j++) {
+                            if ((s_sync_group_mask & (1u << j)) && s_axes[j].running) {
+                                s_axes[j].pos_mode        = false;
+                                s_axes[j].disable_on_stop = false;
+                                s_axes[j].state           = AXIS_DECEL;
+                            }
+                        }
+                        s_sync_group_mask = 0;
+                        s_sync_active     = false;
+                        if (s_sync_aborted_cb) s_sync_aborted_cb(mask);
+                        ESP_LOGW(TAG, "SYNC_ABORTED: limit hit on axis %d", i);
+                    } else {
+                        ax->state    = AXIS_DECEL;
+                        ax->pos_mode = false;
+                    }
                     if (s_limit_hit_cb) s_limit_hit_cb((uint8_t)i);
                 }
             }
@@ -451,6 +490,25 @@ static void motor_control_task(void *arg)
                         if (was_pos_mode && s_move_done_cb) {
                             s_move_done_cb((uint8_t)i);
                         }
+
+                        /* SYNC_MOVE 完了チェック: グループ全軸が IDLE になったか確認 (F-MOT-11) */
+                        if (s_sync_active && (s_sync_group_mask & (1u << i))) {
+                            bool all_done = true;
+                            for (int j = 0; j < NUM_AXES; j++) {
+                                if ((s_sync_group_mask & (1u << j)) &&
+                                    s_axes[j].state != AXIS_IDLE) {
+                                    all_done = false;
+                                    break;
+                                }
+                            }
+                            if (all_done) {
+                                uint8_t mask  = s_sync_group_mask;
+                                s_sync_group_mask = 0;
+                                s_sync_active     = false;
+                                ESP_LOGI(TAG, "SYNC_DONE mask=0x%02x", mask);
+                                if (s_sync_done_cb) s_sync_done_cb(mask);
+                            }
+                        }
                     }
 
                     /* MOVE 中断通知（vel_pending 再起動の有無に関わらず送出） */
@@ -528,6 +586,7 @@ void motor_ctrl_init(void)
         ax->move_aborted      = false;
 
         ax->stall_fault_th     = DEFAULT_STALL_TH;
+        ax->sync_pending       = false;
 
         ax->home_phase         = 0;
         ax->home_dir           = -1;
@@ -554,6 +613,8 @@ void motor_register_limit_hit_cb(motor_event_cb_t cb)    { s_limit_hit_cb      =
 void motor_register_fault_cb(motor_fault_cb_t cb)        { s_fault_cb          = cb; }
 void motor_register_home_done_cb(motor_event_cb_t cb)    { s_home_done_cb      = cb; }
 void motor_register_home_timeout_cb(motor_event_cb_t cb) { s_home_timeout_cb   = cb; }
+void motor_register_sync_done_cb(motor_sync_cb_t cb)     { s_sync_done_cb      = cb; }
+void motor_register_sync_aborted_cb(motor_sync_cb_t cb)  { s_sync_aborted_cb   = cb; }
 
 /* ------------------------------------------------------------------ */
 /*  motor_enable / motor_disable                                        */
@@ -717,6 +778,23 @@ bool motor_stop(uint8_t axis)
     axis_t *ax = &s_axes[axis];
     if (!ax->running) return true;
 
+    /* SYNC_MOVE 中: グループ全軸を台形減速停止 (F-MOT-11) */
+    if (s_sync_active && (s_sync_group_mask & (1u << axis))) {
+        uint8_t mask = s_sync_group_mask;
+        for (int j = 0; j < NUM_AXES; j++) {
+            if ((s_sync_group_mask & (1u << j)) && s_axes[j].running) {
+                s_axes[j].pos_mode        = false;
+                s_axes[j].disable_on_stop = false;
+                s_axes[j].state           = AXIS_DECEL;
+            }
+        }
+        s_sync_group_mask = 0;
+        s_sync_active     = false;
+        if (s_sync_aborted_cb) s_sync_aborted_cb(mask);
+        ESP_LOGI(TAG, "SYNC_ABORTED via STOP axis %d", axis);
+        return true;
+    }
+
     ax->pos_mode        = false;
     ax->disable_on_stop = false;
     ax->state           = AXIS_DECEL;
@@ -745,15 +823,25 @@ bool motor_stop_free(uint8_t axis)
 
 void motor_estop(fault_reason_t reason)
 {
+    /* SYNC_MOVE 実行中であれば中断通知（FAULT cb の前に送出） */
+    if (s_sync_active) {
+        uint8_t smask = s_sync_group_mask;
+        s_sync_group_mask    = 0;
+        s_sync_active        = false;
+        s_sync_start_pending = false;
+        if (s_sync_aborted_cb) s_sync_aborted_cb(smask);
+    }
+
     uint8_t mask = 0;
     for (int i = 0; i < NUM_AXES; i++) {
         axis_t *ax = &s_axes[i];
         if (ax->state != AXIS_SLEEP) {
             mask |= (1u << i);
         }
-        ax->running     = false;
-        ax->current_vel = 0.0f;
-        ax->state       = AXIS_FAULT;
+        ax->running      = false;
+        ax->current_vel  = 0.0f;
+        ax->state        = AXIS_FAULT;
+        ax->sync_pending = false;
         rmt_stop_channel(ax);
         gpio_set_level(s_step_gpios[i], 0);
     }
@@ -891,6 +979,170 @@ bool motor_set_soft_limit(uint8_t axis, int32_t min_p, int32_t max_p)
     if (axis >= NUM_AXES || min_p >= max_p) return false;
     s_axes[axis].min_pos = min_p;
     s_axes[axis].max_pos = max_p;
+    return true;
+}
+
+/* ================================================================== */
+/*  Phase 5: SYNC_MOVE (F-MOT-11)                                      */
+/* ================================================================== */
+
+bool motor_sync_move(uint8_t n, const uint8_t *axes, const int32_t *steps)
+{
+    if (n < 2 || n > NUM_AXES) return false;
+    if (!s_drv_enabled) {
+        ESP_LOGW(TAG, "SYNC_MOVE rejected — call ENABLE first");
+        return false;
+    }
+
+    /* 参照軸を決定: |steps| が最大の軸 */
+    int     ref_idx   = -1;
+    int32_t max_steps = 0;
+    for (int i = 0; i < (int)n; i++) {
+        int32_t abs_s = steps[i] < 0 ? -steps[i] : steps[i];
+        if (abs_s > max_steps) {
+            max_steps = abs_s;
+            ref_idx   = i;
+        }
+    }
+    if (ref_idx < 0 || max_steps == 0) return false;   /* 全軸 steps=0 */
+
+    /* 参照軸パラメータ */
+    uint8_t  ref_axis  = axes[ref_idx];
+    uint32_t ref_vmax  = s_axes[ref_axis].v_max;
+    uint32_t ref_accel = s_axes[ref_axis].accel;
+    uint32_t ref_decel = s_axes[ref_axis].decel;
+
+    /* ソフトリミット事前チェック */
+    for (int i = 0; i < (int)n; i++) {
+        if (steps[i] == 0) continue;
+        axis_t *ax = &s_axes[axes[i]];
+        taskENTER_CRITICAL(&s_step_pos_mux);
+        int32_t cur = ax->step_pos;
+        taskEXIT_CRITICAL(&s_step_pos_mux);
+        int32_t tgt = cur + steps[i];
+        if (tgt > ax->max_pos || tgt < ax->min_pos) return false;  /* ERR E006 */
+    }
+
+    /* 全軸パラメータ設定 (まず DIR を全軸セット、その後 vTaskDelay で 650ns 確保) */
+    uint8_t mask = 0;
+    for (int i = 0; i < (int)n; i++) {
+        mask |= (1u << axes[i]);
+        if (steps[i] == 0) continue;   /* steps=0 の軸は IDLE 維持 */
+
+        axis_t  *ax  = &s_axes[axes[i]];
+        bool     dir = (steps[i] > 0);
+        int32_t  abs_s = steps[i] < 0 ? -steps[i] : steps[i];
+
+        /* 速度スケーリング */
+        uint32_t vm, ac, dc;
+        if (i == ref_idx) {
+            vm = ref_vmax;
+            ac = ref_accel;
+            dc = ref_decel;
+        } else {
+            float ratio = (float)abs_s / (float)max_steps;
+            vm = (uint32_t)((float)ref_vmax  * ratio); if (vm < 1) vm = 1;
+            ac = (uint32_t)((float)ref_accel * ratio); if (ac < 1) ac = 1;
+            dc = (uint32_t)((float)ref_decel * ratio); if (dc < 1) dc = 1;
+        }
+
+        /* DIR GPIO セット（DIR セットアップ時間は直後の vTaskDelay で確保） */
+        ax->dir = dir;
+        gpio_set_level(s_dir_gpios[axes[i]], dir ? 1 : 0);
+
+        /* 現在位置と目標を確定 */
+        taskENTER_CRITICAL(&s_step_pos_mux);
+        int32_t cur_pos = ax->step_pos;
+        taskEXIT_CRITICAL(&s_step_pos_mux);
+        ax->target_pos      = cur_pos + steps[i];
+        ax->pos_mode        = true;
+        ax->disable_on_stop = false;
+        ax->idle_counter_ms = 0;
+
+        /* スケール済みパラメータをこの移動に適用 */
+        ax->v_max = vm;
+        ax->accel = ac;
+        ax->decel = dc;
+
+        /* 初速 */
+        float sv = (float)vm * 0.1f;
+        if (sv < START_VEL_MIN) sv = START_VEL_MIN;
+        if (sv > START_VEL_MAX) sv = START_VEL_MAX;
+        ax->current_vel = sv;
+        set_rmt_freq(ax, sv);
+
+        ax->state        = AXIS_ACCEL;
+        ax->running      = false;   /* MotorControlTask の START フェーズで true に */
+        ax->sync_pending = true;
+    }
+
+    /* DIR セットアップ時間（DRV8825: 650 ns 以上、1 ms で十分）*/
+    vTaskDelay(pdMS_TO_TICKS(1));
+
+    /* グループマスクと開始ペンディングフラグをセット */
+    s_sync_group_mask    = mask;
+    s_sync_start_pending = true;
+
+    ESP_LOGI(TAG, "SYNC_MOVE queued: n=%u mask=0x%02x ref_axis=%u", n, mask, ref_axis);
+    return true;
+}
+
+/* ================================================================== */
+/*  追加ゲッター（NVS 永続化・状態確認用）                               */
+/* ================================================================== */
+
+uint32_t motor_get_stall_fault_th(uint8_t axis)
+{
+    if (axis >= NUM_AXES) return 0;
+    return s_axes[axis].stall_fault_th;
+}
+
+bool motor_get_soft_limit(uint8_t axis, int32_t *out_min, int32_t *out_max)
+{
+    if (axis >= NUM_AXES) return false;
+    if (out_min) *out_min = s_axes[axis].min_pos;
+    if (out_max) *out_max = s_axes[axis].max_pos;
+    return true;
+}
+
+uint32_t motor_get_v_home_coarse(uint8_t axis)
+{
+    if (axis >= NUM_AXES) return 0;
+    return s_axes[axis].v_home_coarse;
+}
+
+uint32_t motor_get_v_home_fine(uint8_t axis)
+{
+    if (axis >= NUM_AXES) return 0;
+    return s_axes[axis].v_home_fine;
+}
+
+int32_t motor_get_back_off_steps(uint8_t axis)
+{
+    if (axis >= NUM_AXES) return 0;
+    return s_axes[axis].back_off_steps;
+}
+
+int32_t motor_get_home_offset_steps(uint8_t axis)
+{
+    if (axis >= NUM_AXES) return 0;
+    return s_axes[axis].home_offset_steps;
+}
+
+int8_t motor_get_home_dir(uint8_t axis)
+{
+    if (axis >= NUM_AXES) return -1;
+    return s_axes[axis].home_dir;
+}
+
+bool motor_set_home_params(uint8_t axis, uint32_t v_coarse, uint32_t v_fine,
+                            int32_t back_off, int32_t home_offset)
+{
+    if (axis >= NUM_AXES) return false;
+    s_axes[axis].v_home_coarse     = v_coarse;
+    s_axes[axis].v_home_fine       = v_fine;
+    s_axes[axis].back_off_steps    = back_off;
+    s_axes[axis].home_offset_steps = home_offset;
     return true;
 }
 

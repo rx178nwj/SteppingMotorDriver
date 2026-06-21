@@ -117,10 +117,45 @@ void config_init(void)
         motor_set_accel(i, aa);
         motor_set_decel(i, ad);
 
-        ESP_LOGI(TAG, "Axis %d profile=%lu [%s] vmax=%lu accel=%lu decel=%lu",
+        /* --- F-MOT-10 追加パラメータ (Phase 5) --- */
+        /* 脱調フォルト閾値 */
+        uint32_t stall_th = 512U;
+        if (err == ESP_OK) { snprintf(key, sizeof(key), "stall%d", i); nvs_get_u32(h, key, &stall_th); }
+        motor_set_stall_fault_th(i, stall_th);
+
+        /* ソフトリミット */
+        int32_t min_p = -2000000, max_p = 2000000;
+        if (err == ESP_OK) {
+            uint32_t tmp;
+            snprintf(key, sizeof(key), "minp%d", i);
+            if (nvs_get_u32(h, key, &tmp) == ESP_OK) min_p = (int32_t)tmp;
+            snprintf(key, sizeof(key), "maxp%d", i);
+            if (nvs_get_u32(h, key, &tmp) == ESP_OK) max_p = (int32_t)tmp;
+        }
+        motor_set_soft_limit(i, min_p, max_p);
+
+        /* ホーミングパラメータ */
+        uint32_t v_coarse = 2000U, v_fine = 500U, back_off = 200U;
+        int32_t  home_ofs = 0;
+        int8_t   home_dir = -1;
+        if (err == ESP_OK) {
+            snprintf(key, sizeof(key), "hcoarse%d", i); nvs_get_u32(h, key, &v_coarse);
+            snprintf(key, sizeof(key), "hfine%d",   i); nvs_get_u32(h, key, &v_fine);
+            snprintf(key, sizeof(key), "hback%d",   i); nvs_get_u32(h, key, &back_off);
+            uint32_t tmp;
+            snprintf(key, sizeof(key), "hofs%d", i);
+            if (nvs_get_u32(h, key, &tmp) == ESP_OK) home_ofs = (int32_t)tmp;
+            snprintf(key, sizeof(key), "hdir%d", i);
+            if (nvs_get_u32(h, key, &tmp) == ESP_OK) home_dir = (int8_t)(int32_t)tmp;
+        }
+        motor_set_home_params(i, v_coarse, v_fine, (int32_t)back_off, home_ofs);
+        motor_set_home_dir(i, home_dir);
+
+        ESP_LOGI(TAG, "Axis %d profile=%lu [%s] vmax=%lu accel=%lu decel=%lu stall=%lu",
                  i, (unsigned long)s_profile[i],
                  p ? p->model : "NONE",
-                 (unsigned long)av, (unsigned long)aa, (unsigned long)ad);
+                 (unsigned long)av, (unsigned long)aa, (unsigned long)ad,
+                 (unsigned long)stall_th);
     }
 
     if (err == ESP_OK) {
@@ -156,6 +191,21 @@ bool config_save(void)
         snprintf(key, sizeof(key), "accel%d", i); nvs_set_u32(h, key, st.accel);
         snprintf(key, sizeof(key), "decel%d", i); nvs_set_u32(h, key, st.decel);
         snprintf(key, sizeof(key), "mprof%d", i); nvs_set_u32(h, key, (uint32_t)s_profile[i]);
+
+        /* F-MOT-10 追加パラメータ */
+        snprintf(key, sizeof(key), "stall%d", i);
+        nvs_set_u32(h, key, motor_get_stall_fault_th(i));
+
+        int32_t min_p, max_p;
+        motor_get_soft_limit(i, &min_p, &max_p);
+        snprintf(key, sizeof(key), "minp%d", i); nvs_set_u32(h, key, (uint32_t)min_p);
+        snprintf(key, sizeof(key), "maxp%d", i); nvs_set_u32(h, key, (uint32_t)max_p);
+
+        snprintf(key, sizeof(key), "hcoarse%d", i); nvs_set_u32(h, key, motor_get_v_home_coarse(i));
+        snprintf(key, sizeof(key), "hfine%d",   i); nvs_set_u32(h, key, motor_get_v_home_fine(i));
+        snprintf(key, sizeof(key), "hback%d",   i); nvs_set_u32(h, key, (uint32_t)motor_get_back_off_steps(i));
+        snprintf(key, sizeof(key), "hofs%d",    i); nvs_set_u32(h, key, (uint32_t)motor_get_home_offset_steps(i));
+        snprintf(key, sizeof(key), "hdir%d",    i); nvs_set_u32(h, key, (uint32_t)(int32_t)motor_get_home_dir(i));
     }
     nvs_set_u32(h, "microstep",    (uint32_t)s_microstep);
     nvs_set_u32(h, "idle_timeout", s_idle_timeout_ms);

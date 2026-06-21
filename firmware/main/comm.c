@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 #include "freertos/FreeRTOS.h"
@@ -92,6 +93,49 @@ static void on_overcurrent(float current_mA)
     comm_sendf("EVT OVERCURRENT ALL %.1f\n", (double)current_mA);
 }
 
+static void on_sync_done(uint8_t axis_mask)
+{
+    comm_sendf("EVT SYNC_DONE 0x%02x\n", (unsigned)axis_mask);
+}
+
+static void on_sync_aborted(uint8_t axis_mask)
+{
+    comm_sendf("EVT SYNC_ABORTED 0x%02x\n", (unsigned)axis_mask);
+}
+
+/* ------------------------------------------------------------------ */
+/*  StatusTask — 100ms ハートビート・内部ログ出力 (F-COM-03)            */
+/* ------------------------------------------------------------------ */
+static volatile bool s_heartbeat_enabled = false;
+
+static void status_task(void *arg)
+{
+    for (;;) {
+        vTaskDelay(pdMS_TO_TICKS(100));
+
+        if (s_heartbeat_enabled) {
+            comm_sendf("HB %lld", (long long)(esp_timer_get_time() / 1000LL));
+            for (uint8_t i = 0; i < NUM_AXES; i++) {
+                axis_status_t st;
+                motor_get_status(i, &st);
+                const char *sname;
+                switch (st.state) {
+                case AXIS_SLEEP:  sname = "SL"; break;
+                case AXIS_IDLE:   sname = "ID"; break;
+                case AXIS_ACCEL:  sname = "AC"; break;
+                case AXIS_CRUISE: sname = "CR"; break;
+                case AXIS_DECEL:  sname = "DE"; break;
+                case AXIS_HOMING: sname = "HO"; break;
+                case AXIS_FAULT:  sname = "FA"; break;
+                default:          sname = "??"; break;
+                }
+                comm_sendf(" %s/%ld", sname, (long)st.pos);
+            }
+            comm_send("\n");
+        }
+    }
+}
+
 /* ------------------------------------------------------------------ */
 /*  WatchdogTask — 無通信タイムアウト監視                               */
 /* ------------------------------------------------------------------ */
@@ -125,6 +169,67 @@ static void dispatch(const char *line)
     }
 
     unsigned axis;
+
+    /* ---------- SYNC_MOVE (F-MOT-11) ---------- */
+    if (strncmp(line, "SYNC_MOVE", 9) == 0 && (line[9] == ' ' || line[9] == '\0')) {
+        const char *p   = line + 9;
+        char       *end;
+
+        /* n: 同期軸数 */
+        long n_val = strtol(p, &end, 10);
+        if (end == p || n_val < 2 || n_val > (long)NUM_AXES) {
+            comm_send("ERR E002 INVALID_ARG\n"); return;
+        }
+        unsigned n = (unsigned)n_val;
+        p = end;
+
+        uint8_t  sync_axes[NUM_AXES];
+        int32_t  sync_steps[NUM_AXES];
+        uint8_t  used_mask = 0;
+
+        for (unsigned k = 0; k < n; k++) {
+            /* axis */
+            long ax_v = strtol(p, &end, 10);
+            if (end == p)                       { comm_send("ERR E002 INVALID_ARG\n");  return; }
+            if (ax_v < 0 || ax_v >= NUM_AXES)   { comm_send("ERR E003 INVALID_AXIS\n"); return; }
+            p = end;
+            /* steps */
+            long st_v = strtol(p, &end, 10);
+            if (end == p)                       { comm_send("ERR E002 INVALID_ARG\n");  return; }
+            p = end;
+
+            uint8_t axb = (uint8_t)ax_v;
+            if (used_mask & (1u << axb))        { comm_send("ERR E011 DUPLICATE_AXIS\n"); return; }
+            used_mask |= (1u << axb);
+
+            if (motor_is_moving(axb))           { comm_send("ERR E008 MOTION_IN_PROGRESS\n"); return; }
+            axis_status_t chk;
+            motor_get_status(axb, &chk);
+            if (chk.state == AXIS_FAULT)        { comm_send("ERR E005 FAULT\n"); return; }
+
+            sync_axes[k]  = axb;
+            sync_steps[k] = (int32_t)st_v;
+        }
+
+        if (!motor_sync_move(n, sync_axes, sync_steps)) {
+            comm_send("ERR E006 SOFT_LIMIT\n");
+        } else {
+            comm_send("OK\n");
+        }
+        return;
+    }
+
+    /* ---------- ハートビート切替 ---------- */
+    if (strcmp(line, "HEARTBEAT ON") == 0) {
+        s_heartbeat_enabled = true;
+        comm_send("OK\n");
+        return;
+    }
+    if (strcmp(line, "HEARTBEAT OFF") == 0) {
+        s_heartbeat_enabled = false;
+        comm_send("OK\n");
+        return;
+    }
 
     /* ---------- 有効化 / 無効化 ---------- */
     if (strcmp(line, "ENABLE") == 0 ||
@@ -519,6 +624,10 @@ void comm_init(void)
     /* ADC 過電流コールバックを登録 */
     adc_register_overcurrent_cb(on_overcurrent);
 
+    /* SYNC_MOVE コールバックを登録 */
+    motor_register_sync_done_cb(on_sync_done);
+    motor_register_sync_aborted_cb(on_sync_aborted);
+
     /* ウォッチドッグ初期値を config から取得 */
     s_wdog_ms      = config_get_comm_timeout();
     s_wdog_enabled = (s_wdog_ms > 0);
@@ -529,6 +638,7 @@ void comm_init(void)
     ESP_LOGI(TAG, "CommTask starting (USB Serial/JTAG via VFS)");
     xTaskCreate(comm_task,     "CommTask",     4096, NULL, 10, NULL);
     xTaskCreate(watchdog_task, "WatchdogTask", 2048, NULL,  5, NULL);
+    xTaskCreate(status_task,   "StatusTask",   2048, NULL,  5, NULL);
 }
 
 void comm_send(const char *msg)
