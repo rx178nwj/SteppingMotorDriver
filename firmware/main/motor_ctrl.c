@@ -1,4 +1,5 @@
 #include "motor_ctrl.h"
+#include "encoder.h"
 #include "gpio_config.h"
 
 #include "freertos/FreeRTOS.h"
@@ -30,6 +31,12 @@ static const char *TAG = "motor_ctrl";
 /* 起動初速: 最初の RMT バッチを短時間で完了させる最低速度 */
 #define START_VEL_MIN    50.0f
 #define START_VEL_MAX   200.0f
+
+/* ホーミングタイムアウト: 30 秒 */
+#define HOME_TIMEOUT_US  30000000LL
+
+/* 脱調検出デフォルト閾値 [counts] */
+#define DEFAULT_STALL_TH 512U
 
 /* ------------------------------------------------------------------ */
 /*  内部軸状態                                                           */
@@ -69,6 +76,25 @@ typedef struct {
 
     /* アイドルタイムアウト */
     uint32_t             idle_counter_ms;
+
+    /* VEL 割り込みシーケンス (MOVE 中に VEL を受けた場合: DECEL 後に再起動) */
+    bool                 vel_pending;
+    float                vel_pending_speed;
+    bool                 vel_pending_dir;
+    bool                 move_aborted;     /* true → DECEL 完了後に EVT MOVE_ABORTED を送出 */
+
+    /* 脱調検出 */
+    uint32_t             stall_fault_th;   /* |enc_pos - step_pos| > this → FAULT_STALL */
+
+    /* ホーミング */
+    uint8_t              home_phase;       /* 0=coarse, 1=backoff, 2=fine, 3=done */
+    int8_t               home_dir;         /* +1 or -1 */
+    uint32_t             v_home_coarse;    /* steps/sec */
+    uint32_t             v_home_fine;      /* steps/sec */
+    int32_t              back_off_steps;
+    int32_t              home_offset_steps;
+    int32_t              home_backoff_target;
+    int64_t              home_timeout_us;  /* 絶対時刻 [µs] (esp_timer_get_time()) */
 } axis_t;
 
 static axis_t   s_axes[NUM_AXES];
@@ -82,8 +108,12 @@ static portMUX_TYPE s_step_pos_mux = portMUX_INITIALIZER_UNLOCKED;
 static fault_info_t     s_last_fault   = { FAULT_NONE, 0, 0 };
 
 /* イベントコールバック */
-static motor_event_cb_t  s_move_done_cb = NULL;
-static motor_fault_cb_t  s_fault_cb     = NULL;
+static motor_event_cb_t  s_move_done_cb      = NULL;
+static motor_event_cb_t  s_move_aborted_cb   = NULL;
+static motor_event_cb_t  s_limit_hit_cb      = NULL;
+static motor_fault_cb_t  s_fault_cb          = NULL;
+static motor_event_cb_t  s_home_done_cb      = NULL;
+static motor_event_cb_t  s_home_timeout_cb   = NULL;
 
 /* ------------------------------------------------------------------ */
 /*  ヘルパー: sym の周波数更新                                           */
@@ -156,9 +186,16 @@ static bool IRAM_ATTR on_trans_done(rmt_channel_handle_t tx_chan,
 static void motor_control_task(void *arg)
 {
     TickType_t last_wake = xTaskGetTickCount();
+    uint32_t   enc_tick  = 0;   /* encoder_update_10ms 用カウンタ */
 
     for (;;) {
         vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(1));
+
+        /* --- encoder 速度更新 (10ms 毎) --- */
+        if (++enc_tick >= 10) {
+            enc_tick = 0;
+            encoder_update_10ms();
+        }
 
         /* --- アイドルタイムアウト監視 --- */
         bool any_active = false;
@@ -194,22 +231,139 @@ static void motor_control_task(void *arg)
                 ax->idle_counter_ms = 0;
             }
 
-            /* --- 速度プロファイル更新 --- */
+            /* --- 速度プロファイル更新 / HOMING 以外はスキップ --- */
             if (ax->state != AXIS_ACCEL &&
                 ax->state != AXIS_CRUISE &&
-                ax->state != AXIS_DECEL) {
+                ax->state != AXIS_DECEL  &&
+                ax->state != AXIS_HOMING) {
                 continue;
             }
 
-            /* 残りステップ (位置モード) — step_pos は ISR と共有 */
+            /* 現在ステップ位置読み取り (ISR と共有) */
+            int32_t cur_pos;
+            taskENTER_CRITICAL(&s_step_pos_mux);
+            cur_pos = ax->step_pos;
+            taskEXIT_CRITICAL(&s_step_pos_mux);
+
+            /* --- 脱調検出 (ACCEL/CRUISE/DECEL 中のみ) --- */
+            if (ax->state == AXIS_ACCEL || ax->state == AXIS_CRUISE ||
+                ax->state == AXIS_DECEL) {
+                int32_t enc_pos = encoder_get_pos((uint8_t)i);
+                int32_t diff    = enc_pos - cur_pos;
+                if (diff < 0) diff = -diff;
+                if ((uint32_t)diff > ax->stall_fault_th) {
+                    ESP_LOGE(TAG, "Axis %d: STALL enc=%ld step=%ld diff=%ld",
+                             i, (long)enc_pos, (long)cur_pos, (long)diff);
+                    motor_estop(FAULT_STALL);
+                    continue;
+                }
+            }
+
+            /* --- HOMING 状態機械 --- */
+            if (ax->state == AXIS_HOMING) {
+                /* タイムアウト監視 */
+                if (ax->running &&
+                    esp_timer_get_time() >= ax->home_timeout_us) {
+                    rmt_stop_channel(ax);
+                    ax->running     = false;
+                    ax->current_vel = 0.0f;
+                    motor_estop(FAULT_ESTOP);
+                    ESP_LOGE(TAG, "Axis %d: HOME timeout", i);
+                    if (s_home_timeout_cb) s_home_timeout_cb((uint8_t)i);
+                    continue;
+                }
+
+                switch (ax->home_phase) {
+                case 0: /* coarse: Z イベント待ち */
+                    if (encoder_take_z_event((uint8_t)i)) {
+                        rmt_stop_channel(ax);
+                        ax->running     = false;
+                        ax->current_vel = 0.0f;
+                        ax->home_phase  = 1;
+                        /* 次ティックでバックオフ開始 (DIR セットアップ時間確保) */
+                    }
+                    break;
+
+                case 1: /* backoff */
+                    if (!ax->running) {
+                        /* バックオフ開始: home_dir 逆方向に back_off_steps */
+                        ax->dir = !(ax->home_dir > 0);
+                        gpio_set_level(s_dir_gpios[i], ax->dir ? 1 : 0);
+                        /* DIR セットアップ: RMT HIGH 期間 2µs で 650ns 要件を満たす */
+                        ax->home_backoff_target = cur_pos +
+                            (int32_t)ax->back_off_steps *
+                            (ax->home_dir > 0 ? -1 : 1);
+                        ax->current_vel = (float)ax->v_home_fine;
+                        set_rmt_freq(ax, ax->current_vel);
+                        ax->running = true;
+                    } else {
+                        bool done = ax->dir
+                            ? (cur_pos >= ax->home_backoff_target)
+                            : (cur_pos <= ax->home_backoff_target);
+                        if (done) {
+                            rmt_stop_channel(ax);
+                            ax->running     = false;
+                            ax->current_vel = 0.0f;
+                            ax->home_phase  = 2;
+                            /* 次ティックで fine homing 開始 */
+                        }
+                    }
+                    break;
+
+                case 2: /* fine: Z イベント待ち */
+                    if (!ax->running) {
+                        /* fine homing 開始: home_dir 方向 */
+                        ax->dir = (ax->home_dir > 0);
+                        gpio_set_level(s_dir_gpios[i], ax->dir ? 1 : 0);
+                        encoder_take_z_event((uint8_t)i); /* 残留イベントクリア */
+                        ax->current_vel = (float)ax->v_home_fine;
+                        set_rmt_freq(ax, ax->current_vel);
+                        ax->running = true;
+                    } else if (encoder_take_z_event((uint8_t)i)) {
+                        rmt_stop_channel(ax);
+                        ax->running     = false;
+                        ax->current_vel = 0.0f;
+                        /* step_pos と encoder_pos をホームオフセットにセット */
+                        taskENTER_CRITICAL(&s_step_pos_mux);
+                        ax->step_pos = ax->home_offset_steps;
+                        taskEXIT_CRITICAL(&s_step_pos_mux);
+                        encoder_set_pos((uint8_t)i, ax->home_offset_steps);
+                        ax->home_phase      = 3;
+                        ax->state           = AXIS_IDLE;
+                        ax->idle_counter_ms = 0;
+                        ESP_LOGI(TAG, "Axis %d: HOME done offset=%ld",
+                                 i, (long)ax->home_offset_steps);
+                        if (s_home_done_cb) s_home_done_cb((uint8_t)i);
+                    }
+                    break;
+
+                default:
+                    ax->state = AXIS_IDLE;
+                    break;
+                }
+
+                if (ax->running) rmt_kick(ax);
+                continue;
+            }
+
+            /* --- 残りステップ (位置モード) --- */
             int32_t remaining = 0;
             if (ax->pos_mode) {
-                taskENTER_CRITICAL(&s_step_pos_mux);
-                int32_t pos = ax->step_pos;
-                taskEXIT_CRITICAL(&s_step_pos_mux);
                 remaining = ax->dir
-                    ? (ax->target_pos - pos)
-                    : (pos - ax->target_pos);
+                    ? (ax->target_pos - cur_pos)
+                    : (cur_pos - ax->target_pos);
+            }
+
+            /* VEL モード: ソフトリミット到達チェック */
+            if (!ax->pos_mode &&
+                ax->state != AXIS_DECEL && ax->state != AXIS_FAULT) {
+                if ((ax->dir  && cur_pos >= ax->max_pos) ||
+                    (!ax->dir && cur_pos <= ax->min_pos)) {
+                    ax->state    = AXIS_DECEL;
+                    ax->pos_mode = false;
+                    ESP_LOGW(TAG, "Axis %d: soft limit at pos=%ld", i, (long)cur_pos);
+                    if (s_limit_hit_cb) s_limit_hit_cb((uint8_t)i);
+                }
             }
 
             /* 現在速度で停止するのに必要なステップ数 */
@@ -258,22 +412,50 @@ static void motor_control_task(void *arg)
                 if (ax->current_vel < 1.0f ||
                     (ax->pos_mode && remaining <= 0)) {
                     ax->current_vel = 0.0f;
-                    ax->running = false;
-                    ax->state   = AXIS_IDLE;
-                    ax->idle_counter_ms = 0;
+                    ax->running     = false;
+                    rmt_stop_channel(ax);   /* キューに残ったバッチを即時消去 */
 
-                    /* STOP_FREE: コイル解除 */
-                    if (ax->disable_on_stop) {
+                    bool was_pos_mode = ax->pos_mode;
+                    bool was_aborted  = ax->move_aborted;
+                    ax->move_aborted  = false;
+
+                    if (ax->vel_pending) {
+                        /* VEL 割り込みシーケンス: 停止後に VEL モード再起動 */
+                        ax->vel_pending     = false;
+                        ax->dir             = ax->vel_pending_dir;
+                        ax->target_vel      = ax->vel_pending_speed;
+                        ax->pos_mode        = false;
+                        ax->current_vel     = START_VEL_MIN;
                         ax->disable_on_stop = false;
-                        gpio_set_level(GPIO_DRV_EN, 1);
-                        s_drv_enabled = false;
+
+                        gpio_set_level(s_dir_gpios[i], ax->dir ? 1 : 0);
+                        /* DIR セットアップ: RMT 最初の LOW 期間（2µs）で 650ns 保証 */
+
+                        ax->state           = AXIS_ACCEL;
+                        ax->running         = true;
+                        ax->idle_counter_ms = 0;
+                        set_rmt_freq(ax, ax->current_vel);
+                        /* ax->running = true のためループ末尾で rmt_kick() が実行される */
+                    } else {
+                        ax->state           = AXIS_IDLE;
+                        ax->idle_counter_ms = 0;
+
+                        if (ax->disable_on_stop) {
+                            ax->disable_on_stop = false;
+                            gpio_set_level(GPIO_DRV_EN, 1);
+                            s_drv_enabled = false;
+                        }
+
+                        ESP_LOGI(TAG, "Axis %d: done, pos=%ld", i, (long)ax->step_pos);
+
+                        if (was_pos_mode && s_move_done_cb) {
+                            s_move_done_cb((uint8_t)i);
+                        }
                     }
 
-                    ESP_LOGI(TAG, "Axis %d: done, pos=%ld", i, (long)ax->step_pos);
-
-                    /* EVT MOVE_DONE コールバック（位置モードのみ） */
-                    if (ax->pos_mode && s_move_done_cb) {
-                        s_move_done_cb((uint8_t)i);
+                    /* MOVE 中断通知（vel_pending 再起動の有無に関わらず送出） */
+                    if (was_aborted && s_move_aborted_cb) {
+                        s_move_aborted_cb((uint8_t)i);
                     }
                 } else {
                     set_rmt_freq(ax, ax->current_vel);
@@ -340,6 +522,22 @@ void motor_ctrl_init(void)
         ax->max_pos         =  2000000;
         ax->idle_counter_ms = 0;
 
+        ax->vel_pending       = false;
+        ax->vel_pending_speed = 0.0f;
+        ax->vel_pending_dir   = true;
+        ax->move_aborted      = false;
+
+        ax->stall_fault_th     = DEFAULT_STALL_TH;
+
+        ax->home_phase         = 0;
+        ax->home_dir           = -1;
+        ax->v_home_coarse      = 2000;
+        ax->v_home_fine        = 500;
+        ax->back_off_steps     = 200;
+        ax->home_offset_steps  = 0;
+        ax->home_backoff_target = 0;
+        ax->home_timeout_us    = 0;
+
         ESP_LOGI(TAG, "Axis %d RMT init OK (GPIO %d)", i, s_step_gpios[i]);
     }
 
@@ -350,8 +548,12 @@ void motor_ctrl_init(void)
 /* ------------------------------------------------------------------ */
 /*  コールバック登録                                                      */
 /* ------------------------------------------------------------------ */
-void motor_register_move_done_cb(motor_event_cb_t cb) { s_move_done_cb = cb; }
-void motor_register_fault_cb(motor_fault_cb_t cb)     { s_fault_cb = cb; }
+void motor_register_move_done_cb(motor_event_cb_t cb)    { s_move_done_cb      = cb; }
+void motor_register_move_aborted_cb(motor_event_cb_t cb) { s_move_aborted_cb   = cb; }
+void motor_register_limit_hit_cb(motor_event_cb_t cb)    { s_limit_hit_cb      = cb; }
+void motor_register_fault_cb(motor_fault_cb_t cb)        { s_fault_cb          = cb; }
+void motor_register_home_done_cb(motor_event_cb_t cb)    { s_home_done_cb      = cb; }
+void motor_register_home_timeout_cb(motor_event_cb_t cb) { s_home_timeout_cb   = cb; }
 
 /* ------------------------------------------------------------------ */
 /*  motor_enable / motor_disable                                        */
@@ -481,30 +683,29 @@ bool motor_vel(uint8_t axis, int32_t vel_signed)
     bool    dir   = vel_signed > 0;
     float   speed = (float)(vel_signed < 0 ? -vel_signed : vel_signed);
     if (speed > 200000.0f) speed = 200000.0f;
+    if (speed > (float)ax->v_max) speed = (float)ax->v_max;
 
     if (ax->running && ax->state != AXIS_FAULT) {
         /* 既存 VEL モード（同方向）: 目標速度だけ更新 */
         if (!ax->pos_mode && ax->dir == dir) {
             ax->target_vel = speed;
-            if (speed > (float)ax->v_max) ax->target_vel = (float)ax->v_max;
-            ax->state = AXIS_CRUISE;
+            ax->state      = AXIS_CRUISE;
             return true;
         }
-        /* MOVE/MOVETO 実行中: 減速停止後に VEL モードへ移行 (VEL 割り込みシーケンス) */
-        ax->pos_mode   = false;
-        ax->target_vel = speed;
-        ax->state      = AXIS_DECEL;
-        /* DECEL 完了後に再起動は行わない — 現実装では IDLE になる。
-         * VEL 割り込みシーケンスの完全実装は Phase 2 で対応。 */
+        /* MOVE/MOVETO 実行中 or 逆方向: 減速停止後に VEL モードへ移行 */
+        bool was_pos          = ax->pos_mode;
+        ax->pos_mode          = false;
+        ax->vel_pending       = true;
+        ax->vel_pending_speed = speed;
+        ax->vel_pending_dir   = dir;
+        ax->state             = AXIS_DECEL;
+        if (was_pos) ax->move_aborted = true;   /* EVT MOVE_ABORTED を予約 */
         return true;
     }
 
+    /* 停止中: 新規 VEL 開始 */
     ax->target_vel = speed;
-    bool ok = start_motion(axis, dir, 0, false);
-    if (ok) {
-        ax->target_vel = speed;
-    }
-    return ok;
+    return start_motion(axis, dir, 0, false);
 }
 
 /* ------------------------------------------------------------------ */
@@ -682,6 +883,81 @@ bool motor_set_decel(uint8_t axis, uint32_t decel_val)
 bool motor_set_idle_timeout(uint32_t timeout_ms)
 {
     s_idle_timeout_ms = timeout_ms;
+    return true;
+}
+
+bool motor_set_soft_limit(uint8_t axis, int32_t min_p, int32_t max_p)
+{
+    if (axis >= NUM_AXES || min_p >= max_p) return false;
+    s_axes[axis].min_pos = min_p;
+    s_axes[axis].max_pos = max_p;
+    return true;
+}
+
+/* ================================================================== */
+/*  Phase 3: ホーミング / 脱調検出                                      */
+/* ================================================================== */
+
+bool motor_home(uint8_t axis)
+{
+    if (axis >= NUM_AXES) return false;
+    axis_t *ax = &s_axes[axis];
+
+    if (ax->state == AXIS_FAULT) return false;
+    if (motor_is_moving(axis))   return false;
+    if (!s_drv_enabled) {
+        ESP_LOGW(TAG, "Axis %d: HOME rejected — call ENABLE first", axis);
+        return false;
+    }
+
+    /* 残留 Z イベントをクリアして誤検知を防ぐ */
+    encoder_take_z_event(axis);
+
+    ax->home_phase          = 0;
+    ax->home_backoff_target = 0;
+    ax->home_timeout_us     = esp_timer_get_time() + HOME_TIMEOUT_US;
+    ax->pos_mode            = false;
+    ax->idle_counter_ms     = 0;
+
+    /* DIR 設定 */
+    ax->dir = (ax->home_dir > 0);
+    gpio_set_level(s_dir_gpios[axis], ax->dir ? 1 : 0);
+    vTaskDelay(pdMS_TO_TICKS(1));   /* DIR セットアップ時間 */
+
+    ax->current_vel = (float)ax->v_home_coarse;
+    set_rmt_freq(ax, ax->current_vel);
+
+    /* state を HOMING に設定してから running を true にする */
+    ax->state   = AXIS_HOMING;
+    ax->running = true;
+
+    esp_err_t err = rmt_kick(ax);
+    if (err != ESP_OK) {
+        ax->running = false;
+        ax->state   = AXIS_IDLE;
+        ESP_LOGE(TAG, "Axis %d home rmt_kick: %s", axis, esp_err_to_name(err));
+        return false;
+    }
+
+    ESP_LOGI(TAG, "Axis %d: HOMING start dir=%+d coarse=%lu fine=%lu",
+             axis, (int)ax->home_dir,
+             (unsigned long)ax->v_home_coarse,
+             (unsigned long)ax->v_home_fine);
+    return true;
+}
+
+bool motor_set_stall_fault_th(uint8_t axis, uint32_t th)
+{
+    if (axis >= NUM_AXES) return false;
+    s_axes[axis].stall_fault_th = th;
+    return true;
+}
+
+bool motor_set_home_dir(uint8_t axis, int8_t dir)
+{
+    if (axis >= NUM_AXES) return false;
+    if (dir != 1 && dir != -1) return false;
+    s_axes[axis].home_dir = dir;
     return true;
 }
 

@@ -832,31 +832,47 @@ void motor_control_1ms_tick(axis_t *ax) {
 ## 7. 開発ロードマップ
 
 ### Phase 1：基本動作確認
-- [ ] ESP-IDF v5.x プロジェクトセットアップ（CMakeLists.txt、sdkconfig.defaults）
-- [ ] USB-CDC 通信確立（CommTask）
-- [ ] RMT を使用した 1 軸ステップパルス生成（F-MOT-01 タイミング検証）
+- [x] ESP-IDF v5.x プロジェクトセットアップ（CMakeLists.txt、sdkconfig.defaults）
+- [x] USB-CDC 通信確立（CommTask — USB Serial/JTAG VFS stdin/stdout）
+- [x] RMT を使用した 3 軸ステップパルス生成（F-MOT-01、motor_ctrl.c）
 - [ ] DIR セットアップ時間の実測確認（オシロスコープで 650 ns 以上を確認）
-- [ ] マイクロステップ設定（M0/M1/M2 GPIO 制御）
-- [ ] DRV_EN / DRV_SLEEP 制御シーケンス確認
+- [x] マイクロステップ設定（M0/M1/M2 GPIO 制御、config.c apply_microstep_gpio）
+- [ ] DRV_EN / DRV_SLEEP 制御シーケンス確認（実機通電テスト要）
 
 ### Phase 2：3軸制御・モーションプロファイル
-- [ ] 3 軸独立 RMT チャンネル設定（F-MOT-01）
-- [ ] 台形加速プロファイル実装（F-MOT-04）
-  - [ ] 加速・定速・減速フェーズ切り替え
-  - [ ] 短距離移動時の三角プロファイル
-  - [ ] 1 ms ティックでの RMT 周波数動的更新
-- [ ] 軸状態機械実装（IDLE / ACCEL / CRUISE / DECEL / SLEEP / FAULT）
-- [ ] CLEAR_FAULT コマンド実装（F-MOT-07b：RESET パルス → SLEEP 遷移）
-- [ ] GET FAULT_INFO コマンド実装（F-MOT-07c）
-- [ ] アイドルタイムアウト・スリープ制御（F-MOT-03）
-- [ ] ソフトリミット（F-MOT-10）
+- [x] 3 軸独立 RMT チャンネル設定（F-MOT-01）
+- [x] 台形加速プロファイル実装（F-MOT-04）
+  - [x] 加速・定速・減速フェーズ切り替え（MotorControlTask 1ms ティック）
+  - [x] 短距離移動時の三角プロファイル（残りステップ ≤ decel_steps で ACCEL→DECEL 自動遷移）
+  - [x] 1 ms ティックでの RMT 周波数動的更新（set_rmt_freq → rmt_kick）
+  - [x] DECEL 完了時の rmt_stop_channel によるキュー残バッチ消去（バグ修正）
+- [x] 軸状態機械実装（IDLE / ACCEL / CRUISE / DECEL / SLEEP / FAULT）
+  - [x] VEL 割り込みシーケンス（MOVE 中 VEL 受信 → DECEL 後に VEL モード再起動・EVT MOVE_ABORTED）
+- [x] CLEAR_FAULT コマンド実装（F-MOT-07b：RESET パルス → SLEEP 遷移）
+- [x] GET FAULT_INFO コマンド実装（F-MOT-07c）
+- [x] アイドルタイムアウト・スリープ制御（F-MOT-03）
+- [x] ソフトリミット（F-MOT-10）
+  - [x] MOVE/MOVETO 開始時チェック（start_motion でクランプ）
+  - [x] VEL モード中の動的監視 → DECEL 強制・EVT LIMIT_HIT 送出
+  - [x] SET SOFT_LIMIT コマンド実装
 
 ### Phase 3：エンコーダフィードバック・ホーミング
-- [ ] PCNT によるエンコーダ 4 逓倍デコード（3 軸）（F-ENC-01）
-- [ ] Z 相インデックスパルス割り込み処理（F-ENC-02）
-- [ ] エンコーダ速度推定（F-ENC-03）
-- [ ] ホーミング動作実装（F-MOT-09 の 2 段階アプローチシーケンス）
-- [ ] 脱調検出（F-MOT-08 の偏差閾値監視）
+- [x] PCNT によるエンコーダ 4 逓倍デコード（3 軸）（F-ENC-01）
+- [x] Z 相インデックスパルス割り込み処理（F-ENC-02）
+- [x] エンコーダ速度推定（F-ENC-03）
+  - [x] encoder_update_10ms() を MotorControlTask の 1ms ループで 10ms 毎に呼び出し
+  - [x] GET ENC コマンド実装（encoder_get_pos → OK \<count\>）
+- [x] ホーミング動作実装（F-MOT-09 の 2 段階アプローチシーケンス）
+  - [x] motor_home() 関数（AXIS_HOMING 状態遷移・タイムアウト管理）
+  - [x] フェーズ 0 coarse: Z 検出で即時停止
+  - [x] フェーズ 1 backoff: back_off_steps を逆方向移動
+  - [x] フェーズ 2 fine: Z 再検出・位置ゼロセット
+  - [x] HOME コマンド・EVT HOME_DONE / HOME_TIMEOUT 送出
+  - [x] SET HOME_DIR コマンド実装
+- [x] 脱調検出（F-MOT-08 の偏差閾値監視）
+  - [x] ACCEL/CRUISE/DECEL 中に encoder_get_pos と step_pos の差分を 1ms 毎に監視
+  - [x] |差分| > stall_fault_th → motor_estop(FAULT_STALL)
+  - [x] motor_set_stall_fault_th() 関数・SET STALL_FAULT コマンド実装
 
 ### Phase 4：ADC モニタリング
 - [ ] NJM2114 出力 ADC 読み取り（12 bit、esp_adc_cal 適用）

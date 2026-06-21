@@ -58,6 +58,8 @@ void motor_ctrl_init(void);
 /*  イベントコールバック登録                                              */
 /* ------------------------------------------------------------------ */
 void motor_register_move_done_cb(motor_event_cb_t cb);
+void motor_register_move_aborted_cb(motor_event_cb_t cb);  /* EVT MOVE_ABORTED */
+void motor_register_limit_hit_cb(motor_event_cb_t cb);     /* EVT LIMIT_HIT    */
 void motor_register_fault_cb(motor_fault_cb_t cb);
 
 /* ------------------------------------------------------------------ */
@@ -94,7 +96,8 @@ bool motor_is_moving(uint8_t axis);    /* ACCEL/CRUISE/DECEL/HOMING なら true 
 bool motor_set_vmax(uint8_t axis, uint32_t vmax);
 bool motor_set_accel(uint8_t axis, uint32_t accel_val);
 bool motor_set_decel(uint8_t axis, uint32_t decel_val);
-bool motor_set_idle_timeout(uint32_t timeout_ms);       /* 全軸共通 */
+bool motor_set_idle_timeout(uint32_t timeout_ms);                        /* 全軸共通 */
+bool motor_set_soft_limit(uint8_t axis, int32_t min_p, int32_t max_p);  /* ソフトリミット */
 
 /* ------------------------------------------------------------------ */
 /*  Phase 1 テスト API (デバッグ用)                                     */
@@ -102,3 +105,12 @@ bool motor_set_idle_timeout(uint32_t timeout_ms);       /* 全軸共通 */
 bool motor_test_pulse(uint8_t axis, uint32_t freq_hz);
 bool motor_stop_immediate(uint8_t axis);
 bool motor_test_gpio_toggle(uint8_t axis, uint32_t count);
+
+/* ------------------------------------------------------------------ */
+/*  Phase 3: ホーミング / 脱調検出                                      */
+/* ------------------------------------------------------------------ */
+bool motor_home(uint8_t axis);
+bool motor_set_stall_fault_th(uint8_t axis, uint32_t th);
+bool motor_set_home_dir(uint8_t axis, int8_t dir);
+void motor_register_home_done_cb(motor_event_cb_t cb);
+void motor_register_home_timeout_cb(motor_event_cb_t cb);

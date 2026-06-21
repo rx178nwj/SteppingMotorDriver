@@ -7,6 +7,8 @@
 
 #include "gpio_config.h"
 #include "motor_ctrl.h"
+#include "encoder.h"
+#include "adc_monitor.h"
 #include "config.h"
 #include "comm.h"
 
@@ -98,6 +100,12 @@ void app_main(void)
 
     /* --- RMT モーター制御初期化 --- */
     motor_ctrl_init();
+
+    /* --- PCNT エンコーダー初期化 (3ch, 4逓倍) --- */
+    encoder_init();
+
+    /* --- ADC モニター初期化 (5ch, ADCTask 起動) --- */
+    adc_monitor_init();
 
     /* --- NVS からパラメータ読み込み・適用 --- */
     config_init();

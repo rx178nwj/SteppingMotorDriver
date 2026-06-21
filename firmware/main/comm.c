@@ -1,5 +1,7 @@
 #include "comm.h"
 #include "motor_ctrl.h"
+#include "encoder.h"
+#include "adc_monitor.h"
 #include "config.h"
 
 #include <string.h>
@@ -58,10 +60,36 @@ static void on_move_done(uint8_t axis)
     comm_sendf("EVT MOVE_DONE %u\n", (unsigned)axis);
 }
 
+static void on_move_aborted(uint8_t axis)
+{
+    comm_sendf("EVT MOVE_ABORTED %u\n", (unsigned)axis);
+}
+
+static void on_limit_hit(uint8_t axis)
+{
+    comm_sendf("EVT LIMIT_HIT %u\n", (unsigned)axis);
+}
+
 static void on_fault(fault_reason_t reason, uint8_t axis_mask)
 {
     comm_sendf("EVT FAULT %s 0x%02x\n",
                fault_reason_name(reason), (unsigned)axis_mask);
+}
+
+static void on_home_done(uint8_t axis)
+{
+    comm_sendf("EVT HOME_DONE %u\n", (unsigned)axis);
+}
+
+static void on_home_timeout(uint8_t axis)
+{
+    comm_sendf("EVT HOME_TIMEOUT %u\n", (unsigned)axis);
+}
+
+static void on_overcurrent(float current_mA)
+{
+    /* EVT OVERCURRENT <mA>: 過電流検出（motor_estop は adc_monitor 内で発火） */
+    comm_sendf("EVT OVERCURRENT ALL %.1f\n", (double)current_mA);
 }
 
 /* ------------------------------------------------------------------ */
@@ -185,6 +213,24 @@ static void dispatch(const char *line)
         return;
     }
 
+    /* ---------- ホーミング ---------- */
+    if (sscanf(line, "HOME %u", &axis) == 1) {
+        if (axis >= NUM_AXES) {
+            comm_send("ERR E003 INVALID_AXIS\n");
+        } else {
+            axis_status_t home_st;
+            motor_get_status((uint8_t)axis, &home_st);
+            if (motor_is_moving((uint8_t)axis) || home_st.state == AXIS_FAULT) {
+                comm_send("ERR E008 MOTION_IN_PROGRESS\n");
+            } else if (!motor_home((uint8_t)axis)) {
+                comm_send("ERR E005 FAULT\n");
+            } else {
+                comm_send("OK\n");
+            }
+        }
+        return;
+    }
+
     /* ---------- フォルト ---------- */
     if (strcmp(line, "CLEAR_FAULT") == 0) {
         if (motor_clear_fault()) {
@@ -220,6 +266,28 @@ static void dispatch(const char *line)
             comm_send("ERR E003 INVALID_AXIS\n");
         } else {
             comm_sendf("OK %ld\n", (long)st.vel);
+        }
+        return;
+    }
+    if (sscanf(line, "GET ENC %u", &axis) == 1) {
+        if (axis >= NUM_AXES) {
+            comm_send("ERR E003 INVALID_AXIS\n");
+        } else {
+            comm_sendf("OK %ld\n", (long)encoder_get_pos((uint8_t)axis));
+        }
+        return;
+    }
+
+    /* GET ADC <ch>: ch=0〜2→生 mV / ch=3→電源電圧 V / ch=4→電流 mA */
+    if (sscanf(line, "GET ADC %u", &axis) == 1) {
+        if (axis > 4) {
+            comm_send("ERR E002 INVALID_ARG\n");
+        } else if (axis == 4) {
+            comm_sendf("OK %.1f\n", (double)adc_get_current_mA());
+        } else if (axis == 3) {
+            comm_sendf("OK %.3f\n", (double)adc_get_voltage_V());
+        } else {
+            comm_sendf("OK %d\n", adc_get_raw_mv((uint8_t)axis));
         }
         return;
     }
@@ -275,6 +343,48 @@ static void dispatch(const char *line)
             return;
         }
 
+        /* ADC 関連はモーション中でも変更可（監視・安全機能） */
+        {
+            char ch_str[8];
+            unsigned filter_n;
+            if (sscanf(line, "SET ADC_FILTER %7s %u", ch_str, &filter_n) == 2) {
+                uint8_t ch = (strcmp(ch_str, "ALL") == 0) ? 0xFF : (uint8_t)atoi(ch_str);
+                if (ch != 0xFF && ch > 4) {
+                    comm_send("ERR E002 INVALID_ARG\n");
+                } else if (filter_n < 1 || filter_n > 64) {
+                    comm_send("ERR E002 INVALID_ARG\n");
+                } else {
+                    adc_set_filter_window(ch, (uint8_t)filter_n);
+                    comm_send("OK\n");
+                }
+                return;
+            }
+        }
+        {
+            float mA_val;
+            if (sscanf(line, "SET CURRENT_LIMIT %u %f", &axis, &mA_val) == 2) {
+                if (mA_val <= 0.0f) {
+                    comm_send("ERR E002 INVALID_ARG\n");
+                } else {
+                    adc_set_overcurrent_th(mA_val);
+                    comm_send("OK\n");
+                }
+                return;
+            }
+        }
+        {
+            float ratio;
+            if (sscanf(line, "SET VOLT_DIVIDER %f", &ratio) == 1) {
+                if (ratio <= 0.0f) {
+                    comm_send("ERR E002 INVALID_ARG\n");
+                } else {
+                    adc_set_volt_divider(ratio);
+                    comm_send("OK\n");
+                }
+                return;
+            }
+        }
+
         /* 上記以外の SET はモーション中に拒否 */
         bool any_moving = false;
         for (uint8_t i = 0; i < NUM_AXES; i++) {
@@ -299,6 +409,23 @@ static void dispatch(const char *line)
         }
         if (sscanf(line, "SET MICROSTEP %u", &val) == 1) {
             comm_send(config_set_microstep((microstep_t)val) ? "OK\n" : "ERR E002 INVALID_PARAM\n");
+            return;
+        }
+        int soft_min, soft_max;
+        if (sscanf(line, "SET SOFT_LIMIT %u %d %d", &axis, &soft_min, &soft_max) == 3) {
+            comm_send(motor_set_soft_limit((uint8_t)axis, soft_min, soft_max)
+                      ? "OK\n" : "ERR E002 INVALID_PARAM\n");
+            return;
+        }
+        if (sscanf(line, "SET STALL_FAULT %u %u", &axis, &val) == 2) {
+            comm_send(motor_set_stall_fault_th((uint8_t)axis, val)
+                      ? "OK\n" : "ERR E002 INVALID_PARAM\n");
+            return;
+        }
+        int home_dir_val;
+        if (sscanf(line, "SET HOME_DIR %u %d", &axis, &home_dir_val) == 2) {
+            comm_send(motor_set_home_dir((uint8_t)axis, (int8_t)home_dir_val)
+                      ? "OK\n" : "ERR E002 INVALID_PARAM\n");
             return;
         }
 
@@ -383,7 +510,14 @@ void comm_init(void)
 
     /* motor_ctrl のイベントコールバックを登録 */
     motor_register_move_done_cb(on_move_done);
+    motor_register_move_aborted_cb(on_move_aborted);
+    motor_register_limit_hit_cb(on_limit_hit);
     motor_register_fault_cb(on_fault);
+    motor_register_home_done_cb(on_home_done);
+    motor_register_home_timeout_cb(on_home_timeout);
+
+    /* ADC 過電流コールバックを登録 */
+    adc_register_overcurrent_cb(on_overcurrent);
 
     /* ウォッチドッグ初期値を config から取得 */
     s_wdog_ms      = config_get_comm_timeout();
