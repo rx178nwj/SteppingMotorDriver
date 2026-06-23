@@ -130,6 +130,10 @@ bool motor_sync_move(uint8_t n, const uint8_t *axes, const int32_t *steps);
 /* ------------------------------------------------------------------ */
 uint32_t motor_get_stall_fault_th(uint8_t axis);
 bool     motor_get_soft_limit(uint8_t axis, int32_t *out_min, int32_t *out_max);
+int8_t   motor_get_enc_dir(uint8_t axis);
+bool     motor_set_enc_dir(uint8_t axis, int8_t dir);   /* +1=正 / -1=逆接続 */
+uint16_t motor_get_mpc_x100(uint8_t axis);
+bool     motor_set_mpc_x100(uint8_t axis, uint16_t mpc); /* microsteps_per_count×100 */
 uint32_t motor_get_v_home_coarse(uint8_t axis);
 uint32_t motor_get_v_home_fine(uint8_t axis);
 int32_t  motor_get_back_off_steps(uint8_t axis);

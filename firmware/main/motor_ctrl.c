@@ -69,6 +69,9 @@ typedef struct {
     uint32_t             v_max;
     uint32_t             accel;
     uint32_t             decel;
+    uint32_t             motion_v_max;  /* 現在モーション用の実効プロファイル */
+    uint32_t             motion_accel;
+    uint32_t             motion_decel;
 
     /* ソフトリミット */
     int32_t              min_pos;
@@ -84,7 +87,9 @@ typedef struct {
     bool                 move_aborted;     /* true → DECEL 完了後に EVT MOVE_ABORTED を送出 */
 
     /* 脱調検出 */
-    uint32_t             stall_fault_th;   /* |enc_pos - step_pos| > this → FAULT_STALL */
+    uint32_t             stall_fault_th;   /* 正規化後の diff > this → FAULT_STALL */
+    int8_t               enc_dir;          /* エンコーダ方向: +1 (正) / -1 (逆接続) */
+    uint16_t             mpc_x100;         /* microsteps_per_count × 100 (単位正規化) */
 
     /* SYNC_MOVE (F-MOT-11) */
     bool                 sync_pending;     /* true = CommTask がパラメータ設定済み・MotorControlTask の START 待ち */
@@ -124,6 +129,21 @@ static volatile bool     s_sync_start_pending = false; /* 開始待ちフラグ 
 static volatile bool     s_sync_active        = false; /* 同期実行中 */
 static motor_sync_cb_t   s_sync_done_cb       = NULL;
 static motor_sync_cb_t   s_sync_aborted_cb    = NULL;
+
+static inline void axis_apply_base_profile(axis_t *ax)
+{
+    ax->motion_v_max = ax->v_max;
+    ax->motion_accel = ax->accel;
+    ax->motion_decel = ax->decel;
+}
+
+static inline void axis_apply_motion_profile(axis_t *ax, uint32_t v_max,
+                                             uint32_t accel, uint32_t decel)
+{
+    ax->motion_v_max = v_max;
+    ax->motion_accel = accel;
+    ax->motion_decel = decel;
+}
 
 /* ------------------------------------------------------------------ */
 /*  ヘルパー: sym の周波数更新                                           */
@@ -272,11 +292,18 @@ static void motor_control_task(void *arg)
             if (ax->state == AXIS_ACCEL || ax->state == AXIS_CRUISE ||
                 ax->state == AXIS_DECEL) {
                 int32_t enc_pos = encoder_get_pos((uint8_t)i);
-                int32_t diff    = enc_pos - cur_pos;
+                /* enc_pos (counts) を motor_steps 単位に正規化して比較
+                   enc_steps = enc_pos × enc_dir × (microsteps_per_count)
+                             = enc_pos × enc_dir × mpc_x100 / 100              */
+                int32_t enc_steps = (ax->mpc_x100 > 0)
+                    ? (int32_t)((int64_t)enc_pos * (int64_t)ax->enc_dir
+                                * (int64_t)ax->mpc_x100 / 100LL)
+                    : (int32_t)((int64_t)enc_pos * (int64_t)ax->enc_dir);
+                int32_t diff = enc_steps - cur_pos;
                 if (diff < 0) diff = -diff;
                 if ((uint32_t)diff > ax->stall_fault_th) {
-                    ESP_LOGE(TAG, "Axis %d: STALL enc=%ld step=%ld diff=%ld",
-                             i, (long)enc_pos, (long)cur_pos, (long)diff);
+                    ESP_LOGE(TAG, "Axis %d: STALL enc=%ld enc_steps=%ld step=%ld diff=%ld",
+                             i, (long)enc_pos, (long)enc_steps, (long)cur_pos, (long)diff);
                     motor_estop(FAULT_STALL);
                     continue;
                 }
@@ -407,14 +434,14 @@ static void motor_control_task(void *arg)
 
             /* 現在速度で停止するのに必要なステップ数 */
             float decel_steps = (ax->current_vel * ax->current_vel) /
-                                 (2.0f * (float)ax->decel);
+                                 (2.0f * (float)ax->motion_decel);
 
             switch (ax->state) {
             case AXIS_ACCEL: {
-                ax->current_vel += (float)ax->accel * 0.001f;
+                ax->current_vel += (float)ax->motion_accel * 0.001f;
                 float vel_cap = ax->pos_mode
-                    ? (float)ax->v_max
-                    : (ax->target_vel < (float)ax->v_max ? ax->target_vel : (float)ax->v_max);
+                    ? (float)ax->motion_v_max
+                    : (ax->target_vel < (float)ax->motion_v_max ? ax->target_vel : (float)ax->motion_v_max);
                 if (ax->current_vel >= vel_cap) {
                     ax->current_vel = vel_cap;
                     ax->state = AXIS_CRUISE;
@@ -431,11 +458,11 @@ static void motor_control_task(void *arg)
                     /* VEL モード: 目標速度に向けて加減速 */
                     float tv = ax->target_vel;
                     if (ax->current_vel < tv) {
-                        ax->current_vel += (float)ax->accel * 0.001f;
+                        ax->current_vel += (float)ax->motion_accel * 0.001f;
                         if (ax->current_vel > tv) ax->current_vel = tv;
                         set_rmt_freq(ax, ax->current_vel);
                     } else if (ax->current_vel > tv) {
-                        ax->current_vel -= (float)ax->decel * 0.001f;
+                        ax->current_vel -= (float)ax->motion_decel * 0.001f;
                         if (ax->current_vel < tv) ax->current_vel = tv;
                         set_rmt_freq(ax, ax->current_vel);
                     }
@@ -447,7 +474,7 @@ static void motor_control_task(void *arg)
                 break;
 
             case AXIS_DECEL:
-                ax->current_vel -= (float)ax->decel * 0.001f;
+                ax->current_vel -= (float)ax->motion_decel * 0.001f;
                 if (ax->current_vel < 1.0f ||
                     (ax->pos_mode && remaining <= 0)) {
                     ax->current_vel = 0.0f;
@@ -576,6 +603,7 @@ void motor_ctrl_init(void)
         ax->v_max           = DEFAULT_VMAX;
         ax->accel           = DEFAULT_ACCEL;
         ax->decel           = DEFAULT_DECEL;
+        axis_apply_base_profile(ax);
         ax->min_pos         = -2000000;
         ax->max_pos         =  2000000;
         ax->idle_counter_ms = 0;
@@ -586,6 +614,8 @@ void motor_ctrl_init(void)
         ax->move_aborted      = false;
 
         ax->stall_fault_th     = DEFAULT_STALL_TH;
+        ax->enc_dir            = 1;
+        ax->mpc_x100           = 160;   /* ME1K 1000PPR×4 / (200×32 µsteps) = 0.625 → ×100=160 */
         ax->sync_pending       = false;
 
         ax->home_phase         = 0;
@@ -621,16 +651,31 @@ void motor_register_sync_aborted_cb(motor_sync_cb_t cb)  { s_sync_aborted_cb   =
 /* ------------------------------------------------------------------ */
 void motor_enable(void)
 {
+    /* 無効化後の再 ENABLE: エンコーダ位置をコマンド位置に再基準化
+       (無励磁中のドリフトを受け入れ、脱調誤検出を防止する)        */
+    bool resync = !s_drv_enabled;
+
     gpio_set_level(GPIO_DRV_SLEEP, 1);   /* スリープ解除 */
     vTaskDelay(pdMS_TO_TICKS(1));         /* チャージポンプ安定待ち */
     gpio_set_level(GPIO_DRV_EN, 0);       /* アクティブ Low: 励磁 */
     s_drv_enabled = true;
 
-    /* SLEEP 状態の軸を IDLE に戻す */
     for (int i = 0; i < NUM_AXES; i++) {
         if (s_axes[i].state == AXIS_SLEEP) {
             s_axes[i].state = AXIS_IDLE;
             s_axes[i].idle_counter_ms = 0;
+        }
+        if (resync && s_axes[i].mpc_x100 > 0 && s_axes[i].enc_dir != 0) {
+            /* enc_pos = step_pos × 100 / (enc_dir × mpc_x100)
+               → enc_steps = enc_pos × enc_dir × mpc_x100 / 100 = step_pos */
+            int32_t cur;
+            taskENTER_CRITICAL(&s_step_pos_mux);
+            cur = s_axes[i].step_pos;
+            taskEXIT_CRITICAL(&s_step_pos_mux);
+            int32_t enc_pos = (int32_t)((int64_t)cur * 100LL
+                              / ((int64_t)s_axes[i].enc_dir
+                                 * (int64_t)s_axes[i].mpc_x100));
+            encoder_set_pos((uint8_t)i, enc_pos);
         }
     }
     ESP_LOGI(TAG, "DRV enabled");
@@ -683,9 +728,10 @@ static bool start_motion(uint8_t axis, bool dir, int32_t target, bool pos_mode)
     ax->pos_mode        = pos_mode;
     ax->disable_on_stop = false;
     ax->idle_counter_ms = 0;
+    axis_apply_base_profile(ax);
 
     /* 初速: 最初のバッチを短時間で完了させる最低速度 */
-    float sv = (float)ax->v_max * 0.1f;
+    float sv = (float)ax->motion_v_max * 0.1f;
     if (sv < START_VEL_MIN) sv = START_VEL_MIN;
     if (sv > START_VEL_MAX) sv = START_VEL_MAX;
     ax->current_vel = sv;
@@ -766,6 +812,7 @@ bool motor_vel(uint8_t axis, int32_t vel_signed)
 
     /* 停止中: 新規 VEL 開始 */
     ax->target_vel = speed;
+    axis_apply_base_profile(ax);
     return start_motion(axis, dir, 0, false);
 }
 
@@ -951,6 +998,7 @@ bool motor_set_vmax(uint8_t axis, uint32_t vmax)
 {
     if (axis >= NUM_AXES || vmax == 0 || vmax > 200000UL) return false;
     s_axes[axis].v_max = vmax;
+    s_axes[axis].motion_v_max = vmax;
     return true;
 }
 
@@ -958,6 +1006,7 @@ bool motor_set_accel(uint8_t axis, uint32_t accel_val)
 {
     if (axis >= NUM_AXES || accel_val == 0) return false;
     s_axes[axis].accel = accel_val;
+    s_axes[axis].motion_accel = accel_val;
     return true;
 }
 
@@ -965,6 +1014,7 @@ bool motor_set_decel(uint8_t axis, uint32_t decel_val)
 {
     if (axis >= NUM_AXES || decel_val == 0) return false;
     s_axes[axis].decel = decel_val;
+    s_axes[axis].motion_decel = decel_val;
     return true;
 }
 
@@ -1059,13 +1109,11 @@ bool motor_sync_move(uint8_t n, const uint8_t *axes, const int32_t *steps)
         ax->disable_on_stop = false;
         ax->idle_counter_ms = 0;
 
-        /* スケール済みパラメータをこの移動に適用 */
-        ax->v_max = vm;
-        ax->accel = ac;
-        ax->decel = dc;
+        /* スケール済みパラメータはこの同期移動にだけ適用 */
+        axis_apply_motion_profile(ax, vm, ac, dc);
 
         /* 初速 */
-        float sv = (float)vm * 0.1f;
+        float sv = (float)ax->motion_v_max * 0.1f;
         if (sv < START_VEL_MIN) sv = START_VEL_MIN;
         if (sv > START_VEL_MAX) sv = START_VEL_MAX;
         ax->current_vel = sv;
@@ -1202,6 +1250,33 @@ bool motor_set_stall_fault_th(uint8_t axis, uint32_t th)
 {
     if (axis >= NUM_AXES) return false;
     s_axes[axis].stall_fault_th = th;
+    return true;
+}
+
+int8_t motor_get_enc_dir(uint8_t axis)
+{
+    if (axis >= NUM_AXES) return 1;
+    return s_axes[axis].enc_dir;
+}
+
+bool motor_set_enc_dir(uint8_t axis, int8_t dir)
+{
+    if (axis >= NUM_AXES) return false;
+    if (dir != 1 && dir != -1) return false;
+    s_axes[axis].enc_dir = dir;
+    return true;
+}
+
+uint16_t motor_get_mpc_x100(uint8_t axis)
+{
+    if (axis >= NUM_AXES) return 160;
+    return s_axes[axis].mpc_x100;
+}
+
+bool motor_set_mpc_x100(uint8_t axis, uint16_t mpc)
+{
+    if (axis >= NUM_AXES) return false;
+    s_axes[axis].mpc_x100 = mpc;
     return true;
 }
 

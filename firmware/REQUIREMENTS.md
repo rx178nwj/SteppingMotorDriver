@@ -558,20 +558,31 @@ axis_mask: SYNC_MOVE で指定した軸のビットフィールド（例: 軸 0 
 
 **電流センス（ADC4 = GPIO5）：**
 
+実機回路：10 mΩ シャント抵抗 + LT6106 電流センスアンプ（Rin=120Ω、Rout=5kΩ）
+
 | 項目 | 値 |
 |------|-----|
-| シャント抵抗 | 100 mΩ |
-| アンプゲイン | 20倍 |
-| ADC 入力電圧 | V_adc = I[A] × 0.1 × 20 = I[A] × 2 |
-| 換算式 | I[mA] = V_adc[mV] / 2 |
+| シャント抵抗 R_shunt | 10 mΩ (0.010 Ω) |
+| 電流センスアンプ | LT6106（Rin=120 Ω、Rout=5000 Ω） |
+| アンプゲイン | Rout/Rin = 5000/120 ≈ 41.67 倍 |
+| ADC 入力電圧 | V_adc[V] = I[A] × 0.010 × (5000/120) = I[A] × 0.4167 |
+| 換算式 | I[mA] = V_adc[mV] × Rin / (R_shunt × Rout) = V_adc[mV] × 2.4 |
 
 ```c
 // ESP32-S3 ADC: 12 bit, Vref = 3.3 V
+// 実機: 10mΩ シャント + LT6106 (Rin=120Ω, Rout=5kΩ) → 換算係数 ×2.4
+#define CURRENT_R_SHUNT   0.010f   /* シャント抵抗 [Ω] (10 mΩ) */
+#define CURRENT_R_IN      120.0f   /* LT6106 Rin [Ω] */
+#define CURRENT_R_OUT     5000.0f  /* LT6106 Rout [Ω] */
+#define CURRENT_CONV_FACTOR  (CURRENT_R_IN / (CURRENT_R_SHUNT * CURRENT_R_OUT))  /* = 2.4 mA/mV */
+
 float v_adc_mv = adc_raw * (3300.0f / 4095.0f);
-float current_mA = v_adc_mv / 2.0f;  // 100mΩ × 20倍
+float current_mA = v_adc_mv * CURRENT_CONV_FACTOR;  /* × 2.4 */
 ```
 
-- ゲイン・シャント抵抗値は NVS（`adc_config` 名前空間）に保存し実行時変更可能とする
+動作範囲：0 mV → 0 mA、2500 mV → 6000 mA（6 A）、3300 mV → 7920 mA（ADC 満量程）
+
+- 換算係数（Rin/Rout/R_shunt）は NVS（`adc_config` 名前空間）に保存し実行時変更可能とする
 
 **電源電圧モニタ（ADC3 = GPIO4）：**
 
@@ -875,9 +886,9 @@ void motor_control_1ms_tick(axis_t *ax) {
   - [x] motor_set_stall_fault_th() 関数・SET STALL_FAULT コマンド実装
 
 ### Phase 4：ADC モニタリング
-- [ ] NJM2114 出力 ADC 読み取り（12 bit、esp_adc_cal 適用）
-- [ ] 電流換算（ゲイン・シャント抵抗パラメータ適用）
-- [ ] 過電流保護・緊急停止連動（F-ADC-03）
+- [x] NJM2114 出力 ADC 読み取り（12 bit、esp_adc_cal 適用）
+- [x] 電流換算（ゲイン・シャント抵抗パラメータ適用）（LT6106実機回路: I[mA]=V_adc[mV]×2.4）
+- [x] 過電流保護・緊急停止連動（F-ADC-03）（ヒステリシス付き、motor_estop(FAULT_OVERCURRENT) 連動）
 
 ### Phase 5：コマンドセット・設定管理・統合
 - [x] コマンドセット完全実装（Section 4 全コマンド）
@@ -887,7 +898,10 @@ void motor_control_1ms_tick(axis_t *ax) {
 - [x] STATUS コマンドの JSON 応答フォーマット実装
 - [x] ハートビート（StatusTask 100ms、HEARTBEAT ON/OFF で切替）
 - [x] 多軸同期移動実装（F-MOT-11 SYNC_MOVE：速度スケーリング・同一ティック START・STOP/ESTOP/リミット連動・EVT SYNC_DONE/SYNC_ABORTED）
-- [ ] 総合テスト（3 軸同時動作、ホーミング、脱調検出、フォルト復帰、SYNC_MOVE 直線補間確認）
+  - [x] 速度スケーリング値はモーション専用の一時プロファイルへ適用し、軸設定の `v_max / accel / decel` は永続変更しない（2026-06-23 修正）
+- [x] 総合テスト（3 軸同時動作、ホーミング、脱調検出、フォルト復帰、SYNC_MOVE 直線補間確認）（T24〜T27 実機 PASS 2026-06-23）
+- [x] 回帰テスト（T28〜T30 実機 PASS 2026-06-23）
+  - [x] T26 後も axis0..2 の `vmax / accel / decel` が不変であることを確認
 
 ---
 

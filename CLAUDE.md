@@ -33,7 +33,7 @@ SteppingMotorDriver/
 | GPIO2 | POT1 | ADC1_CH1 | ポテンショメーター ch1 |
 | GPIO3 | POT2 | ADC1_CH2 | ポテンショメーター ch2 |
 | GPIO4 | MOT_V | ADC1_CH3 | モーター電源電圧モニタ（24V分圧） |
-| GPIO5 | CURRENT | ADC1_CH4 | 電流センス（100mΩシャント + 20倍アンプ） |
+| GPIO5 | CURRENT | ADC1_CH4 | 電流センス（10mΩシャント + LT6106、Rin=120Ω/Rout=5kΩ） |
 | GPIO6 | STEP0 | Digital Out | CH0 ステップ |
 | GPIO7 | DIR0 | Digital Out | CH0 方向 |
 | GPIO8 | STEP1 | Digital Out | CH1 ステップ |
@@ -70,7 +70,7 @@ SteppingMotorDriver/
 - **ADC はすべて ADC1（GPIO1〜GPIO5）に集約**。ADC2 は WiFi と共有のため使用しない
 - ESP32-S3 の ADC は非線形特性あり → 必ず `esp_adc_cal` でキャリブレーション適用
 - **ポテンショメーター（POT0/1/2）**：分圧回路（20kΩ/10kΩ）＋ RC フィルタ（0.1µF）経由
-- **電流センス（CURRENT = GPIO5/ADC4）**：100 mΩ シャント抵抗 + 20倍アンプ経由。V_adc = I[A]×2 → I[mA] = V_adc[mV]/2
+- **電流センス（CURRENT = GPIO5/ADC4）**：10 mΩ シャント抵抗 + LT6106（Rin=120Ω、Rout=5kΩ、ゲイン≈41.67倍）経由。V_adc[V] = I[A]×0.4167 → I[mA] = V_adc[mV]×2.4
 - **電源電圧モニタ（MOT_V = GPIO4/ADC3）**：分圧回路（24V→3.3V 範囲）経由
 
 ---
@@ -183,6 +183,14 @@ SteppingMotorDriver/
 | ~~9.12~~ | ~~DRV8825 FAULT ピン GPIO 未接続確認（解決済み：3.3V プルアップのみ、EVT DRV_FAULT 削除、間接検知方式に確定）~~ | ~~Medium~~ |
 
 詳細は [firmware/REQUIREMENTS.md](firmware/REQUIREMENTS.md) の Section 9 を参照。
+
+### 直近の検証メモ（2026-06-23）
+
+- SYNC_MOVE の速度スケーリングが `ax->v_max / accel / decel` を上書きしていた不具合を修正済み
+- 実行時専用の `motion_v_max / motion_accel / motion_decel` を導入し、軸設定値は保持する方式へ変更
+- 実機テスト結果: `137/138 PASS, 0 FAIL, 1 SKIP`
+- `SKIP` は T12（`TEST_GPIO`: RMT 排他のため）
+- T26 後に axis0..2 の `vmax / accel / decel` が変化しない回帰テストを追加済み
 
 ---
 

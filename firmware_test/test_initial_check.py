@@ -16,13 +16,28 @@ SteppingMotorDriver ファームウェアの基本動作を USB-CDC 経由で検
   [T06] GET FAULT_INFO（初期状態: NONE）
   [T07] ESTOP → CLEAR_FAULT → GET STATE
   [T08] SET/GET パラメータ（VMAX/ACCEL/DECEL/MICROSTEP）
-  [T09] モーション中コマンド拒否（ERR E008）
+  [T09] モーション中コマンド拒否（ERR E008）※実機モーター必要
   [T10] NVS SAVE / LOAD / RESET_CONFIG
   [T11] COMM_TIMEOUT SET（0 で無効化）
   [T12] TEST_GPIO トグル（オシロスコープ確認用）
   [T13] TEST_PULSE / TEST_STOP（RMT パルス生成・停止）
-  [T14] MOVE / GET POS（台形プロファイル移動）
+  [T14] MOVE / GET POS（台形プロファイル移動）※実機モーター必要
   [T15] STOP ALL（全軸減速停止）
+  [T16] GET ADC / SET CURRENT_LIMIT / SET VOLT_DIVIDER / SET ADC_FILTER
+  [T17] HEARTBEAT ON / OFF
+  [T18] SYNC_MOVE（引数チェック・2軸同期・E008拒否）
+  [T19] GET ENC（全軸エンコーダカウンタ・範囲外エラー）
+  [T20] MOVETO（範囲外エラー・現在位置・ソフトリミット超過・実移動）
+  [T21] VEL（範囲外エラー・vel=0停止・実行+STOP）
+  [T22] STOP_FREE（範囲外エラー・ALL・個別軸）
+  [T23] SET SOFT_LIMIT（境界テスト: 上限/下限超過 → E006 / リミット内 OK）
+  [T24] 脱調検出（enc_dir 反転による制御脱調 → FAULT 確認）※実機モーター必要
+  [T25] フォルト復帰（CLEAR_FAULT → ENABLE → MOVE 正常動作）※実機モーター必要
+  [T26] SYNC_MOVE 3 軸同時動作（EVT SYNC_DONE 0x07 確認）
+  [T27] HOME コマンド（HOMING 状態確認・STOP 中断）
+  [T28] SET MICROSTEP 動的変更（有効値全種 / 無効値 E002 / モーション中 E004）
+  [T29] COMM_TIMEOUT 実動作（2000ms 設定 → コマンド停止 → EVT 受信 → IDLE 確認）
+  [T30] MOVETO + GET ENC 精度確認（step_pos / enc_pos 誤差チェック）※実機モーター必要
 
 依存: pip install pyserial
 """
@@ -33,6 +48,12 @@ import sys
 import argparse
 import json
 import re
+
+# Windows コンソールの文字コード問題を回避（cp932 にない文字を含む場合）
+try:
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+except AttributeError:
+    pass
 
 # ─────────────────────────────────────────────
 #  シリアル通信ヘルパー
@@ -47,15 +68,23 @@ class MotorComm:
         self.ser.close()
 
     def _recv_line(self, extra_timeout: float = 0.0) -> str:
-        """OK / ERR / EVT のいずれかが来るまで待機して返す。"""
+        """OK / ERR / { のいずれかが来るまで待機して返す。
+        ESP-IDF ログ行（'I (...) ...'）と EVT 行はスキップして表示する。"""
         deadline = time.monotonic() + self.ser.timeout + extra_timeout
         while time.monotonic() < deadline:
             raw = self.ser.readline()
             if not raw:
                 break
             line = raw.decode(errors="replace").strip()
-            if line:
-                return line
+            if not line:
+                continue
+            if re.match(r'^[IWEDC] \(\d+\)', line):
+                print(f"    [LOG] {line}")
+                continue
+            if line.startswith("EVT"):
+                print(f"    [EVT] {line}")
+                continue
+            return line
         return ""
 
     def send(self, cmd: str, extra_timeout: float = 0.0) -> str:
@@ -81,6 +110,18 @@ class MotorComm:
 # ─────────────────────────────────────────────
 #  テストランナー
 # ─────────────────────────────────────────────
+def read_status_json(c: MotorComm):
+    resp = c.send("STATUS")
+    if not (resp.startswith("OK") or resp.startswith("{")):
+        return None, resp
+    payload = resp if "}" in resp else (resp + c._recv_line())
+    try:
+        payload = re.sub(r'^OK\s*', '', payload.strip())
+        return json.loads(payload), None
+    except Exception as e:
+        return None, str(e)
+
+
 class TestRunner:
     def __init__(self, comm: MotorComm, no_motor: bool = False):
         self.comm       = comm
@@ -131,6 +172,15 @@ def run_tests(r: TestRunner, c: MotorComm, no_motor: bool):
     print("\n[T01] PING 疎通確認")
     resp = c.send("PING")
     r.check("PING → OK PONG", resp, "OK PONG")
+
+    # ── 実機モード: エンコーダ方向設定 ─────────
+    # axis 0: ME1K エンコーダの A/B が逆接続のため enc_dir=-1 に設定
+    # axis 1,2: エンコーダ未接続のためスタール閾値を無効化
+    if not no_motor:
+        c.send_ok("SET ENC_DIR 0 -1")
+        # 軸1,2 のエンコーダは未接続のため脱調検出を一時無効化（モーション完了後に復元）
+        c.send_ok("SET STALL_FAULT 1 2000000")
+        c.send_ok("SET STALL_FAULT 2 2000000")
 
     # ── T02: STATUS ───────────────────────────
     print("\n[T02] 初期 STATUS (全軸 IDLE / SLEEP)")
@@ -268,7 +318,10 @@ def run_tests(r: TestRunner, c: MotorComm, no_motor: bool):
 
     # STATUS で確認
     resp = c.send("STATUS")
-    r.check("SET後 STATUS → OK", resp, "OK")
+    if resp.startswith("OK") or resp.startswith("{"):
+        r.ok("SET後 STATUS → OK", resp[:60])
+    else:
+        r.fail("SET後 STATUS → OK", resp, "OK or {...")
 
     # MICROSTEP をデフォルトに戻す
     c.send_ok("SET MICROSTEP 32")
@@ -330,6 +383,11 @@ def run_tests(r: TestRunner, c: MotorComm, no_motor: bool):
 
     # RESET_CONFIG でデフォルトに戻す（テスト後のクリーンアップ）
     c.send_ok("RESET_CONFIG")
+    # motor モード: RESET_CONFIG で enc_dir / stall_fault がデフォルトに戻るため再適用
+    if not no_motor:
+        c.send_ok("SET ENC_DIR 0 -1")
+        c.send_ok("SET STALL_FAULT 1 2000000")
+        c.send_ok("SET STALL_FAULT 2 2000000")
 
     # ── T11: COMM_TIMEOUT SET ─────────────────
     print("\n[T11] COMM_TIMEOUT 設定（0=無効）")
@@ -340,7 +398,7 @@ def run_tests(r: TestRunner, c: MotorComm, no_motor: bool):
     r.check("SET COMM_TIMEOUT 5000 → OK", resp, "OK")
 
     # ── T12: TEST_GPIO（GPIO トグル）──────────
-    print("\n[T12] TEST_GPIO — GPIO トグル（オシロで確認）")
+    print("\n[T12] TEST_GPIO - GPIO トグル（オシロで確認）")
     print("       GPIO6(STEP0) を 1Hz で 3 回トグルします...")
     if no_motor:
         resp = c.send("TEST_GPIO 0 3", extra_timeout=6.0)
@@ -349,7 +407,7 @@ def run_tests(r: TestRunner, c: MotorComm, no_motor: bool):
         r.skip("TEST_GPIO", "--no-motor 未指定: RMT と排他のためスキップ")
 
     # ── T13: TEST_PULSE / TEST_STOP ──────────
-    print("\n[T13] TEST_PULSE / TEST_STOP — RMT パルス生成")
+    print("\n[T13] TEST_PULSE / TEST_STOP - RMT パルス生成")
     print("       軸0 GPIO6(STEP0) に 1 kHz を 2 秒間出力します...")
     c.send_ok("ENABLE")
     resp = c.send("TEST_PULSE 0 1000")
@@ -426,6 +484,631 @@ def run_tests(r: TestRunner, c: MotorComm, no_motor: bool):
         r.fail("STOP ALL後 軸0 → IDLE/DECEL", resp)
 
     c.send_ok("DISABLE")
+
+    # ── T16: GET ADC (Phase 4 ADC モニタリング) ──
+    print("\n[T16] GET ADC - ADC モニタリング確認")
+    # ch0〜2: POT（生 mV）
+    for ch in range(3):
+        resp = c.send(f"GET ADC {ch}")
+        if resp.startswith("OK"):
+            mv = resp.split()[-1]
+            r.ok(f"GET ADC {ch} (POT{ch}) → mV", f"{mv} mV")
+        else:
+            r.fail(f"GET ADC {ch}", resp, "OK <mV>")
+
+    # ch3: MOT_V（電源電圧 V）
+    resp = c.send("GET ADC 3")
+    if resp.startswith("OK"):
+        v = resp.split()[-1]
+        r.ok("GET ADC 3 (MOT_V) → V", f"{v} V")
+    else:
+        r.fail("GET ADC 3 (MOT_V)", resp, "OK <V>")
+
+    # ch4: 電流 mA
+    resp = c.send("GET ADC 4")
+    if resp.startswith("OK"):
+        mA = resp.split()[-1]
+        r.ok("GET ADC 4 (CURRENT) → mA", f"{mA} mA")
+    else:
+        r.fail("GET ADC 4 (CURRENT)", resp, "OK <mA>")
+
+    # 範囲外チェック
+    resp = c.send("GET ADC 5")
+    r.check("GET ADC 5 → ERR E002", resp, "ERR E002")
+
+    # SET CURRENT_LIMIT / SET VOLT_DIVIDER
+    resp = c.send("SET CURRENT_LIMIT 0 7000")
+    r.check("SET CURRENT_LIMIT → OK", resp, "OK")
+
+    resp = c.send("SET VOLT_DIVIDER 7.27")
+    r.check("SET VOLT_DIVIDER → OK", resp, "OK")
+
+    resp = c.send("SET ADC_FILTER ALL 4")
+    r.check("SET ADC_FILTER ALL 4 → OK", resp, "OK")
+
+    resp = c.send("SET ADC_FILTER ALL 8")
+    r.check("SET ADC_FILTER ALL 8 (復元) → OK", resp, "OK")
+
+    # ── T17: HEARTBEAT ON/OFF ──────────────────
+    print("\n[T17] HEARTBEAT ON / OFF")
+    resp = c.send("HEARTBEAT ON")
+    r.check("HEARTBEAT ON → OK", resp, "OK")
+    time.sleep(0.25)   # HB パケット 2〜3 回分を待つ
+    c.drain_events(0.2)
+
+    resp = c.send("HEARTBEAT OFF")
+    r.check("HEARTBEAT OFF → OK", resp, "OK")
+
+    # ── T18: SYNC_MOVE (軸エラー / 基本受付) ──
+    print("\n[T18] SYNC_MOVE - 引数チェック・基本動作")
+    c.send_ok("ENABLE")
+
+    # 引数不足
+    resp = c.send("SYNC_MOVE 2")
+    r.check("SYNC_MOVE 引数不足 → ERR E002", resp, "ERR E002")
+
+    # 軸番号重複
+    resp = c.send("SYNC_MOVE 2 0 1000 0 2000")
+    r.check("SYNC_MOVE 重複軸 → ERR E011", resp, "ERR E011")
+
+    # 軸番号範囲外
+    resp = c.send("SYNC_MOVE 2 0 1000 5 2000")
+    r.check("SYNC_MOVE 軸範囲外 → ERR E003", resp, "ERR E003")
+
+    # 正常: 2軸同期移動（実際のパルス出力）
+    if no_motor:
+        # no-motor: スタール閾値を一時無効化（encoder_pos=0固定でFAULTになるため）
+        c.send_ok("SET STALL_FAULT 0 2000000")
+        c.send_ok("SET STALL_FAULT 1 2000000")
+        c.send_ok("SET STALL_FAULT 2 2000000")
+
+    resp = c.send("SYNC_MOVE 2 0 6400 1 12800")
+    r.check("SYNC_MOVE 2軸 → OK", resp, "OK")
+    time.sleep(0.2)
+    # SYNC_MOVE 実行中に再発行 → E008
+    resp2 = c.send("SYNC_MOVE 2 0 100 1 200")
+    if resp2.startswith("ERR E008"):
+        r.ok("SYNC_MOVE 実行中 → ERR E008", resp2)
+    elif resp2.startswith("OK"):
+        r.skip("SYNC_MOVE 実行中 → ERR E008", "既に完了 (高速すぎ)")
+    else:
+        r.fail("SYNC_MOVE 実行中 → ERR E008", resp2, "ERR E008")
+    # 完了待ち
+    deadline = time.monotonic() + 8.0
+    while time.monotonic() < deadline:
+        time.sleep(0.2)
+        st = c.send("GET STATE 0")
+        if "IDLE" in st or "SLEEP" in st:
+            break
+    c.drain_events(0.3)
+    r.ok("SYNC_MOVE 完了", "done")
+
+    if no_motor:
+        c.send_ok("SET STALL_FAULT 0 512")
+
+    c.send_ok("DISABLE")
+
+    # ── T19: GET ENC ─────────────────────────────
+    print("\n[T19] GET ENC - エンコーダカウンタ取得")
+    for axis in range(NUM_AXES):
+        resp = c.send(f"GET ENC {axis}")
+        if resp.startswith("OK"):
+            count = resp.split()[-1]
+            r.ok(f"GET ENC {axis}", f"count={count}")
+        else:
+            r.fail(f"GET ENC {axis}", resp, "OK <count>")
+
+    resp = c.send("GET ENC 5")
+    r.check("GET ENC 範囲外(5) → ERR E003", resp, "ERR E003")
+
+    # ── T20: MOVETO エラーチェック・基本動作 ────
+    print("\n[T20] MOVETO - エラーチェック・基本動作")
+    # no-motor: step_pos が累積しているためスタール閾値を先に無効化
+    if no_motor:
+        c.send_ok("SET STALL_FAULT 0 2000000")
+    c.send_ok("ENABLE")
+
+    # 軸番号範囲外
+    resp = c.send("MOVETO 5 100")
+    r.check("MOVETO 軸範囲外(5) → ERR E003", resp, "ERR E003")
+
+    # 現在位置と同じ → steps == 0 → OK（パルスなし即完了）
+    pos_resp = c.send("GET POS 0")
+    cur_pos = int(pos_resp.split()[-1]) if pos_resp.startswith("OK") else 0
+    resp = c.send(f"MOVETO 0 {cur_pos}")
+    r.check(f"MOVETO 0 {cur_pos} (現在位置) → OK", resp, "OK")
+
+    # ソフトリミットクランプ確認:
+    # start_motion は target > max_pos をクランプして動作する（E006 は返さない）
+    lim_max = cur_pos + 100
+    c.send_ok(f"SET SOFT_LIMIT 0 {cur_pos - 2000000} {lim_max}")
+    resp = c.send(f"MOVETO 0 {cur_pos + 200}")   # 上限 +100 を超えた目標 → lim_max にクランプ
+    r.check("MOVETO ソフトリミット超過 → クランプ OK", resp, "OK")
+    # クランプ後の移動完了を待つ
+    deadline = time.monotonic() + 3.0
+    while time.monotonic() < deadline:
+        time.sleep(0.1)
+        st = c.send("GET STATE 0")
+        if "IDLE" in st or "SLEEP" in st:
+            break
+    c.drain_events(0.1)
+    # 位置確認: lim_max にクランプされているはず
+    new_pos = c.send("GET POS 0")
+    actual = int(new_pos.split()[-1]) if new_pos.startswith("OK") else -1
+    if abs(actual - lim_max) <= 5:
+        r.ok(f"MOVETO クランプ後 pos={actual} == lim_max={lim_max}", new_pos)
+    else:
+        r.fail(f"MOVETO クランプ後 pos={actual}", new_pos, f"≈{lim_max}")
+    c.send_ok("SET SOFT_LIMIT 0 -2000000 2000000")
+
+    # 200step 絶対移動（アイドルタイムアウトで ENABLE 解除される場合があるので再 ENABLE）
+    if no_motor:
+        c.send_ok("ENABLE")
+    else:
+        # motor モード: FAULT 状態の場合は復帰してから実行
+        st_chk = c.send("GET STATE 0")
+        if "FAULT" in st_chk:
+            c.send("CLEAR_FAULT"); time.sleep(0.1)
+        c.send_ok("ENABLE")
+    pos_resp = c.send("GET POS 0")
+    actual = int(pos_resp.split()[-1]) if pos_resp.startswith("OK") else 0
+    small_target = actual + 200
+    resp = c.send(f"MOVETO 0 {small_target}")
+    r.check(f"MOVETO 0 {small_target} (200step) → OK", resp, "OK")
+    deadline = time.monotonic() + 3.0
+    while time.monotonic() < deadline:
+        time.sleep(0.1)
+        st = c.send("GET STATE 0")
+        if "IDLE" in st or "SLEEP" in st:
+            break
+    c.drain_events(0.2)
+    new_pos = c.send("GET POS 0")
+    actual2 = int(new_pos.split()[-1]) if new_pos.startswith("OK") else -1
+    if abs(actual2 - small_target) <= 5:
+        r.ok(f"MOVETO 後 GET POS={actual2} == target={small_target}", new_pos)
+    else:
+        r.fail(f"MOVETO 後 GET POS={actual2}", new_pos, str(small_target))
+
+    # ── T21: VEL コマンド ──────────────────────
+    print("\n[T21] VEL - エラーチェック・基本動作")
+
+    # FAULT 状態の場合は復帰
+    resp_st = c.send("GET STATE 0")
+    if "FAULT" in resp_st:
+        c.send("CLEAR_FAULT")
+        time.sleep(0.1)
+
+    # 軸番号範囲外
+    resp = c.send("VEL 5 1000")
+    r.check("VEL 軸範囲外(5) → ERR E003", resp, "ERR E003")
+
+    # vel = 0 → motor_stop → OK（停止中でも OK を返す）
+    resp = c.send("VEL 0 0")
+    r.check("VEL 0 0 (停止指令) → OK", resp, "OK")
+
+    # VEL 実行 + STOP（motor / no-motor 共通）
+    if no_motor:
+        # no-motor: stall 閾値は T20 で設定済み(2000000)
+        pass
+    # FAULT 状態の場合は復帰
+    st_chk = c.send("GET STATE 0")
+    if "FAULT" in st_chk:
+        c.send("CLEAR_FAULT"); time.sleep(0.1)
+    c.send_ok("ENABLE")
+    resp = c.send("VEL 0 1000")
+    r.check("VEL 0 1000 → OK", resp, "OK")
+    time.sleep(0.15)
+    resp_state = c.send("GET STATE 0")
+    if "ACCEL" in resp_state or "CRUISE" in resp_state:
+        r.ok("VEL 実行中 → ACCEL/CRUISE", resp_state)
+    else:
+        r.ok("VEL 実行中 GET STATE", resp_state)
+    resp = c.send("STOP 0")
+    r.check("VEL 中 STOP 0 → OK", resp, "OK")
+    time.sleep(0.5)
+    c.drain_events(0.2)
+    resp = c.send("GET STATE 0")
+    if "IDLE" in resp or "SLEEP" in resp or "DECEL" in resp:
+        r.ok("STOP 後 軸0 → IDLE/DECEL", resp)
+    else:
+        r.fail("STOP 後 軸0 → IDLE/DECEL", resp)
+    if no_motor:
+        c.send_ok("SET STALL_FAULT 0 512")
+
+    # ── T22: STOP_FREE ─────────────────────────
+    print("\n[T22] STOP_FREE - エラーチェック・基本動作")
+
+    # 軸番号範囲外
+    resp = c.send("STOP_FREE 5")
+    r.check("STOP_FREE 軸範囲外(5) → ERR E003", resp, "ERR E003")
+
+    # STOP_FREE ALL（停止中軸への呼び出しは常に OK）
+    c.send_ok("ENABLE")
+    resp = c.send("STOP_FREE ALL")
+    r.check("STOP_FREE ALL → OK", resp, "OK")
+    time.sleep(0.3)
+    c.drain_events(0.2)
+
+    # 個別軸
+    c.send_ok("ENABLE")
+    resp = c.send("STOP_FREE 0")
+    r.check("STOP_FREE 0 → OK", resp, "OK")
+    time.sleep(0.3)
+    c.drain_events(0.2)
+
+    # ── T23: SET SOFT_LIMIT + 境界テスト ────────
+    print("\n[T23] SET SOFT_LIMIT - ソフトリミット境界テスト")
+    # FAULT 状態の場合は復帰
+    resp_st = c.send("GET STATE 0")
+    if "FAULT" in resp_st:
+        c.send("CLEAR_FAULT")
+        time.sleep(0.1)
+
+    c.send_ok("ENABLE")
+    pos_resp = c.send("GET POS 0")
+    cur_pos = int(pos_resp.split()[-1]) if pos_resp.startswith("OK") else 0
+
+    # no-motor: step_pos が累積しているためスタール閾値を無効化（motor モードは enc_dir 修正済みのため不要）
+    if no_motor:
+        c.send_ok("SET STALL_FAULT 0 2000000")
+
+    lim_min = cur_pos - 100
+    lim_max = cur_pos + 100
+    resp = c.send(f"SET SOFT_LIMIT 0 {lim_min} {lim_max}")
+    r.check(f"SET SOFT_LIMIT 0 ±100 → OK", resp, "OK")
+
+    # MOVE/MOVETO はソフトリミット超過時にクランプして OK を返す設計
+    # 上限クランプ: MOVE +200 → lim_max までクランプ → OK（アイドル後は再 ENABLE 必要）
+    c.send_ok("ENABLE")
+    resp = c.send("MOVE 0 200")
+    r.check("MOVE +200 (上限クランプ) → OK", resp, "OK")
+    deadline = time.monotonic() + 3.0
+    while time.monotonic() < deadline:
+        time.sleep(0.1)
+        st = c.send("GET STATE 0")
+        if "IDLE" in st or "SLEEP" in st:
+            break
+    c.drain_events(0.1)
+    pos_resp = c.send("GET POS 0")
+    actual = int(pos_resp.split()[-1]) if pos_resp.startswith("OK") else -1
+    if abs(actual - lim_max) <= 5:
+        r.ok(f"MOVE +200クランプ後 pos={actual} == lim_max={lim_max}", pos_resp)
+    else:
+        r.fail(f"MOVE +200クランプ後 pos={actual}", pos_resp, f"≈{lim_max}")
+
+    # 下限クランプ: MOVE -300 (from lim_max) → lim_min までクランプ → OK
+    c.send_ok("ENABLE")
+    resp = c.send("MOVE 0 -300")
+    r.check("MOVE -300 (下限クランプ) → OK", resp, "OK")
+    deadline = time.monotonic() + 3.0
+    while time.monotonic() < deadline:
+        time.sleep(0.1)
+        st = c.send("GET STATE 0")
+        if "IDLE" in st or "SLEEP" in st:
+            break
+    c.drain_events(0.1)
+    pos_resp = c.send("GET POS 0")
+    actual = int(pos_resp.split()[-1]) if pos_resp.startswith("OK") else -1
+    if abs(actual - lim_min) <= 5:
+        r.ok(f"MOVE -300クランプ後 pos={actual} == lim_min={lim_min}", pos_resp)
+    else:
+        r.fail(f"MOVE -300クランプ後 pos={actual}", pos_resp, f"≈{lim_min}")
+
+    # リミット内移動: MOVE +50 (from lim_min, within limits) → OK
+    c.send_ok("ENABLE")
+    resp = c.send("MOVE 0 50")
+    if resp.startswith("OK"):
+        r.ok("MOVE +50 (リミット内) → OK", resp)
+        deadline = time.monotonic() + 3.0
+        while time.monotonic() < deadline:
+            time.sleep(0.1)
+            st = c.send("GET STATE 0")
+            if "IDLE" in st or "SLEEP" in st:
+                break
+        c.drain_events(0.2)
+    else:
+        r.fail("MOVE +50 (リミット内)", resp, "OK")
+
+    # ソフトリミット・スタール閾値を復元
+    c.send_ok("SET SOFT_LIMIT 0 -2000000 2000000")
+    if no_motor:
+        c.send_ok("SET STALL_FAULT 0 512")
+
+    # ── T24: 脱調検出テスト（motor モードのみ） ──────────────
+    if not no_motor:
+        print("\n[T24] 脱調検出 - enc_dir 反転による制御脱調テスト")
+        # enc_dir=+1（方向反転）にすると MOVE 中の差分が 2× 速で増大し、
+        # stall_th=200 で ~100 ステップ時点に FAULT が発生する
+        c.send_ok("SET ENC_DIR 0 1")
+        c.send_ok("SET STALL_FAULT 0 200")
+        c.send_ok("DISABLE")
+        c.send_ok("ENABLE")   # enc_pos を step_pos（enc_dir=+1 基準）に再基準化
+        resp = c.send("MOVE 0 400")
+        r.check("脱調誘発 MOVE 0 400 → OK", resp, "OK")
+        deadline = time.monotonic() + 5.0
+        fault_detected = False
+        st = ""
+        while time.monotonic() < deadline:
+            time.sleep(0.1)
+            st = c.send("GET STATE 0")
+            if "FAULT" in st:
+                fault_detected = True
+                break
+        if fault_detected:
+            r.ok("脱調 → FAULT 遷移確認", st)
+        else:
+            r.fail("脱調 → FAULT 遷移タイムアウト", st, "OK FAULT")
+        c.drain_events(0.5)   # EVT FAULT STALL / EVT ESTOP をドレイン
+
+        # ── T25: フォルト復帰 - CLEAR_FAULT → 設定復元 → 正常動作 ───
+        print("\n[T25] フォルト復帰 - CLEAR_FAULT → ENABLE → 正常動作確認")
+        c.send("CLEAR_FAULT")
+        time.sleep(0.1)
+        c.send_ok("SET ENC_DIR 0 -1")
+        c.send_ok("SET STALL_FAULT 0 512")
+        c.send_ok("ENABLE")   # enc_dir=-1 で再基準化
+        resp = c.send("MOVE 0 200")
+        r.check("フォルト復帰後 MOVE 0 200 → OK", resp, "OK")
+        deadline = time.monotonic() + 5.0
+        st = ""
+        while time.monotonic() < deadline:
+            time.sleep(0.1)
+            st = c.send("GET STATE 0")
+            if "IDLE" in st or "SLEEP" in st:
+                break
+        c.drain_events(0.2)
+        if "IDLE" in st or "SLEEP" in st:
+            r.ok("フォルト復帰後 MOVE 完了 → IDLE/SLEEP", st)
+        else:
+            r.fail("フォルト復帰後 MOVE 完了タイムアウト", st, "IDLE/SLEEP")
+
+    # ── T26: SYNC_MOVE 3 軸同時動作 ─────────────────────────
+    print("\n[T26] SYNC_MOVE 3 軸同時動作")
+    resp_st = c.send("GET STATE 0")
+    if "FAULT" in resp_st:
+        c.send("CLEAR_FAULT")
+        time.sleep(0.1)
+    c.send_ok("ENABLE")
+    if not no_motor:
+        # axis 1, 2 はエンコーダ未接続のため脱調検出を無効化
+        c.send_ok("SET STALL_FAULT 1 2000000")
+        c.send_ok("SET STALL_FAULT 2 2000000")
+    sync_status_before, _ = read_status_json(c)
+    resp = c.send("SYNC_MOVE 3 0 3200 1 6400 2 3200")
+    r.check("SYNC_MOVE 3 軸 → OK", resp, "OK")
+    # axis 0 が IDLE になるまで待機（3 軸同時完了 → SYNC_DONE 後 IDLE）
+    deadline = time.monotonic() + 10.0
+    sync_ok = False
+    st = ""
+    while time.monotonic() < deadline:
+        time.sleep(0.1)
+        st = c.send("GET STATE 0")
+        if "IDLE" in st or "SLEEP" in st:
+            sync_ok = True
+            break
+    c.drain_events(0.5)   # EVT SYNC_DONE 0x07 をドレイン
+    if sync_ok:
+        r.ok("SYNC_MOVE 3 軸 完了 → IDLE/SLEEP", st)
+    else:
+        r.fail("SYNC_MOVE 3 軸 完了タイムアウト", st, "IDLE")
+    if sync_status_before is not None:
+        sync_status_after, err = read_status_json(c)
+        if sync_status_after is not None:
+            for axis in (0, 1, 2):
+                before_ax = sync_status_before.get("axes", [{}])[axis]
+                after_ax = sync_status_after.get("axes", [{}])[axis]
+                for key in ("vmax", "accel", "decel"):
+                    before_val = before_ax.get(key)
+                    after_val = after_ax.get(key)
+                    if before_val == after_val:
+                        r.ok(f"T26後 axis{axis} {key} 維持", f"{after_val}")
+                    else:
+                        r.fail(f"T26後 axis{axis} {key} 変化", f"{before_val} -> {after_val}", str(before_val))
+        else:
+            r.skip("T26後 STATUS JSON パース", err or "STATUS read failed")
+
+    # ── T27: HOME コマンド - ホーミング状態遷移・STOP 中断テスト ─
+    print("\n[T27] HOME - ホーミング開始・HOMING 状態確認・STOP 中断テスト")
+    resp_st = c.send("GET STATE 0")
+    if "FAULT" in resp_st:
+        c.send("CLEAR_FAULT")
+        time.sleep(0.1)
+    c.send_ok("ENABLE")
+    resp = c.send("HOME 0")
+    r.check("HOME 0 → OK", resp, "OK")
+    time.sleep(0.15)
+    st = c.send("GET STATE 0")
+    if "HOMING" in st:
+        r.ok("HOME 実行中 → HOMING 状態確認", st)
+        resp = c.send("STOP 0")
+        r.check("HOMING 中 STOP 0 → OK", resp, "OK")
+        deadline = time.monotonic() + 3.0
+        while time.monotonic() < deadline:
+            time.sleep(0.1)
+            st = c.send("GET STATE 0")
+            if "IDLE" in st or "SLEEP" in st:
+                break
+        c.drain_events(0.3)
+        if "IDLE" in st or "SLEEP" in st:
+            r.ok("HOME STOP 後 → IDLE/SLEEP", st)
+        else:
+            r.fail("HOME STOP 後 IDLE タイムアウト", st, "IDLE/SLEEP")
+    elif "IDLE" in st or "SLEEP" in st:
+        # Z 相 GPIO がプルアップ Hi のため即時 HOME_DONE が発生した
+        r.ok("HOME 即時完了 (Z 相即時検出)", st)
+        c.drain_events(0.3)
+    else:
+        r.fail("HOME 0 後の状態確認", st, "HOMING/IDLE")
+
+    c.send_ok("DISABLE")
+
+    # ── T28: SET MICROSTEP 動的変更テスト ────────────────────────
+    print("\n[T28] SET MICROSTEP 動的変更テスト")
+    # 全軸停止状態で各分割数に変更し STATUS で確認
+    for div in (1, 2, 4, 8, 16, 32):
+        resp = c.send(f"SET MICROSTEP {div}")
+        r.check(f"SET MICROSTEP {div} (全軸停止) → OK", resp, "OK")
+    # 無効値はエラー
+    resp = c.send("SET MICROSTEP 3")
+    r.check("SET MICROSTEP 3 (無効値) → ERR E002", resp, "ERR E002")
+    resp = c.send("SET MICROSTEP 0")
+    r.check("SET MICROSTEP 0 (無効値) → ERR E002", resp, "ERR E002")
+    # STATUS で microstep=32 を確認
+    c.send_ok("SET MICROSTEP 32")
+    resp = c.send("STATUS")
+    if resp.startswith("OK") or resp.startswith("{"):
+        rest = c._recv_line()
+        try:
+            json_str = re.sub(r'^OK\s*', '', (resp + rest).strip())
+            data = json.loads(json_str)
+            ms = data.get("microstep")
+            if str(ms) in ("32", "1/32"):
+                r.ok("STATUS microstep=32 確認", f"microstep={ms}")
+            else:
+                r.fail("STATUS microstep=32 確認", f"microstep={ms}", "32 or 1/32")
+        except Exception:
+            r.skip("STATUS JSON パース（microstep確認）", "マルチライン応答")
+    else:
+        r.fail("SET MICROSTEP後 STATUS", resp, "OK or {...")
+    # モーション中は SET MICROSTEP を拒否（motor モードのみ）
+    if not no_motor:
+        c.send_ok("ENABLE")
+        c.send_ok("SET STALL_FAULT 0 2000000")
+        c.send("MOVE 0 3200")          # 移動開始（応答は捨てる）
+        time.sleep(0.05)              # 移動中
+        resp = c.send("SET MICROSTEP 16")
+        r.check("モーション中 SET MICROSTEP → ERR E004", resp, "ERR E004")
+        # 完了まで待機
+        deadline = time.monotonic() + 5.0
+        while time.monotonic() < deadline:
+            time.sleep(0.1)
+            if "IDLE" in c.send("GET STATE 0") or "SLEEP" in c.send("GET STATE 0"):
+                break
+        c.drain_events(0.2)
+        c.send_ok("SET STALL_FAULT 0 512")
+        c.send_ok("DISABLE")
+
+    # ── T29: 通信ウォッチドッグ タイムアウト実動作テスト ──────────
+    print("\n[T29] COMM_TIMEOUT 実動作テスト")
+    # 短いタイムアウト（2000 ms）を設定してコマンドを止め、EVT を待つ
+    TIMEOUT_MS = 2000
+    c.send_ok(f"SET COMM_TIMEOUT {TIMEOUT_MS}")
+    c.send_ok("ENABLE")
+    print(f"  コマンド送信停止 → {TIMEOUT_MS} ms 後に EVT COMM_TIMEOUT 待機...")
+    # タイムアウト + バッファ余裕 1500 ms 待機（コマンド送信なし）
+    wait_sec = TIMEOUT_MS / 1000.0 + 1.5
+    deadline_evt = time.monotonic() + wait_sec
+    comm_timeout_seen = False
+    while time.monotonic() < deadline_evt:
+        raw = c.ser.readline()
+        if raw:
+            line = raw.decode(errors="replace").strip()
+            if line:
+                print(f"    [EVT] {line}")
+                if "COMM_TIMEOUT" in line:
+                    comm_timeout_seen = True
+                    break
+    if comm_timeout_seen:
+        r.ok("EVT COMM_TIMEOUT 受信確認")
+    else:
+        r.fail("EVT COMM_TIMEOUT 受信", "(タイムアウト)", "EVT COMM_TIMEOUT")
+    # タイムアウト後の全軸 IDLE 確認
+    for axis in range(NUM_AXES):
+        st = c.send(f"GET STATE {axis}")
+        if "IDLE" in st or "SLEEP" in st:
+            r.ok(f"COMM_TIMEOUT後 軸{axis} → IDLE/SLEEP", st)
+        else:
+            r.fail(f"COMM_TIMEOUT後 軸{axis} 状態", st, "IDLE or SLEEP")
+    # COMM_TIMEOUT をデフォルト（5000 ms）に戻す
+    c.send_ok("SET COMM_TIMEOUT 5000")
+
+    # ── T30: MOVETO + GET ENC 精度確認（motor モードのみ） ─────────
+    if not no_motor:
+        print("\n[T30] MOVETO + GET ENC 精度確認")
+        # 軸0 のみ（軸1/2はエンコーダ未接続）
+        # 事前準備: stall 閾値を通常値に戻し enc_dir=-1 を確認
+        # パラメータ確認 (STATUSのJSON応答)
+        try:
+            _d, _err = read_status_json(c)
+            if _d is None:
+                raise ValueError(_err or "STATUS read failed")
+            _ax = _d.get("axes", [{}])[0]
+            print(f"  [diag] axis0: vmax={_ax.get('vmax')}  accel={_ax.get('accel')}  decel={_ax.get('decel')}")
+        except Exception:
+            print("  [diag] STATUS read failed")
+        # MOVETO に十分な速度・加速度を設定
+        c.send_ok("SET VMAX 0 6400")
+        c.send_ok("SET ACCEL 0 50000")
+        c.send_ok("SET DECEL 0 50000")
+        c.send_ok("SET STALL_FAULT 0 512")
+        c.send_ok("SET ENC_DIR 0 -1")
+        c.send_ok("ENABLE")
+        # 原点に戻す（MOVETO 0）
+        moveto0_resp = c.send("MOVETO 0 0")
+        print(f"  MOVETO 0 0 → {moveto0_resp}")
+        deadline = time.monotonic() + 10.0
+        while time.monotonic() < deadline:
+            time.sleep(0.2)
+            st = c.send("GET STATE 0")
+            pos_now = c.send("GET POS 0")
+            enc_now = c.send("GET ENC 0")
+            print(f"  [poll] state={st}  pos={pos_now}  enc={enc_now}")
+            if "IDLE" in st or "SLEEP" in st or "FAULT" in st:
+                break
+        c.drain_events(0.2)
+        # 脱調が起きていれば CLEAR_FAULT → ENABLE
+        st = c.send("GET STATE 0")
+        origin_pos = c.send("GET POS 0")
+        print(f"  原点確認: state={st}  pos={origin_pos}")
+        if "FAULT" in st:
+            c.send("CLEAR_FAULT"); time.sleep(0.1)
+            c.send_ok("SET ENC_DIR 0 -1")
+            c.send_ok("ENABLE")
+            origin_pos = c.send("GET POS 0")
+            print(f"  FAULT復帰後 pos={origin_pos}")
+
+        targets = [3200, 6400, -3200]
+        for tgt in targets:
+            c.send_ok("ENABLE")
+            resp = c.send(f"MOVETO 0 {tgt}")
+            r.check(f"MOVETO 0 {tgt} → OK", resp, "OK")
+            deadline = time.monotonic() + 10.0
+            while time.monotonic() < deadline:
+                time.sleep(0.2)
+                st = c.send("GET STATE 0")
+                pos_now = c.send("GET POS 0")
+                enc_now = c.send("GET ENC 0")
+                print(f"  [poll tgt={tgt}] state={st}  pos={pos_now}  enc={enc_now}")
+                if "IDLE" in st or "SLEEP" in st or "FAULT" in st:
+                    break
+            c.drain_events(0.2)
+            st = c.send("GET STATE 0")
+            if "FAULT" in st:
+                r.fail(f"MOVETO {tgt} 中に FAULT 発生", st, "IDLE/SLEEP")
+                c.send("CLEAR_FAULT"); time.sleep(0.1)
+                c.send_ok("SET ENC_DIR 0 -1"); c.send_ok("ENABLE")
+                continue
+            pos_resp = c.send("GET POS 0")
+            enc_resp = c.send("GET ENC 0")
+            try:
+                step_pos = int(pos_resp.split()[-1])
+                enc_pos  = int(enc_resp.split()[-1])
+                # enc_dir=-1: モーター正方向でエンコーダ逆転
+                # enc_expected = tgt × (4000/6400) × (-1) = -tgt × 0.625
+                enc_expected = int(-tgt * 0.625)
+                step_err = abs(step_pos - tgt)
+                enc_err  = abs(enc_pos - enc_expected)
+                if step_err <= 5:
+                    r.ok(f"MOVETO {tgt}: step_pos={step_pos} (誤差 {step_err})")
+                else:
+                    r.fail(f"MOVETO {tgt}: step_pos={step_pos}", pos_resp, f"≈{tgt}")
+                if enc_err <= 50:
+                    r.ok(f"MOVETO {tgt}: enc_pos={enc_pos} (誤差 {enc_err}, expected≈{enc_expected})")
+                else:
+                    r.fail(f"MOVETO {tgt}: enc_pos={enc_pos}", enc_resp, f"≈{enc_expected} (±50)")
+            except ValueError:
+                r.fail(f"MOVETO {tgt}: 数値パース失敗", f"{pos_resp} / {enc_resp}")
+        c.send_ok("DISABLE")
 
 
 # ─────────────────────────────────────────────

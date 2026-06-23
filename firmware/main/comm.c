@@ -527,6 +527,14 @@ static void dispatch(const char *line)
                       ? "OK\n" : "ERR E002 INVALID_PARAM\n");
             return;
         }
+        {
+            int enc_dir_val;
+            if (sscanf(line, "SET ENC_DIR %u %d", &axis, &enc_dir_val) == 2) {
+                comm_send(motor_set_enc_dir((uint8_t)axis, (int8_t)enc_dir_val)
+                          ? "OK\n" : "ERR E002 INVALID_PARAM\n");
+                return;
+            }
+        }
         int home_dir_val;
         if (sscanf(line, "SET HOME_DIR %u %d", &axis, &home_dir_val) == 2) {
             comm_send(motor_set_home_dir((uint8_t)axis, (int8_t)home_dir_val)

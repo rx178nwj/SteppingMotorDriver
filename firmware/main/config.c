@@ -151,11 +151,27 @@ void config_init(void)
         motor_set_home_params(i, v_coarse, v_fine, (int32_t)back_off, home_ofs);
         motor_set_home_dir(i, home_dir);
 
-        ESP_LOGI(TAG, "Axis %d profile=%lu [%s] vmax=%lu accel=%lu decel=%lu stall=%lu",
+        /* エンコーダ方向 (enc_dir: +1=正, -1=逆接続) */
+        uint32_t enc_dir_u32 = 1U;
+        if (err == ESP_OK) {
+            snprintf(key, sizeof(key), "encdir%d", i);
+            nvs_get_u32(h, key, &enc_dir_u32);
+        }
+        int8_t enc_dir = (enc_dir_u32 == (uint32_t)(int32_t)-1) ? -1 : 1;
+        motor_set_enc_dir(i, enc_dir);
+
+        /* mpc_x100: プロファイルと現在マイクロステップから計算 */
+        if (p && p->encoder_counts_per_rev > 0) {
+            uint32_t mpc = ((uint32_t)p->full_steps_per_rev * ms * 100U)
+                           / p->encoder_counts_per_rev;
+            motor_set_mpc_x100(i, (uint16_t)(mpc > 0xFFFFU ? 0xFFFFU : mpc));
+        }
+
+        ESP_LOGI(TAG, "Axis %d profile=%lu [%s] vmax=%lu accel=%lu decel=%lu stall=%lu enc_dir=%d",
                  i, (unsigned long)s_profile[i],
                  p ? p->model : "NONE",
                  (unsigned long)av, (unsigned long)aa, (unsigned long)ad,
-                 (unsigned long)stall_th);
+                 (unsigned long)stall_th, (int)enc_dir);
     }
 
     if (err == ESP_OK) {
@@ -206,6 +222,7 @@ bool config_save(void)
         snprintf(key, sizeof(key), "hback%d",   i); nvs_set_u32(h, key, (uint32_t)motor_get_back_off_steps(i));
         snprintf(key, sizeof(key), "hofs%d",    i); nvs_set_u32(h, key, (uint32_t)motor_get_home_offset_steps(i));
         snprintf(key, sizeof(key), "hdir%d",    i); nvs_set_u32(h, key, (uint32_t)(int32_t)motor_get_home_dir(i));
+        snprintf(key, sizeof(key), "encdir%d",  i); nvs_set_u32(h, key, (uint32_t)(int32_t)motor_get_enc_dir(i));
     }
     nvs_set_u32(h, "microstep",    (uint32_t)s_microstep);
     nvs_set_u32(h, "idle_timeout", s_idle_timeout_ms);
@@ -242,6 +259,12 @@ void config_reset(void)
         s_profile[i] = DEF_PROFILE_PER_AXIS[i];
         const motor_profile_t *p = motor_spec_get_profile(s_profile[i]);
         if (p) apply_profile_params(i, p);
+        motor_set_enc_dir(i, 1);
+        if (p && p->encoder_counts_per_rev > 0) {
+            uint32_t mpc = ((uint32_t)p->full_steps_per_rev * (uint32_t)MICROSTEP_32 * 100U)
+                           / p->encoder_counts_per_rev;
+            motor_set_mpc_x100(i, (uint16_t)(mpc > 0xFFFFU ? 0xFFFFU : mpc));
+        }
     }
     apply_microstep_gpio(s_microstep);
     motor_set_idle_timeout(s_idle_timeout_ms);
@@ -261,6 +284,15 @@ bool config_set_microstep(microstep_t div)
     }
     s_microstep = div;
     apply_microstep_gpio(div);
+    /* マイクロステップ変更に伴い mpc_x100 を全軸更新 */
+    for (uint8_t i = 0; i < NUM_AXES; i++) {
+        const motor_profile_t *p = motor_spec_get_profile(s_profile[i]);
+        if (p && p->encoder_counts_per_rev > 0) {
+            uint32_t mpc = ((uint32_t)p->full_steps_per_rev * (uint32_t)div * 100U)
+                           / p->encoder_counts_per_rev;
+            motor_set_mpc_x100(i, (uint16_t)(mpc > 0xFFFFU ? 0xFFFFU : mpc));
+        }
+    }
     return true;
 }
 
@@ -290,6 +322,11 @@ bool config_set_motor_profile(uint8_t axis, motor_profile_id_t id)
 
     s_profile[axis] = id;
     apply_profile_params(axis, p);
+    if (p->encoder_counts_per_rev > 0) {
+        uint32_t mpc = ((uint32_t)p->full_steps_per_rev * (uint32_t)s_microstep * 100U)
+                       / p->encoder_counts_per_rev;
+        motor_set_mpc_x100(axis, (uint16_t)(mpc > 0xFFFFU ? 0xFFFFU : mpc));
+    }
 
     /* NVS へ即時保存 (プロファイルと連動パラメータを同時に書く) */
     nvs_handle_t h;
