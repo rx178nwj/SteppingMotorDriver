@@ -10,3 +10,13 @@
 
 # Build artifacts
 firmware/build/
+firmware_test/build/
+firmware_test/__pycache__/
+
+# Editor history (alt)
+schematic/.history_old/
+
+# KiCad backup/temp exports
+schematic/*.bak
+schematic/.step
+schematic/DriverBoard.step
