@@ -181,6 +181,7 @@ SteppingMotorDriver/
 | ~~9.10~~ | ~~エンコーダ低速域の速度推定方式（解決済み：F-ENC-03 を高速/低速2方式切替に改訂、ゼロ判定200 ms）~~ | ~~Medium~~ |
 | 9.11 | I2C 拡張の用途・要件定義 | Medium |
 | ~~9.12~~ | ~~DRV8825 FAULT ピン GPIO 未接続確認（解決済み：3.3V プルアップのみ、EVT DRV_FAULT 削除、間接検知方式に確定）~~ | ~~Medium~~ |
+| ~~9.13~~ | ~~複数基板同時運用時の基板識別方法（解決済み：factory MAC アドレスを基板固有IDとして採用。`GET BOARD_ID` コマンド・USB `iSerialNumber` 設定・`E012` エラーコードを追加。F-COM-05 参照）~~ | ~~High~~ |
 
 詳細は [firmware/REQUIREMENTS.md](firmware/REQUIREMENTS.md) の Section 9 を参照。
 

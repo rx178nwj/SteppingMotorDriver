@@ -89,6 +89,7 @@ ESP32-S3-WROOM-1 を搭載した SteppingMotorDriver PCB 上で動作するフ�
 - プロトコル：USB-CDC（仮想シリアルポート）
 - ボーレート：115200 bps（または USB Full Speed 固定帯域）
 - ESP32-S3 の内蔵 USB Serial/JTAG コントローラを使用
+- USB ディスクリプタの `iSerialNumber` に、eFuse factory MAC アドレス由来の16進文字列（例: `AABBCCDDEEFF`）を設定する（F-COM-05）
 
 ---
 
@@ -623,6 +624,24 @@ float current_mA = v_adc_mv * CURRENT_CONV_FACTOR;  /* × 2.4 */
 - `comm_timeout_ms` は NVS に保存し、電源投入時に復元する（F-MOT-10 NVS テーブル参照）
 - ウォッチドッグタイマは `SET COMM_TIMEOUT` コマンド受信時もリセットする
 
+#### F-COM-05: 基板固有ID（複数基板識別用）
+
+**目的：** 複数基板を同時に USB 接続する運用（例: 6軸ロボットアームを 3ch 基板 2 枚で構成）において、
+ホスト側アプリケーションが COM ポート番号に依存せず基板を一意に識別できるようにする。
+
+**採用方針：** ESP32-S3 の eFuse に工場出荷時点で書き込まれる factory MAC アドレス（48bit、書き換え不可、
+チップごとにグローバルユニーク）を基板固有 ID として使用する。
+
+**実装内容：**
+- 起動時に `esp_efuse_mac_get_default()`（または `esp_read_mac(mac, ESP_MAC_WIFI_STA)`）で MAC アドレスを取得する
+- `GET BOARD_ID` コマンドで 12 桁の 16 進文字列（コロン無し、大文字、例: `AABBCCDDEEFF`）として返す
+- 同じ文字列を USB ディスクリプタの `iSerialNumber` にも設定する（Section 2.4）
+  - これによりホスト側は USB 列挙情報（Windows のデバイスマネージャ相当、Node.js `serialport.list()` の
+    `serialNumber` プロパティ）からシリアルポートを開く前に基板を識別できる
+- MAC アドレス取得に失敗した場合（eFuse 未書き込み等の異常系）は `GET BOARD_ID` に対し `ERR E012 BOARD_ID_UNAVAILABLE` を返す
+
+**反映先：** Section 2.4（USB通信）、Section 4.3（GET BOARD_ID コマンド）、Section 4.6（E012 追加）
+
 ---
 
 ## 4. コマンドセット
@@ -664,6 +683,7 @@ axis: 0〜2  または  ALL
 | `GET ADC <ch>` | - | ADC 電流値取得（mA） | `OK 850` |
 | `GET STATE <axis>` | - | 軸状態取得 | `OK IDLE` |
 | `GET FAULT_INFO` | - | 最後のフォルト情報取得（F-MOT-07c） | `OK OVERCURRENT 0x02 1234567890` |
+| `GET BOARD_ID` | - | 基板固有ID取得（F-COM-05） | `OK AABBCCDDEEFF` |
 | `STATUS` | - | 全軸サマリー（JSON） | `OK {...}` |
 
 **GET STATE の返却値**
@@ -726,6 +746,7 @@ axis: 0〜2  または  ALL
 | `E008` | モーション実行中のモーションコマンド（MOTION_IN_PROGRESS） |
 | `E010` | FAULT 状態ではない（NOT_IN_FAULT） |
 | `E011` | SYNC_MOVE 軸番号重複（DUPLICATE_AXIS） |
+| `E012` | 基板固有ID取得不可（BOARD_ID_UNAVAILABLE、eFuse 異常等） |
 
 ---
 
