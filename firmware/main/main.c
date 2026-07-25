@@ -11,6 +11,7 @@
 #include "adc_monitor.h"
 #include "config.h"
 #include "comm.h"
+#include "gear_monitor.h"
 
 static const char *TAG = "main";
 
@@ -112,6 +113,9 @@ void app_main(void)
 
     /* --- USB-CDC + CommTask 起動 --- */
     comm_init();
+
+    /* --- ギア出力軸角度モニター (非同期、未接続でも起動継続) --- */
+    gear_monitor_init();
 
     ESP_LOGI(TAG, "SteppingMotorDriver firmware started");
 

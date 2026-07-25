@@ -7,9 +7,12 @@
 #include "nvs.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
+#include <math.h>
+#include <string.h>
 
 static const char *TAG    = "config";
 static const char *NVS_NS = "motor_config";
+static const char *GEAR_NVS_NS = "gear_config";
 
 /* ------------------------------------------------------------------ */
 /*  共通デフォルト値                                                     */
@@ -17,6 +20,7 @@ static const char *NVS_NS = "motor_config";
 #define DEF_MICROSTEP          32U
 #define DEF_IDLE_TIMEOUT_MS  2000U
 #define DEF_COMM_TIMEOUT_MS  5000U
+#define DEF_GEAR_DEVIATION_WARN_DEG 5.0f
 
 /* 軸ごとのデフォルトプロファイル ID */
 static const motor_profile_id_t DEF_PROFILE_PER_AXIS[NUM_AXES] = {
@@ -32,6 +36,99 @@ static microstep_t         s_microstep           = MICROSTEP_32;
 static uint32_t            s_idle_timeout_ms     = DEF_IDLE_TIMEOUT_MS;
 static uint32_t            s_comm_timeout_ms     = DEF_COMM_TIMEOUT_MS;
 static motor_profile_id_t  s_profile[NUM_AXES];
+static float                s_gear_offset[NUM_AXES] = {0.0f, 0.0f, 0.0f};
+static int8_t               s_gear_dir[NUM_AXES] = {1, 1, 1};
+static bool                 s_gear_abs_capable[NUM_AXES] = {false, false, false};
+static bool                 s_gear_enable[NUM_AXES] = {true, true, true};
+static float                s_gear_ratio[NUM_AXES] = {1.0f, 1.0f, 1.0f};
+static float                s_gear_deviation_warn = DEF_GEAR_DEVIATION_WARN_DEG;
+
+static uint32_t float_to_u32(float value)
+{
+    uint32_t bits;
+    memcpy(&bits, &value, sizeof(bits));
+    return bits;
+}
+
+static float u32_to_float(uint32_t bits)
+{
+    float value;
+    memcpy(&value, &bits, sizeof(value));
+    return value;
+}
+
+static void load_gear_config(void)
+{
+    nvs_handle_t h;
+    esp_err_t err = nvs_open(GEAR_NVS_NS, NVS_READONLY, &h);
+
+    for (uint8_t i = 0; i < NUM_AXES; i++) {
+        s_gear_offset[i] = 0.0f;
+        s_gear_dir[i] = 1;
+        s_gear_abs_capable[i] = false;
+        s_gear_enable[i] = true;
+
+        if (err == ESP_OK) {
+            char key[16];
+            uint32_t bits;
+            int8_t dir;
+            uint8_t flag;
+
+            snprintf(key, sizeof(key), "gear_off_%u", i);
+            if (nvs_get_u32(h, key, &bits) == ESP_OK) {
+                float value = u32_to_float(bits);
+                if (isfinite(value)) s_gear_offset[i] = value;
+            }
+            snprintf(key, sizeof(key), "gear_dir_%u", i);
+            if (nvs_get_i8(h, key, &dir) == ESP_OK && (dir == 1 || dir == -1)) {
+                s_gear_dir[i] = dir;
+            }
+            snprintf(key, sizeof(key), "gear_abscap_%u", i);
+            if (nvs_get_u8(h, key, &flag) == ESP_OK) {
+                s_gear_abs_capable[i] = (flag != 0);
+            }
+            snprintf(key, sizeof(key), "gear_en_%u", i);
+            if (nvs_get_u8(h, key, &flag) == ESP_OK) {
+                s_gear_enable[i] = (flag != 0);
+            }
+        }
+    }
+
+    s_gear_deviation_warn = DEF_GEAR_DEVIATION_WARN_DEG;
+    if (err == ESP_OK) {
+        uint32_t bits;
+        if (nvs_get_u32(h, "gear_devwarn", &bits) == ESP_OK) {
+            float value = u32_to_float(bits);
+            if (isfinite(value) && value >= 0.0f) {
+                s_gear_deviation_warn = value;
+            }
+        }
+        nvs_close(h);
+    }
+}
+
+static bool save_gear_config(void)
+{
+    nvs_handle_t h;
+    if (nvs_open(GEAR_NVS_NS, NVS_READWRITE, &h) != ESP_OK) return false;
+
+    for (uint8_t i = 0; i < NUM_AXES; i++) {
+        char key[16];
+        snprintf(key, sizeof(key), "gear_off_%u", i);
+        nvs_set_u32(h, key, float_to_u32(s_gear_offset[i]));
+        snprintf(key, sizeof(key), "gear_dir_%u", i);
+        nvs_set_i8(h, key, s_gear_dir[i]);
+        snprintf(key, sizeof(key), "gear_abscap_%u", i);
+        nvs_set_u8(h, key, s_gear_abs_capable[i] ? 1U : 0U);
+        snprintf(key, sizeof(key), "gear_en_%u", i);
+        nvs_set_u8(h, key, s_gear_enable[i] ? 1U : 0U);
+    }
+    nvs_set_u32(h, "gear_devwarn", float_to_u32(s_gear_deviation_warn));
+
+    esp_err_t err = nvs_commit(h);
+    nvs_close(h);
+    return err == ESP_OK;
+}
 
 /* ------------------------------------------------------------------ */
 /*  マイクロステップ → M2/M1/M0 GPIO 出力                               */
@@ -160,6 +257,17 @@ void config_init(void)
         int8_t enc_dir = (enc_dir_u32 == (uint32_t)(int32_t)-1) ? -1 : 1;
         motor_set_enc_dir(i, enc_dir);
 
+        /* gear_ratio は既存 F-MOT-10 パラメータ。未保存時は 1.0。 */
+        s_gear_ratio[i] = 1.0f;
+        if (err == ESP_OK) {
+            uint32_t ratio_bits;
+            snprintf(key, sizeof(key), "gearratio%d", i);
+            if (nvs_get_u32(h, key, &ratio_bits) == ESP_OK) {
+                float ratio = u32_to_float(ratio_bits);
+                if (isfinite(ratio) && ratio > 0.0f) s_gear_ratio[i] = ratio;
+            }
+        }
+
         /* mpc_x100: プロファイルと現在マイクロステップから計算 */
         if (p && p->encoder_counts_per_rev > 0) {
             uint32_t mpc = ((uint32_t)p->full_steps_per_rev * ms * 100U)
@@ -186,6 +294,7 @@ void config_init(void)
 
     apply_microstep_gpio(s_microstep);
     motor_set_idle_timeout(s_idle_timeout_ms);
+    load_gear_config();
 
     ESP_LOGI(TAG, "idle_timeout=%lums comm_timeout=%lums",
              (unsigned long)idle_ms, (unsigned long)comm_ms);
@@ -223,6 +332,8 @@ bool config_save(void)
         snprintf(key, sizeof(key), "hofs%d",    i); nvs_set_u32(h, key, (uint32_t)motor_get_home_offset_steps(i));
         snprintf(key, sizeof(key), "hdir%d",    i); nvs_set_u32(h, key, (uint32_t)(int32_t)motor_get_home_dir(i));
         snprintf(key, sizeof(key), "encdir%d",  i); nvs_set_u32(h, key, (uint32_t)(int32_t)motor_get_enc_dir(i));
+        snprintf(key, sizeof(key), "gearratio%d", i);
+        nvs_set_u32(h, key, float_to_u32(s_gear_ratio[i]));
     }
     nvs_set_u32(h, "microstep",    (uint32_t)s_microstep);
     nvs_set_u32(h, "idle_timeout", s_idle_timeout_ms);
@@ -231,11 +342,13 @@ bool config_save(void)
     esp_err_t err = nvs_commit(h);
     nvs_close(h);
 
-    if (err == ESP_OK) {
+    bool gear_ok = save_gear_config();
+    if (err == ESP_OK && gear_ok) {
         ESP_LOGI(TAG, "Config saved to NVS");
         return true;
     }
-    ESP_LOGE(TAG, "NVS commit failed: %s", esp_err_to_name(err));
+    ESP_LOGE(TAG, "NVS commit failed: motor=%s gear=%s",
+             esp_err_to_name(err), gear_ok ? "OK" : "FAIL");
     return false;
 }
 
@@ -250,6 +363,11 @@ void config_reset(void)
         nvs_commit(h);
         nvs_close(h);
     }
+    if (nvs_open(GEAR_NVS_NS, NVS_READWRITE, &h) == ESP_OK) {
+        nvs_erase_all(h);
+        nvs_commit(h);
+        nvs_close(h);
+    }
 
     s_microstep       = MICROSTEP_32;
     s_idle_timeout_ms = DEF_IDLE_TIMEOUT_MS;
@@ -260,6 +378,11 @@ void config_reset(void)
         const motor_profile_t *p = motor_spec_get_profile(s_profile[i]);
         if (p) apply_profile_params(i, p);
         motor_set_enc_dir(i, 1);
+        s_gear_offset[i] = 0.0f;
+        s_gear_dir[i] = 1;
+        s_gear_abs_capable[i] = false;
+        s_gear_enable[i] = true;
+        s_gear_ratio[i] = 1.0f;
         if (p && p->encoder_counts_per_rev > 0) {
             uint32_t mpc = ((uint32_t)p->full_steps_per_rev * (uint32_t)MICROSTEP_32 * 100U)
                            / p->encoder_counts_per_rev;
@@ -268,6 +391,7 @@ void config_reset(void)
     }
     apply_microstep_gpio(s_microstep);
     motor_set_idle_timeout(s_idle_timeout_ms);
+    s_gear_deviation_warn = DEF_GEAR_DEVIATION_WARN_DEG;
 
     ESP_LOGI(TAG, "Config reset to defaults");
 }
@@ -358,4 +482,72 @@ const motor_profile_t *config_get_motor_profile_data(uint8_t axis)
 {
     if (axis >= NUM_AXES) return NULL;
     return motor_spec_get_profile(s_profile[axis]);
+}
+
+/* ------------------------------------------------------------------ */
+/*  ギア出力角度モニタ設定                                                */
+/* ------------------------------------------------------------------ */
+float config_get_gear_offset(uint8_t axis)
+{
+    return axis < NUM_AXES ? s_gear_offset[axis] : 0.0f;
+}
+
+int8_t config_get_gear_dir(uint8_t axis)
+{
+    return axis < NUM_AXES ? s_gear_dir[axis] : 1;
+}
+
+bool config_get_gear_abs_capable(uint8_t axis)
+{
+    return axis < NUM_AXES && s_gear_abs_capable[axis];
+}
+
+bool config_get_gear_enable(uint8_t axis)
+{
+    return axis < NUM_AXES && s_gear_enable[axis];
+}
+
+float config_get_gear_deviation_warn(void)
+{
+    return s_gear_deviation_warn;
+}
+
+float config_get_gear_ratio(uint8_t axis)
+{
+    return axis < NUM_AXES ? s_gear_ratio[axis] : 1.0f;
+}
+
+bool config_set_gear_offset(uint8_t axis, float deg)
+{
+    if (axis >= NUM_AXES || !isfinite(deg)) return false;
+    s_gear_offset[axis] = deg;
+    return save_gear_config();
+}
+
+bool config_set_gear_dir(uint8_t axis, int8_t dir)
+{
+    if (axis >= NUM_AXES || (dir != 1 && dir != -1)) return false;
+    s_gear_dir[axis] = dir;
+    return save_gear_config();
+}
+
+bool config_set_gear_abs_capable(uint8_t axis, bool capable)
+{
+    if (axis >= NUM_AXES) return false;
+    s_gear_abs_capable[axis] = capable;
+    return save_gear_config();
+}
+
+bool config_set_gear_enable(uint8_t axis, bool enable)
+{
+    if (axis >= NUM_AXES) return false;
+    s_gear_enable[axis] = enable;
+    return save_gear_config();
+}
+
+bool config_set_gear_deviation_warn(float deg)
+{
+    if (!isfinite(deg) || deg < 0.0f) return false;
+    s_gear_deviation_warn = deg;
+    return save_gear_config();
 }

@@ -56,3 +56,20 @@ motor_profile_id_t config_get_motor_profile(uint8_t axis);
 
 /* 現在のプロファイル構造体ポインタを返す (NONE の場合は NULL) */
 const motor_profile_t *config_get_motor_profile_data(uint8_t axis);
+
+/* ------------------------------------------------------------------ */
+/*  ギア出力角度モニタ設定 (gear_config 名前空間)                         */
+/* ------------------------------------------------------------------ */
+float  config_get_gear_offset(uint8_t axis);
+int8_t config_get_gear_dir(uint8_t axis);
+bool   config_get_gear_abs_capable(uint8_t axis);
+bool   config_get_gear_enable(uint8_t axis);
+float  config_get_gear_deviation_warn(void);
+float  config_get_gear_ratio(uint8_t axis);
+
+/* SET GEAR_* は即時 NVS 保存する。false は引数不正または NVS 失敗。 */
+bool config_set_gear_offset(uint8_t axis, float deg);
+bool config_set_gear_dir(uint8_t axis, int8_t dir);
+bool config_set_gear_abs_capable(uint8_t axis, bool capable);
+bool config_set_gear_enable(uint8_t axis, bool enable);
+bool config_set_gear_deviation_warn(float deg);

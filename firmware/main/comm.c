@@ -3,7 +3,9 @@
 #include "encoder.h"
 #include "adc_monitor.h"
 #include "config.h"
+#include "gear_monitor.h"
 
+#include <math.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -79,6 +81,7 @@ static void on_fault(fault_reason_t reason, uint8_t axis_mask)
 
 static void on_home_done(uint8_t axis)
 {
+    gear_monitor_mark_home(axis);
     comm_sendf("EVT HOME_DONE %u\n", (unsigned)axis);
 }
 
@@ -101,6 +104,37 @@ static void on_sync_done(uint8_t axis_mask)
 static void on_sync_aborted(uint8_t axis_mask)
 {
     comm_sendf("EVT SYNC_ABORTED 0x%02x\n", (unsigned)axis_mask);
+}
+
+static void on_gear_event(gear_event_t event, uint8_t axis, float value)
+{
+    switch (event) {
+    case GEAR_EVENT_DEGRADED:
+        comm_sendf("EVT GEAR_DEGRADED %u\n", (unsigned)axis);
+        break;
+    case GEAR_EVENT_RECOVERED:
+        comm_sendf("EVT GEAR_RECOVERED %u\n", (unsigned)axis);
+        break;
+    case GEAR_EVENT_UNAVAILABLE:
+        comm_send("EVT GEAR_UNAVAILABLE\n");
+        break;
+    case GEAR_EVENT_AVAILABLE:
+        comm_send("EVT GEAR_AVAILABLE\n");
+        break;
+    case GEAR_EVENT_DEVIATION_WARN:
+        comm_sendf("EVT GEAR_DEVIATION_WARN %u %.2f\n",
+                   (unsigned)axis, (double)value);
+        break;
+    }
+}
+
+static void send_gear_unavailable_error(void)
+{
+    if (gear_monitor_get_state() == GEAR_STATE_VERSION_MISMATCH) {
+        comm_send("ERR E014 GEAR_VERSION_MISMATCH\n");
+    } else {
+        comm_send("ERR E013 GEAR_UNAVAILABLE\n");
+    }
 }
 
 /* ------------------------------------------------------------------ */
@@ -383,6 +417,74 @@ static void dispatch(const char *line)
         return;
     }
 
+    if (sscanf(line, "GET GEAR_ANGLE %u", &axis) == 1) {
+        gear_axis_status_t gear;
+        if (axis >= NUM_AXES) {
+            comm_send("ERR E003 INVALID_AXIS\n");
+        } else if (gear_monitor_get_state() != GEAR_STATE_READY ||
+                   !gear_monitor_get_axis_status((uint8_t)axis, &gear) ||
+                   !gear.enabled || !gear.ok) {
+            send_gear_unavailable_error();
+        } else {
+            comm_sendf("OK %.2f\n", (double)gear.angle_deg);
+        }
+        return;
+    }
+    if (sscanf(line, "GET GEAR_RAW %u", &axis) == 1) {
+        gear_axis_status_t gear;
+        if (axis >= NUM_AXES) {
+            comm_send("ERR E003 INVALID_AXIS\n");
+        } else if (gear_monitor_get_state() != GEAR_STATE_READY ||
+                   !gear_monitor_get_axis_status((uint8_t)axis, &gear) ||
+                   !gear.enabled || !gear.ok) {
+            send_gear_unavailable_error();
+        } else {
+            comm_sendf("OK %.2f\n", (double)gear.raw_angle_deg);
+        }
+        return;
+    }
+    if (strcmp(line, "GET GEAR_STATUS") == 0) {
+        gear_state_t gear_state = gear_monitor_get_state();
+        comm_sendf("OK {\"bridge\":\"%s\",\"axes\":[",
+                   gear_monitor_state_name(gear_state));
+        for (uint8_t i = 0; i < NUM_AXES; i++) {
+            gear_axis_status_t gear;
+            gear_monitor_get_axis_status(i, &gear);
+            comm_sendf("%s{\"ok\":%s,\"enabled\":%s,\"deg\":%.2f,"
+                       "\"raw\":%.2f,\"motor_equiv_deg\":%.2f,"
+                       "\"boot_valid\":%s,\"boot_deg\":%.2f,"
+                       "\"home_valid\":%s,\"home_deg\":%.2f,"
+                       "\"deviation\":%.2f,\"sample\":%u}",
+                       i == 0 ? "" : ",",
+                       gear.ok ? "true" : "false",
+                       gear.enabled ? "true" : "false",
+                       (double)gear.angle_deg,
+                       (double)gear.raw_angle_deg,
+                       (double)gear.motor_equiv_deg,
+                       gear.boot_angle_valid ? "true" : "false",
+                       (double)gear.boot_angle_deg,
+                       gear.home_angle_valid ? "true" : "false",
+                       (double)gear.home_angle_deg,
+                       (double)gear.deviation_deg,
+                       (unsigned)gear.sample_lo);
+        }
+        comm_send("]}\n");
+        return;
+    }
+    if (sscanf(line, "GET GEAR_DEVIATION %u", &axis) == 1) {
+        gear_axis_status_t gear;
+        if (axis >= NUM_AXES) {
+            comm_send("ERR E003 INVALID_AXIS\n");
+        } else if (gear_monitor_get_state() != GEAR_STATE_READY ||
+                   !gear_monitor_get_axis_status((uint8_t)axis, &gear) ||
+                   !gear.ok || !gear.home_angle_valid) {
+            send_gear_unavailable_error();
+        } else {
+            comm_sendf("OK %.2f\n", (double)gear.deviation_deg);
+        }
+        return;
+    }
+
     /* GET ADC <ch>: ch=0〜2→生 mV / ch=3→電源電圧 V / ch=4→電流 mA */
     if (sscanf(line, "GET ADC %u", &axis) == 1) {
         if (axis > 4) {
@@ -516,6 +618,75 @@ static void dispatch(const char *line)
             comm_send(config_set_microstep((microstep_t)val) ? "OK\n" : "ERR E002 INVALID_PARAM\n");
             return;
         }
+        {
+            float gear_value;
+            if (sscanf(line, "SET GEAR_OFFSET %u %f", &axis, &gear_value) == 2) {
+                if (axis >= NUM_AXES) {
+                    comm_send("ERR E003 INVALID_AXIS\n");
+                } else if (!isfinite(gear_value)) {
+                    comm_send("ERR E002 INVALID_PARAM\n");
+                } else {
+                    comm_send(config_set_gear_offset((uint8_t)axis, gear_value)
+                              ? "OK\n" : "ERR E007 NVS_FAIL\n");
+                }
+                return;
+            }
+        }
+        {
+            int gear_dir;
+            if (sscanf(line, "SET GEAR_DIR %u %d", &axis, &gear_dir) == 2) {
+                if (axis >= NUM_AXES) {
+                    comm_send("ERR E003 INVALID_AXIS\n");
+                } else if (gear_dir != 1 && gear_dir != -1) {
+                    comm_send("ERR E002 INVALID_PARAM\n");
+                } else {
+                    comm_send(config_set_gear_dir((uint8_t)axis, (int8_t)gear_dir)
+                              ? "OK\n" : "ERR E007 NVS_FAIL\n");
+                }
+                return;
+            }
+        }
+        {
+            unsigned capable;
+            if (sscanf(line, "SET GEAR_ABS_CAPABLE %u %u", &axis, &capable) == 2) {
+                if (axis >= NUM_AXES) {
+                    comm_send("ERR E003 INVALID_AXIS\n");
+                } else if (capable > 1) {
+                    comm_send("ERR E002 INVALID_PARAM\n");
+                } else {
+                    comm_send(config_set_gear_abs_capable((uint8_t)axis,
+                                                          capable != 0)
+                              ? "OK\n" : "ERR E007 NVS_FAIL\n");
+                }
+                return;
+            }
+        }
+        {
+            unsigned enable;
+            if (sscanf(line, "SET GEAR_ENABLE %u %u", &axis, &enable) == 2) {
+                if (axis >= NUM_AXES) {
+                    comm_send("ERR E003 INVALID_AXIS\n");
+                } else if (enable > 1) {
+                    comm_send("ERR E002 INVALID_PARAM\n");
+                } else {
+                    comm_send(config_set_gear_enable((uint8_t)axis, enable != 0)
+                              ? "OK\n" : "ERR E007 NVS_FAIL\n");
+                }
+                return;
+            }
+        }
+        {
+            float warn_deg;
+            if (sscanf(line, "SET GEAR_DEVIATION_WARN %f", &warn_deg) == 1) {
+                if (!isfinite(warn_deg) || warn_deg < 0.0f) {
+                    comm_send("ERR E002 INVALID_PARAM\n");
+                } else {
+                    comm_send(config_set_gear_deviation_warn(warn_deg)
+                              ? "OK\n" : "ERR E007 NVS_FAIL\n");
+                }
+                return;
+            }
+        }
         int soft_min, soft_max;
         if (sscanf(line, "SET SOFT_LIMIT %u %d %d", &axis, &soft_min, &soft_max) == 3) {
             comm_send(motor_set_soft_limit((uint8_t)axis, soft_min, soft_max)
@@ -635,6 +806,7 @@ void comm_init(void)
     /* SYNC_MOVE コールバックを登録 */
     motor_register_sync_done_cb(on_sync_done);
     motor_register_sync_aborted_cb(on_sync_aborted);
+    gear_monitor_register_event_callback(on_gear_event);
 
     /* ウォッチドッグ初期値を config から取得 */
     s_wdog_ms      = config_get_comm_timeout();

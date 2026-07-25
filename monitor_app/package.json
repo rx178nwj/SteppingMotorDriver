@@ -1,0 +1,19 @@
+{
+  "name": "stepping-motor-driver-monitor",
+  "version": "0.1.0",
+  "private": true,
+  "description": "USB-CDC monitor for SteppingMotorDriver",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "node scripts/start.js",
+    "test": "node --test",
+    "test:renderer": "node scripts/run-renderer-smoke.js"
+  },
+  "dependencies": {
+    "serialport": "^13.0.0",
+    "uplot": "^1.6.32"
+  },
+  "devDependencies": {
+    "electron": "^43.1.1"
+  }
+}

@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'">
+  <title>SteppingMotorDriver Monitor</title>
+  <link rel="stylesheet" href="../../node_modules/uplot/dist/uPlot.min.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <div>
+      <p class="eyebrow">USB-CDC / Phase 3</p>
+      <h1>SteppingMotorDriver Monitor</h1>
+    </div>
+    <div class="header-actions">
+      <div id="connection-state" class="state disconnected">切断</div>
+      <button id="estop-button" type="button" class="estop" disabled>緊急停止</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="card connection-card" aria-labelledby="connection-heading">
+      <div class="section-heading">
+        <div><h2 id="connection-heading">シリアル接続</h2><p>115200 bps固定。接続後は状態を自動更新します。</p></div>
+        <button id="refresh-button" type="button" class="secondary">ポート更新</button>
+      </div>
+      <div class="connection-controls">
+        <select id="port-select" aria-label="COMポート"><option value="">ポートを検索中…</option></select>
+        <label class="inline-field">更新周期
+          <select id="polling-select">
+            <option value="50">50 ms</option><option value="100" selected>100 ms</option>
+            <option value="250">250 ms</option><option value="500">500 ms</option><option value="1000">1000 ms</option>
+          </select>
+        </label>
+        <button id="connect-button" type="button">接続</button>
+        <button id="disconnect-button" type="button" class="danger" disabled>切断</button>
+      </div>
+      <p id="message" class="message" role="status" aria-live="polite"></p>
+    </section>
+
+    <section id="fault-banner" class="fault-banner" hidden>
+      <strong id="fault-reason">FAULT</strong><span id="fault-detail"></span>
+      <button id="clear-fault-button" type="button">フォルト復帰</button>
+    </section>
+
+    <section class="metrics" aria-label="基板計測値">
+      <article class="metric"><span>マイクロステップ</span><strong id="microstep-value">—</strong></article>
+      <article class="metric"><span>電源電圧</span><strong><span id="voltage-value">—</span> V</strong></article>
+      <article class="metric"><span>基板電流</span><strong><span id="current-value">—</span> mA</strong></article>
+      <article class="metric"><span>最終更新</span><strong id="updated-value">—</strong></article>
+    </section>
+
+    <section class="card dashboard-card" aria-labelledby="dashboard-heading">
+      <div class="section-heading"><div><h2 id="dashboard-heading">全軸ダッシュボード</h2><p>ステップ位置、エンコーダ、偏差、速度を表示します。</p></div></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>軸</th><th>状態</th><th>位置 [steps]</th><th>エンコーダ</th><th>偏差</th><th>速度 [steps/s]</th></tr></thead>
+          <tbody id="axis-table-body">
+            <tr data-axis="0"><th>CH0</th><td class="axis-state">—</td><td class="axis-pos">—</td><td class="axis-enc">—</td><td class="axis-error">—</td><td class="axis-vel">—</td></tr>
+            <tr data-axis="1"><th>CH1</th><td class="axis-state">—</td><td class="axis-pos">—</td><td class="axis-enc">—</td><td class="axis-error">—</td><td class="axis-vel">—</td></tr>
+            <tr data-axis="2"><th>CH2</th><td class="axis-state">—</td><td class="axis-pos">—</td><td class="axis-enc">—</td><td class="axis-error">—</td><td class="axis-vel">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card trend-card" aria-labelledby="trend-heading">
+      <div class="section-heading trend-heading">
+        <div><h2 id="trend-heading">リアルタイムトレンド</h2><p>カーソルを重ねると、その時点の各系列値を確認できます。</p></div>
+        <div class="trend-controls">
+          <label>表示時間
+            <select id="trend-window-select">
+              <option value="10">10秒</option><option value="30">30秒</option>
+              <option value="60" selected>60秒</option><option value="300">300秒</option>
+            </select>
+          </label>
+          <label>脱調しきい値 <input id="stall-threshold" type="number" min="1" step="1" value="512"> counts</label>
+          <label>過電流しきい値 <input id="current-threshold" type="number" min="1" step="100" value="6000"> mA</label>
+          <button id="trend-pause-button" type="button" class="secondary" aria-pressed="false">表示を一時停止</button>
+        </div>
+      </div>
+      <p id="trend-pause-state" class="trend-pause-state" hidden>表示停止中（データ収集は継続しています）</p>
+      <div class="trend-grid">
+        <article class="trend-panel"><h3>速度 [steps/s]</h3><div id="velocity-chart" class="trend-chart" role="img" aria-label="3軸の速度トレンドグラフ"></div></article>
+        <article class="trend-panel"><h3>位置 / エンコーダ [counts]</h3><div id="position-chart" class="trend-chart" role="img" aria-label="3軸のステップ位置とエンコーダ位置のトレンドグラフ"></div></article>
+        <article class="trend-panel"><h3>ステップ / エンコーダ偏差 [counts]</h3><div id="deviation-chart" class="trend-chart" role="img" aria-label="3軸の位置偏差トレンドグラフ"></div></article>
+        <article class="trend-panel"><h3>電流 / 電源電圧</h3><div id="power-chart" class="trend-chart" role="img" aria-label="基板電流と電源電圧のトレンドグラフ"></div></article>
+      </div>
+    </section>
+
+    <section class="card control-card" aria-labelledby="control-heading">
+      <div class="section-heading"><div><h2 id="control-heading">軸操作</h2><p>対象軸を確認してから操作してください。DRV_ENは基板全軸共通です。</p></div></div>
+      <fieldset id="control-fieldset" disabled>
+        <div class="axis-selector"><label for="axis-select">対象軸</label><select id="axis-select"><option value="0">CH0</option><option value="1">CH1</option><option value="2">CH2</option></select></div>
+        <div class="button-row">
+          <button type="button" data-command="ENABLE">有効化</button>
+          <button type="button" data-command="DISABLE" class="secondary">無効化</button>
+          <button type="button" data-command="STOP" class="warning">停止</button>
+          <button type="button" data-command="STOP_FREE" class="warning">停止＋コイル解除</button>
+          <button type="button" data-command="HOME" class="secondary">ホーミング</button>
+        </div>
+        <div class="motion-grid">
+          <div class="motion-group">
+            <h3>ジョグ（押している間）</h3>
+            <label>速度 <input id="jog-speed" type="number" min="1" max="100000" step="100" value="1000"> steps/s</label>
+            <div class="button-row"><button id="jog-negative" type="button" class="secondary">◀ 逆転</button><button id="jog-positive" type="button" class="secondary">正転 ▶</button></div>
+          </div>
+          <form id="move-form" class="motion-group"><h3>相対移動</h3><label>移動量 <input id="move-steps" type="number" step="1" value="1000"> steps</label><button type="submit">MOVE</button></form>
+          <form id="moveto-form" class="motion-group"><h3>絶対位置移動</h3><label>目標位置 <input id="moveto-position" type="number" step="1" value="0"> steps</label><button type="submit">MOVETO</button></form>
+        </div>
+      </fieldset>
+    </section>
+
+    <section class="log-grid">
+      <article class="card log-card"><div class="section-heading"><div><h2>イベントログ</h2><p>非同期EVT通知</p></div><button id="clear-event-button" type="button" class="secondary">クリア</button></div><div id="event-output" class="log-output" role="log"></div></article>
+      <article class="card log-card"><div class="section-heading"><div><h2>送受信ログ</h2><p>TX/RX生データ</p></div><button id="clear-log-button" type="button" class="secondary">クリア</button></div><div id="log-output" class="log-output" role="log"></div></article>
+    </section>
+  </main>
+  <script src="../../node_modules/uplot/dist/uPlot.iife.min.js"></script>
+  <script src="trend-charts.js"></script>
+  <script src="renderer.js"></script>
+</body>
+</html>
