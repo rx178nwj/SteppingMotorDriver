@@ -4,6 +4,9 @@
 #include "adc_monitor.h"
 #include "config.h"
 #include "gear_monitor.h"
+#include "ble_telemetry.h"
+#include "wifi_telemetry.h"
+#include "telemetry.h"
 
 #include <math.h>
 #include <string.h>
@@ -199,6 +202,12 @@ static void dispatch(const char *line)
     /* ---------- 疎通確認 ---------- */
     if (strcmp(line, "PING") == 0) {
         comm_send("OK PONG\n");
+        return;
+    }
+    if (strcmp(line, "IDENTITY") == 0) {
+        comm_sendf("OK {\"product\":\"stepping_motor_driver\","
+                   "\"board_id\":\"%s\",\"protocol_version\":1}\n",
+                   telemetry_board_id());
         return;
     }
 
@@ -509,6 +518,33 @@ static void dispatch(const char *line)
                    (long long)fi.timestamp_us);
         return;
     }
+    if (strcmp(line, "GET BOARD_ID") == 0) {
+        comm_sendf("OK %s\n", telemetry_board_id());
+        return;
+    }
+    if (strcmp(line, "GET BLE_STATUS") == 0) {
+        switch (ble_telemetry_get_status()) {
+        case BLE_TELEMETRY_CONNECTED:
+            comm_send("OK CONNECTED\n");
+            break;
+        case BLE_TELEMETRY_ADVERTISING:
+            comm_send("OK ADVERTISING\n");
+            break;
+        case BLE_TELEMETRY_DISABLED:
+            comm_send("OK DISABLED\n");
+            break;
+        default:
+            comm_send("ERR E016 BLE_INIT_FAILED\n");
+            break;
+        }
+        return;
+    }
+    if (strcmp(line, "GET WIFI_STATUS") == 0) {
+        char status[64];
+        wifi_telemetry_format_status(status, sizeof(status));
+        comm_sendf("OK %s\n", status);
+        return;
+    }
 
     /* STATUS — 全軸サマリー */
     if (strcmp(line, "STATUS") == 0) {
@@ -547,6 +583,69 @@ static void dispatch(const char *line)
             motor_set_idle_timeout(val);
             config_set_idle_timeout(val);
             comm_send("OK\n");
+            return;
+        }
+
+        if (sscanf(line, "SET BLE_ENABLE %u", &val) == 1) {
+            if (val > 1) {
+                comm_send("ERR E002 INVALID_ARG\n");
+            } else if (!config_set_ble_enable(val != 0)) {
+                comm_send("ERR E007 NVS_FAIL\n");
+            } else if (ble_telemetry_set_enabled(val != 0) != ESP_OK) {
+                comm_send("ERR E016 BLE_INIT_FAILED\n");
+            } else {
+                comm_send("OK\n");
+            }
+            return;
+        }
+        if (strncmp(line, "SET WIFI_SSID ", 14) == 0) {
+            const char *ssid = line + 14;
+            if (!config_set_wifi_ssid(ssid)) {
+                comm_send(strlen(ssid) == 0 || strlen(ssid) > 32
+                              ? "ERR E002 INVALID_ARG\n"
+                              : "ERR E007 NVS_FAIL\n");
+            } else if (wifi_telemetry_reconfigure() != ESP_OK) {
+                comm_send("ERR E007 WIFI_RECONFIGURE_FAILED\n");
+            } else {
+                comm_send("OK\n");
+            }
+            return;
+        }
+        if (strncmp(line, "SET WIFI_PASS ", 14) == 0) {
+            const char *password = line + 14;
+            if (strlen(password) > 64) {
+                comm_send("ERR E002 INVALID_ARG\n");
+            } else if (!config_set_wifi_password(password)) {
+                comm_send("ERR E007 NVS_FAIL\n");
+            } else if (wifi_telemetry_reconfigure() != ESP_OK) {
+                comm_send("ERR E007 WIFI_RECONFIGURE_FAILED\n");
+            } else {
+                comm_send("OK\n");
+            }
+            return;
+        }
+        if (sscanf(line, "SET WIFI_ENABLE %u", &val) == 1) {
+            if (val > 1) {
+                comm_send("ERR E002 INVALID_ARG\n");
+            } else if (val == 1 && config_get_wifi_ssid()[0] == '\0') {
+                comm_send("ERR E015 WIFI_NOT_CONFIGURED\n");
+            } else if (!config_set_wifi_enable(val != 0)) {
+                comm_send("ERR E007 NVS_FAIL\n");
+            } else if (wifi_telemetry_set_enabled(val != 0) != ESP_OK) {
+                comm_send("ERR E007 WIFI_STATE_CHANGE_FAILED\n");
+            } else {
+                comm_send("OK\n");
+            }
+            return;
+        }
+        if (sscanf(line, "SET WIFI_TELEMETRY_RATE %u", &val) == 1) {
+            if (val < 1 || val > 100) {
+                comm_send("ERR E002 INVALID_ARG\n");
+            } else if (!config_set_wifi_telemetry_rate((uint8_t)val)) {
+                comm_send("ERR E007 NVS_FAIL\n");
+            } else {
+                comm_send("OK\n");
+            }
             return;
         }
 
@@ -724,11 +823,15 @@ static void dispatch(const char *line)
     }
     if (strcmp(line, "LOAD") == 0) {
         config_init();
+        (void)ble_telemetry_set_enabled(config_get_ble_enable());
+        (void)wifi_telemetry_set_enabled(config_get_wifi_enable());
         comm_send("OK\n");
         return;
     }
     if (strcmp(line, "RESET_CONFIG") == 0) {
         config_reset();
+        (void)ble_telemetry_set_enabled(true);
+        (void)wifi_telemetry_set_enabled(false);
         comm_send("OK\n");
         return;
     }

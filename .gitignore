@@ -10,6 +10,7 @@
 
 # Build artifacts
 firmware/build/
+firmware/managed_components/
 firmware_test/build/
 firmware_test/__pycache__/
 

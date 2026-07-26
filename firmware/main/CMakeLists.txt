@@ -8,6 +8,9 @@ idf_component_register(
         "encoder.c"
         "adc_monitor.c"
         "gear_monitor.c"
+        "telemetry.c"
+        "ble_telemetry.c"
+        "wifi_telemetry.c"
     INCLUDE_DIRS
         "."
     REQUIRES
@@ -15,4 +18,11 @@ idf_component_register(
         nvs_flash
         esp_adc
         esp_timer
+        bt
+        esp_wifi
+        esp_netif
+        esp_event
+        lwip
+        mdns
+        esp_app_format
 )

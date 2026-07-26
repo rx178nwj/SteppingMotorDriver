@@ -13,6 +13,7 @@
 static const char *TAG    = "config";
 static const char *NVS_NS = "motor_config";
 static const char *GEAR_NVS_NS = "gear_config";
+static const char *WIRELESS_NVS_NS = "wifi_config";
 
 /* ------------------------------------------------------------------ */
 /*  共通デフォルト値                                                     */
@@ -42,6 +43,11 @@ static bool                 s_gear_abs_capable[NUM_AXES] = {false, false, false}
 static bool                 s_gear_enable[NUM_AXES] = {true, true, true};
 static float                s_gear_ratio[NUM_AXES] = {1.0f, 1.0f, 1.0f};
 static float                s_gear_deviation_warn = DEF_GEAR_DEVIATION_WARN_DEG;
+static bool                 s_ble_enable = true;
+static bool                 s_wifi_enable = false;
+static uint8_t              s_wifi_telemetry_rate = 10;
+static char                 s_wifi_ssid[33];
+static char                 s_wifi_password[65];
 
 static uint32_t float_to_u32(float value)
 {
@@ -128,6 +134,57 @@ static bool save_gear_config(void)
     esp_err_t err = nvs_commit(h);
     nvs_close(h);
     return err == ESP_OK;
+}
+
+static bool wireless_set_u8(const char *key, uint8_t value)
+{
+    nvs_handle_t h;
+    if (nvs_open(WIRELESS_NVS_NS, NVS_READWRITE, &h) != ESP_OK) return false;
+    esp_err_t err = nvs_set_u8(h, key, value);
+    if (err == ESP_OK) err = nvs_commit(h);
+    nvs_close(h);
+    return err == ESP_OK;
+}
+
+static bool wireless_set_str(const char *key, const char *value)
+{
+    nvs_handle_t h;
+    if (nvs_open(WIRELESS_NVS_NS, NVS_READWRITE, &h) != ESP_OK) return false;
+    esp_err_t err = nvs_set_str(h, key, value);
+    if (err == ESP_OK) err = nvs_commit(h);
+    nvs_close(h);
+    return err == ESP_OK;
+}
+
+static void load_wireless_config(void)
+{
+    s_ble_enable = true;
+    s_wifi_enable = false;
+    s_wifi_telemetry_rate = 10;
+    s_wifi_ssid[0] = '\0';
+    s_wifi_password[0] = '\0';
+
+    nvs_handle_t h;
+    if (nvs_open(WIRELESS_NVS_NS, NVS_READONLY, &h) != ESP_OK) return;
+
+    uint8_t value;
+    size_t length = sizeof(s_wifi_ssid);
+    if (nvs_get_u8(h, "ble_enable", &value) == ESP_OK) {
+        s_ble_enable = value != 0;
+    }
+    if (nvs_get_u8(h, "wifi_enable", &value) == ESP_OK) {
+        s_wifi_enable = value != 0;
+    }
+    if (nvs_get_u8(h, "wifi_rate", &value) == ESP_OK &&
+        value >= 1 && value <= 100) {
+        s_wifi_telemetry_rate = value;
+    }
+    (void)nvs_get_str(h, "ssid", s_wifi_ssid, &length);
+    length = sizeof(s_wifi_password);
+    (void)nvs_get_str(h, "password", s_wifi_password, &length);
+    nvs_close(h);
+
+    if (s_wifi_ssid[0] == '\0') s_wifi_enable = false;
 }
 
 /* ------------------------------------------------------------------ */
@@ -295,6 +352,7 @@ void config_init(void)
     apply_microstep_gpio(s_microstep);
     motor_set_idle_timeout(s_idle_timeout_ms);
     load_gear_config();
+    load_wireless_config();
 
     ESP_LOGI(TAG, "idle_timeout=%lums comm_timeout=%lums",
              (unsigned long)idle_ms, (unsigned long)comm_ms);
@@ -368,6 +426,11 @@ void config_reset(void)
         nvs_commit(h);
         nvs_close(h);
     }
+    if (nvs_open(WIRELESS_NVS_NS, NVS_READWRITE, &h) == ESP_OK) {
+        nvs_erase_all(h);
+        nvs_commit(h);
+        nvs_close(h);
+    }
 
     s_microstep       = MICROSTEP_32;
     s_idle_timeout_ms = DEF_IDLE_TIMEOUT_MS;
@@ -392,6 +455,11 @@ void config_reset(void)
     apply_microstep_gpio(s_microstep);
     motor_set_idle_timeout(s_idle_timeout_ms);
     s_gear_deviation_warn = DEF_GEAR_DEVIATION_WARN_DEG;
+    s_ble_enable = true;
+    s_wifi_enable = false;
+    s_wifi_telemetry_rate = 10;
+    s_wifi_ssid[0] = '\0';
+    s_wifi_password[0] = '\0';
 
     ESP_LOGI(TAG, "Config reset to defaults");
 }
@@ -550,4 +618,72 @@ bool config_set_gear_deviation_warn(float deg)
     if (!isfinite(deg) || deg < 0.0f) return false;
     s_gear_deviation_warn = deg;
     return save_gear_config();
+}
+
+bool config_get_ble_enable(void)
+{
+    return s_ble_enable;
+}
+
+bool config_set_ble_enable(bool enable)
+{
+    if (!wireless_set_u8("ble_enable", enable ? 1U : 0U)) return false;
+    s_ble_enable = enable;
+    return true;
+}
+
+const char *config_get_wifi_ssid(void)
+{
+    return s_wifi_ssid;
+}
+
+const char *config_get_wifi_password(void)
+{
+    return s_wifi_password;
+}
+
+bool config_get_wifi_enable(void)
+{
+    return s_wifi_enable;
+}
+
+uint8_t config_get_wifi_telemetry_rate(void)
+{
+    return s_wifi_telemetry_rate;
+}
+
+bool config_set_wifi_ssid(const char *ssid)
+{
+    if (!ssid) return false;
+    size_t length = strlen(ssid);
+    if (length == 0 || length > 32) return false;
+    if (!wireless_set_str("ssid", ssid)) return false;
+    memcpy(s_wifi_ssid, ssid, length + 1);
+    return true;
+}
+
+bool config_set_wifi_password(const char *password)
+{
+    if (!password) return false;
+    size_t length = strlen(password);
+    if (length > 64) return false;
+    if (!wireless_set_str("password", password)) return false;
+    memcpy(s_wifi_password, password, length + 1);
+    return true;
+}
+
+bool config_set_wifi_enable(bool enable)
+{
+    if (enable && s_wifi_ssid[0] == '\0') return false;
+    if (!wireless_set_u8("wifi_enable", enable ? 1U : 0U)) return false;
+    s_wifi_enable = enable;
+    return true;
+}
+
+bool config_set_wifi_telemetry_rate(uint8_t hz)
+{
+    if (hz < 1 || hz > 100) return false;
+    if (!wireless_set_u8("wifi_rate", hz)) return false;
+    s_wifi_telemetry_rate = hz;
+    return true;
 }

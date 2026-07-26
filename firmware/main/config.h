@@ -73,3 +73,15 @@ bool config_set_gear_dir(uint8_t axis, int8_t dir);
 bool config_set_gear_abs_capable(uint8_t axis, bool capable);
 bool config_set_gear_enable(uint8_t axis, bool enable);
 bool config_set_gear_deviation_warn(float deg);
+
+/* BLE / WiFi telemetry configuration (wifi_config namespace). */
+bool        config_get_ble_enable(void);
+bool        config_set_ble_enable(bool enable);
+const char *config_get_wifi_ssid(void);
+const char *config_get_wifi_password(void);
+bool        config_get_wifi_enable(void);
+uint8_t     config_get_wifi_telemetry_rate(void);
+bool        config_set_wifi_ssid(const char *ssid);
+bool        config_set_wifi_password(const char *password);
+bool        config_set_wifi_enable(bool enable);
+bool        config_set_wifi_telemetry_rate(uint8_t hz);

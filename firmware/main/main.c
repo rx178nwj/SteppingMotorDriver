@@ -12,6 +12,8 @@
 #include "config.h"
 #include "comm.h"
 #include "gear_monitor.h"
+#include "ble_telemetry.h"
+#include "wifi_telemetry.h"
 
 static const char *TAG = "main";
 
@@ -116,6 +118,17 @@ void app_main(void)
 
     /* --- ギア出力軸角度モニター (非同期、未接続でも起動継続) --- */
     gear_monitor_init();
+
+    /* --- Read-only wireless telemetry (independent of motor control) --- */
+    esp_err_t ble_err = ble_telemetry_init();
+    if (ble_err != ESP_OK) {
+        ESP_LOGE(TAG, "E016 BLE_INIT_FAILED: %s", esp_err_to_name(ble_err));
+    }
+    esp_err_t wifi_err = wifi_telemetry_init();
+    if (wifi_err != ESP_OK) {
+        ESP_LOGE(TAG, "WiFi telemetry init failed: %s",
+                 esp_err_to_name(wifi_err));
+    }
 
     ESP_LOGI(TAG, "SteppingMotorDriver firmware started");
 
