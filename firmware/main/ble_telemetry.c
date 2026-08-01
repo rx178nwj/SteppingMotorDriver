@@ -63,11 +63,32 @@ static bool s_encrypted;
 static bool s_initialized;
 static ble_telemetry_status_t s_status = BLE_TELEMETRY_DISABLED;
 static char s_device_name[18];
+static char s_device_name_short[9];
 
 void ble_store_config_init(void);
 
 static int gap_event(struct ble_gap_event *event, void *arg);
 static void start_advertising(void);
+
+static void delete_peer_bond(uint16_t conn_handle, const char *reason)
+{
+    struct ble_gap_conn_desc desc;
+    int rc = ble_gap_conn_find(conn_handle, &desc);
+    if (rc != 0) {
+        ESP_LOGW(TAG, "cannot inspect peer bond (%s), conn=%u rc=%d",
+                 reason, conn_handle, rc);
+        return;
+    }
+
+    rc = ble_store_util_delete_peer(&desc.peer_id_addr);
+    if (rc == 0) {
+        ESP_LOGW(TAG, "deleted stale peer bond (%s), conn=%u",
+                 reason, conn_handle);
+    } else {
+        ESP_LOGW(TAG, "peer bond delete failed (%s), conn=%u rc=%d",
+                 reason, conn_handle, rc);
+    }
+}
 
 static bool format_characteristic(enum telemetry_characteristic chr,
                                   char *buf, size_t size)
@@ -94,10 +115,16 @@ static int characteristic_access(uint16_t conn_handle, uint16_t attr_handle,
     char json[320];
     if (!format_characteristic((enum telemetry_characteristic)(intptr_t)arg,
                                json, sizeof(json))) {
+        ESP_LOGE(TAG, "GATT read format failed, conn=%u attr=%u chr=%d",
+                 conn_handle, attr_handle, (int)(intptr_t)arg);
         return BLE_ATT_ERR_INSUFFICIENT_RES;
     }
-    return os_mbuf_append(ctxt->om, json, strlen(json)) == 0
-               ? 0 : BLE_ATT_ERR_INSUFFICIENT_RES;
+    size_t length = strlen(json);
+    int rc = os_mbuf_append(ctxt->om, json, length);
+    ESP_LOGI(TAG, "GATT read, conn=%u attr=%u chr=%d len=%u rc=%d",
+             conn_handle, attr_handle, (int)(intptr_t)arg,
+             (unsigned)length, rc);
+    return rc == 0 ? 0 : BLE_ATT_ERR_INSUFFICIENT_RES;
 }
 
 #define READ_ENCRYPTED (BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_READ_ENC)
@@ -205,6 +232,17 @@ static void start_advertising(void)
     fields.uuids128 = (ble_uuid128_t *)&s_service_uuid;
     fields.num_uuids128 = 1;
     fields.uuids128_is_complete = 1;
+    /* Windows' Settings > Bluetooth "Add device" list often scans
+     * passively and never fetches the scan response, so a device with
+     * no name in the primary PDU shows up unlabeled and is easy to miss
+     * or fails to appear at all. A shortened name (fits the leftover
+     * ~10 bytes after flags + 128-bit service UUID in the 31-byte
+     * legacy PDU) keeps it identifiable; the full name still goes in
+     * the scan response below.
+     */
+    fields.name = (uint8_t *)s_device_name_short;
+    fields.name_len = strlen(s_device_name_short);
+    fields.name_is_complete = 0;
     int rc = ble_gap_adv_set_fields(&fields);
     if (rc != 0) {
         ESP_LOGE(TAG, "advertising data failed rc=%d", rc);
@@ -265,7 +303,22 @@ static int gap_event(struct ble_gap_event *event, void *arg)
             };
             (void)ble_gap_update_params(s_conn_handle, &params);
         }
-        (void)ble_gap_security_initiate(s_conn_handle);
+        {
+            int rc = ble_gap_security_initiate(s_conn_handle);
+            if (rc == 0) {
+                ESP_LOGI(TAG, "BLE security initiated, conn=%u",
+                         s_conn_handle);
+            } else if (rc == BLE_HS_EALREADY) {
+                ESP_LOGI(TAG, "BLE security already in progress, conn=%u",
+                         s_conn_handle);
+            } else {
+                ESP_LOGE(TAG, "BLE security initiation failed, conn=%u rc=%d",
+                         s_conn_handle, rc);
+                delete_peer_bond(s_conn_handle, "security initiation failed");
+                (void)ble_gap_terminate(s_conn_handle,
+                                        BLE_ERR_REM_USER_CONN_TERM);
+            }
+        }
         break;
 
     case BLE_GAP_EVENT_DISCONNECT:
@@ -283,7 +336,24 @@ static int gap_event(struct ble_gap_event *event, void *arg)
 
     case BLE_GAP_EVENT_ENC_CHANGE:
         s_encrypted = event->enc_change.status == 0;
-        if (!s_encrypted) {
+        if (s_encrypted) {
+            struct ble_gap_conn_desc desc;
+            int rc = ble_gap_conn_find(s_conn_handle, &desc);
+            if (rc == 0) {
+                ESP_LOGI(TAG,
+                         "BLE security state, conn=%u encrypted=%u "
+                         "authenticated=%u bonded=%u key_size=%u",
+                         s_conn_handle, desc.sec_state.encrypted,
+                         desc.sec_state.authenticated, desc.sec_state.bonded,
+                         desc.sec_state.key_size);
+            } else {
+                ESP_LOGW(TAG, "BLE link encrypted but state lookup failed, "
+                         "conn=%u rc=%d", s_conn_handle, rc);
+            }
+        } else {
+            ESP_LOGE(TAG, "BLE encryption failed, conn=%u status=%d",
+                     s_conn_handle, event->enc_change.status);
+            delete_peer_bond(s_conn_handle, "encryption failed");
             (void)ble_gap_terminate(s_conn_handle,
                                     BLE_ERR_REM_USER_CONN_TERM);
         }
@@ -302,13 +372,10 @@ static int gap_event(struct ble_gap_event *event, void *arg)
         break;
 
     case BLE_GAP_EVENT_REPEAT_PAIRING:
-        {
-            struct ble_gap_conn_desc desc;
-            if (ble_gap_conn_find(event->repeat_pairing.conn_handle,
-                                  &desc) == 0) {
-                (void)ble_store_util_delete_peer(&desc.peer_id_addr);
-            }
-        }
+        ESP_LOGW(TAG, "repeat pairing requested, conn=%u",
+                 event->repeat_pairing.conn_handle);
+        delete_peer_bond(event->repeat_pairing.conn_handle,
+                         "repeat pairing requested");
         return BLE_GAP_REPEAT_PAIRING_RETRY;
 
     default:
@@ -343,6 +410,12 @@ esp_err_t ble_telemetry_init(void)
 
     snprintf(s_device_name, sizeof(s_device_name), "SMD-%s",
              telemetry_board_id());
+    {
+        const char *board_id = telemetry_board_id();
+        size_t len = strlen(board_id);
+        const char *suffix = len > 4 ? board_id + (len - 4) : board_id;
+        snprintf(s_device_name_short, sizeof(s_device_name_short), "SMD-%s", suffix);
+    }
     esp_err_t err = nimble_port_init();
     if (err != ESP_OK) {
         s_status = BLE_TELEMETRY_ERROR;
@@ -355,7 +428,14 @@ esp_err_t ble_telemetry_init(void)
     ble_hs_cfg.sm_bonding = 1;
     ble_hs_cfg.sm_mitm = 0;
     ble_hs_cfg.sm_sc = 1;
-    ble_hs_cfg.sm_sc_only = 1;
+    /*
+     * Just Works has no MITM authentication.  NimBLE's SC-only mode promotes
+     * every encrypted GATT attribute to security level 4, which would reject
+     * this valid encrypted-but-unauthenticated pairing.  Keep Secure
+     * Connections enabled, but allow the level-2 Just Works link required by
+     * this headless board.
+     */
+    ble_hs_cfg.sm_sc_only = 0;
     ble_hs_cfg.sm_our_key_dist = BLE_SM_PAIR_KEY_DIST_ENC |
                                  BLE_SM_PAIR_KEY_DIST_ID;
     ble_hs_cfg.sm_their_key_dist = BLE_SM_PAIR_KEY_DIST_ENC |
