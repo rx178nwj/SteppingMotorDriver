@@ -28,6 +28,10 @@
 #define GPIO_M1  42
 #define GPIO_M2  45
 
+/* Status LEDs */
+#define GPIO_STATUS1_LED  46  /* USB / system status */
+#define GPIO_STATUS2_LED  47  /* BLE / WiFi telemetry status */
+
 /* ------------------------------------------------------------------ */
 /*  エンコーダ A/B/Z 相  (3ch)                                          */
 /* ------------------------------------------------------------------ */

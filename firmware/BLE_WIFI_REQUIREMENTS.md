@@ -1,4 +1,4 @@
-# SteppingMotorDriver Bluetooth(BLE)・WiFi通信 要件定義・要求仕様
+﻿# SteppingMotorDriver Bluetooth(BLE)・WiFi通信 要件定義・要求仕様
 
 SteppingMotorDriver ファームウェアに、モニタアプリ（`robot_arm_monitor`）向けの**読み取り専用テレメトリ経路**として
 Bluetooth Low Energy（BLE）を実装し、BLE の帯域では不足する用途向けに WiFi（ステーションモード）による
@@ -10,8 +10,8 @@ Bluetooth Low Energy（BLE）を実装し、BLE の帯域では不足する用�
 | 関連（本体） | [firmware/REQUIREMENTS.md](REQUIREMENTS.md)（USB-CDC 本体要件定義。コマンド・データモデルの元） |
 | 関連（外部） | [design/SYSTEM_REQUIREMENTS.md](../../design/SYSTEM_REQUIREMENTS.md) §4（通信アーキテクチャ方針）・§6 #1/#3/#4（本書が解消する未解決事項） |
 | 関連（外部） | [robot_arm_monitor/REQUIREMENTS.md](../../robot_arm_monitor/REQUIREMENTS.md)（本書のテレメトリを消費するホスト側アプリ、Phase 6 以降） |
-| 版 | 0.1（初版） |
-| 作成日 | 2026-07-25 |
+| 版 | 0.2（0位置設定コマンドのスコープ確認を反映） |
+| 作成日 | 2026-07-25（初版）／2026-08-01 改訂（§1.3, §4.1: 0位置設定はUSB-CDC限定と確認・明記） |
 
 ---
 
@@ -43,6 +43,7 @@ Bluetooth Low Energy（BLE）を実装し、BLE の帯域では不足する用�
 ### 1.3 非対象（明示的に対象外）
 
 - BLE/WiFi 経由の ENABLE/MOVE/JOG/ESTOP 等の書き込みコマンド（§1.2 #4、恒久対象外）
+- BLE/WiFi 経由の `SET GEAR_ZERO`/`GEAR_ZERO_CLEAR`（0位置設定, [GEAR_ANGLE_MONITOR_REQUIREMENTS.md F-GEAR-10](GEAR_ANGLE_MONITOR_REQUIREMENTS.md)）発行。§1.2 #4 の恒久方針どおり書き込みコマンドの一種として扱い、USB-CDC（制御アプリ）限定とする。BLE/WiFi側は較正状態の参照のみ（§4.1 `zero_calibrated`）（2026-08-01 確認・確定）
 - WiFi SoftAP モード・Web プロビジョニング UI（§5.4 で USB-CDC 経由のプロビジョニングに確定）
 - 制御アプリとのIPC中継（[design/SYSTEM_REQUIREMENTS.md §6 #2](../../design/SYSTEM_REQUIREMENTS.md) は別件、本書の対象外）
 
@@ -87,9 +88,32 @@ Bluetooth Low Energy（BLE）を実装し、BLE の帯域では不足する用�
 |------|------|
 | BLE スタック | ESP-IDF NimBLE（BLE-only、Bluedroid比で省メモリ。Classic Bluetooth は不要） |
 | WiFi | ESP32-S3 内蔵 2.4GHz WiFi（IEEE 802.11 b/g/n、Station mode のみ使用） |
-| 専用GPIO | なし（内蔵RF、ESP32-S3-WROOM-1 モジュール内蔵アンテナを使用） |
+| 専用GPIO | 無線モジュール自体は内蔵RF（ESP32-S3-WROOM-1 モジュール内蔵アンテナ）のため専用GPIOなし。ただし接続状態表示用に GPIO47（Status2 LED）を使用する（§3.1） |
 | ADC2 との関係 | 既存確定仕様どおり ADC2 は WiFi と共有のため未使用（全 ADC を ADC1 に集約、[firmware/REQUIREMENTS.md §2.3](REQUIREMENTS.md)）。本書の WiFi 有効化はこの制約と整合する |
 | 要確認 | 筐体内でのアンテナ設置・RF性能（金属筐体・他基板との近接配置による減衰）は未検証。実機評価が必要（§9.5） |
+
+### 3.1 Status2 LED（BLE/WiFi接続状態表示）
+
+| 項目 | 内容 |
+|------|------|
+| GPIO | GPIO47（出力、Status2 LED専用） |
+| 用途 | BLE・WiFi無線テレメトリ経路の接続／通信／エラー状態をユーザーに一目で提示する表示灯 |
+| 駆動タスク | BleTask・WifiTelemetryTask（§8）が状態を共有変数経由でLED制御タスクへ通知する想定。専用タスクを新設するか既存 StatusTask（[firmware/REQUIREMENTS.md §6](REQUIREMENTS.md)）に統合するかは実装時に決定する |
+
+#### 表示パターン
+
+BLE・WiFiは同一のStatus2 LEDを共有し、以下の優先順位（上ほど優先）で状態を反映する。BLE/WiFiのいずれか一方でも該当条件を満たせばその表示を採用する。
+
+| 優先度 | 状態 | LED挙動 | 周期（デフォルト、暫定値） | 条件 |
+|--------|------|---------|---------------------------|------|
+| 1（最優先） | エラー | 高速点滅 | 8 Hz（Duty 50%、約62.5ms ON/OFF） | `E015 WIFI_NOT_CONFIGURED`以外のBLE/WiFi関連エラー（`E016 BLE_INIT_FAILED`、WiFi接続失敗・認証エラー等） |
+| 2 | データ通信中 | 点滅 | 2 Hz（Duty 50%、約250ms ON/OFF） | BLE Notify送信中、またはWiFi TCPテレメトリ配信中（§4.1・§5.3） |
+| 3 | 接続確立 | 点灯（常時ON） | - | BLE CentralとConnection確立中、またはWiFi TCPクライアント接続中（データ送信の合間を含む） |
+| 4（デフォルト） | 未接続 | 消灯 | - | BLE未接続（Advertising中含む）かつWiFi未接続（無効・未接続いずれも） |
+
+- 点滅周期（2Hz／8Hz）は暫定値とし、実機評価後に見やすさ・視認性の観点で調整可能とする（§9.7、未解決事項に追加）。
+- BLEとWiFiが同時に異なる状態（例：BLE接続済み・WiFi通信中）の場合は、上表の優先順位に従い高い方（この例では「データ通信中」）を表示する。
+- 本LEDは読み取り専用テレメトリ経路の状態表示に限定し、モーション制御・USB通信の状態には連動しない（§1.2 #4の恒久方針と整合、他LEDがあれば役割分担する）。
 
 ---
 
@@ -105,7 +129,7 @@ Bluetooth Low Energy（BLE）を実装し、BLE の帯域では不足する用�
 | Axis Status | Read, Notify | 10 Hz（100ms、デフォルト） | `[{"axis":0,"state":"IDLE","pos":12800,"vel":0,"enc":51200},...]`（3軸分の配列） | `GET STATE`/`GET POS`/`GET VEL`/`GET ENC` の集約 |
 | Power/ADC | Read, Notify | 10 Hz（100ms、デフォルト） | `{"pot":[v0,v1,v2],"current_mA":850,"voltage_mV":24100}` | `GET ADC` の集約 |
 | Fault Info | Read, Notify | 変化時 + 1Hz keepalive | `{"reason":"OVERCURRENT","axis_mask":2,"timestamp_us":1234567890}` | `GET FAULT_INFO` |
-| Gear Angle | Read, Notify | 10 Hz（gear monitor 有効時のみ、[GEAR_ANGLE_MONITOR_REQUIREMENTS.md](GEAR_ANGLE_MONITOR_REQUIREMENTS.md) 実装後） | `[{"axis":0,"angle_deg":123.4,"state":"OK"},...]`（未実装時は `{"state":"UNAVAILABLE"}`） | `GET GEAR_ANGLE`（将来） |
+| Gear Angle | Read, Notify | 10 Hz（gear monitor 有効時のみ、[GEAR_ANGLE_MONITOR_REQUIREMENTS.md](GEAR_ANGLE_MONITOR_REQUIREMENTS.md) 実装後） | `[{"axis":0,"angle_deg":123.4,"state":"OK","zero_calibrated":true},...]`（未実装時は `{"state":"UNAVAILABLE"}`） | `GET GEAR_ANGLE`／`GET GEAR_ZERO_STATUS`（将来, [GEAR_ANGLE_MONITOR_REQUIREMENTS.md F-GEAR-10](GEAR_ANGLE_MONITOR_REQUIREMENTS.md)） |
 
 **書き込み可能なキャラクタリスティックは設けない**（CCCD＝Notify有効化のためのクライアント設定記述子を除く）。これにより §1.2 #4 の恒久対象外方針をプロトコルレベルで担保する。
 
@@ -279,6 +303,7 @@ CommTask   BleTask   WifiTelemetryTask
 | 9.4 | ファームウェアOTA更新の要件化時期 | Low | 本書スコープ外、別途要件化 |
 | 9.5 | 筐体内アンテナ性能（金属筐体・近接配置による減衰） | Medium | §3、実機評価が必要 |
 | 9.6 | WiFi接続の認証・トークンを設けないことの妥当性 | Low | 読み取り専用・信頼済みローカルネットワーク前提のため本版では未導入。将来トークン認証を追加する余地を残す設計とする |
+| 9.7 | Status2 LED（§3.1）の点滅周期（2Hz／8Hz）の妥当性 | Low | 暫定値。実機評価で視認性を確認し、必要に応じて調整する |
 
 ---
 

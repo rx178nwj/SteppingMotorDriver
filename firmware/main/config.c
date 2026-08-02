@@ -2,6 +2,7 @@
 #include "motor_ctrl.h"
 #include "motor_specs.h"
 #include "gpio_config.h"
+#include "adc_monitor.h"
 
 #include "nvs_flash.h"
 #include "nvs.h"
@@ -233,11 +234,19 @@ void config_init(void)
     uint32_t ms      = DEF_MICROSTEP;
     uint32_t idle_ms = DEF_IDLE_TIMEOUT_MS;
     uint32_t comm_ms = DEF_COMM_TIMEOUT_MS;
+    float    volt_div = adc_get_volt_divider();
 
     if (err == ESP_OK) {
         nvs_get_u32(h, "microstep",    &ms);
         nvs_get_u32(h, "idle_timeout", &idle_ms);
         nvs_get_u32(h, "comm_timeout", &comm_ms);
+        uint32_t volt_div_bits;
+        if (nvs_get_u32(h, "volt_div", &volt_div_bits) == ESP_OK) {
+            float saved_volt_div = u32_to_float(volt_div_bits);
+            if (isfinite(saved_volt_div) && saved_volt_div > 0.0f) {
+                volt_div = saved_volt_div;
+            }
+        }
     }
 
     for (uint8_t i = 0; i < NUM_AXES; i++) {
@@ -351,6 +360,7 @@ void config_init(void)
 
     apply_microstep_gpio(s_microstep);
     motor_set_idle_timeout(s_idle_timeout_ms);
+    adc_set_volt_divider(volt_div);
     load_gear_config();
     load_wireless_config();
 
@@ -396,6 +406,7 @@ bool config_save(void)
     nvs_set_u32(h, "microstep",    (uint32_t)s_microstep);
     nvs_set_u32(h, "idle_timeout", s_idle_timeout_ms);
     nvs_set_u32(h, "comm_timeout", s_comm_timeout_ms);
+    nvs_set_u32(h, "volt_div",     float_to_u32(adc_get_volt_divider()));
 
     esp_err_t err = nvs_commit(h);
     nvs_close(h);
@@ -454,6 +465,7 @@ void config_reset(void)
     }
     apply_microstep_gpio(s_microstep);
     motor_set_idle_timeout(s_idle_timeout_ms);
+    adc_set_volt_divider(24.0f / 3.3f);
     s_gear_deviation_warn = DEF_GEAR_DEVIATION_WARN_DEG;
     s_ble_enable = true;
     s_wifi_enable = false;

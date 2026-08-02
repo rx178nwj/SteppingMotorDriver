@@ -809,6 +809,16 @@
 	)
 	(wire
 		(pts
+			(xy 142.24 31.75) (xy 148.59 31.75)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "661a8a84-3b7a-4259-9d34-5efe8a3c910d")
+	)
+	(wire
+		(pts
 			(xy 201.93 118.11) (xy 217.17 118.11)
 		)
 		(stroke
@@ -946,6 +956,16 @@
 			(type default)
 		)
 		(uuid "89dca0bc-9909-4616-be19-551990ffb149")
+	)
+	(wire
+		(pts
+			(xy 185.42 25.4) (xy 205.74 25.4)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8d44ee85-689d-4542-9a78-2160efcc03eb")
 	)
 	(wire
 		(pts
@@ -1126,6 +1146,26 @@
 			(type default)
 		)
 		(uuid "cb830d91-5af2-4f60-b2fb-6260b552a9bf")
+	)
+	(wire
+		(pts
+			(xy 142.24 35.56) (xy 148.59 35.56)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "cd7c8160-fa49-47af-bbe4-edbd0b204b56")
+	)
+	(wire
+		(pts
+			(xy 142.24 40.64) (xy 148.59 40.64)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "cdb96b6f-8951-4186-8eaa-2cd72cd85dc0")
 	)
 	(wire
 		(pts
@@ -2235,6 +2275,50 @@
 			)
 		)
 	)
+	(global_label "I2C_SDA"
+		(shape bidirectional)
+		(at 148.59 35.56 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "8e87464a-046d-4c7d-b3fd-57003204ddb2")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 148.59 35.56 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+	)
+	(global_label "I2C_MUL_RESET"
+		(shape input)
+		(at 148.59 40.64 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "a31fc3cd-988d-49d8-a8be-db5c67c6312d")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 148.59 40.64 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+	)
 	(global_label "I2C_SCL"
 		(shape bidirectional)
 		(at 185.42 30.48 180)
@@ -2247,6 +2331,28 @@
 		(uuid "a58de83f-c7f1-4d36-8024-3056f562367c")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 185.42 30.48 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+	)
+	(global_label "I2C_MUL_RESET"
+		(shape input)
+		(at 185.42 25.4 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "a64e9bc5-af26-4c0b-8dfd-47922ff703e7")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 185.42 25.4 0)
 			(hide yes)
 			(show_name yes)
 			(do_not_autoplace no)
@@ -2445,6 +2551,28 @@
 		(uuid "c6e8e9d1-661f-4c69-b7d3-b81c3e0c8401")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 66.04 74.93 0)
+			(hide yes)
+			(show_name yes)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+	)
+	(global_label "I2C_SCL"
+		(shape bidirectional)
+		(at 148.59 31.75 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "c722c0e4-b16a-4722-8564-98d0f165a381")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 148.59 31.75 0)
 			(hide yes)
 			(show_name yes)
 			(do_not_autoplace no)
@@ -4179,7 +4307,7 @@
 				(justify left top)
 			)
 		)
-		(pin "I2C_SDA" bidirectional
+		(pin "I2C_SDA" output
 			(at 205.74 27.94 180)
 			(uuid "28f7d14d-5d71-4cd4-8e42-6d3407c67ca2")
 			(effects
@@ -4189,7 +4317,7 @@
 				(justify left)
 			)
 		)
-		(pin "I2C_SCL" bidirectional
+		(pin "I2C_SCL" output
 			(at 205.74 30.48 180)
 			(uuid "127e51c6-34c7-4d84-95bd-4b37accc1917")
 			(effects
@@ -4457,6 +4585,92 @@
 					(size 1.27 1.27)
 				)
 				(justify left)
+			)
+		)
+		(pin "I2C_MUL_RESET" output
+			(at 205.74 25.4 180)
+			(uuid "2bff3380-b4c4-4f07-affc-7245a4f6109d")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+	)
+	(sheet
+		(at 123.825 27.94)
+		(size 18.415 29.21)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "bb992776-e69b-4b28-bba1-1bee9351b867")
+		(property "Sheetname" "I2C_Multiplexer"
+			(at 123.825 27.2284 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "Multiplexer.kicad_sch"
+			(at 123.825 57.7346 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(pin "I2C_SCL" output
+			(at 142.24 31.75 0)
+			(uuid "3f150f52-7b76-4d6f-9315-8026775da4a1")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(pin "I2C_SDA" output
+			(at 142.24 35.56 0)
+			(uuid "d70b98ab-35a8-46e5-b008-57356216e41c")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(pin "I2C_MUL_RESET" output
+			(at 142.24 40.64 0)
+			(uuid "35307dd2-affb-40cf-9f9f-434f0f855445")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(instances
+			(project "SteppingMotorDriver"
+				(path "/9b845d9c-42fa-43ff-8aea-dde971ea3cf9"
+					(page "2")
+				)
 			)
 		)
 	)

@@ -3,6 +3,7 @@
 #include "config.h"
 #include "gear_monitor.h"
 #include "telemetry.h"
+#include "status_led.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -185,6 +186,8 @@ static void notify_json(uint16_t handle, enum telemetry_characteristic chr)
     int rc = ble_gatts_notify_custom(s_conn_handle, handle, om);
     if (rc != 0 && rc != BLE_HS_ENOTCONN) {
         ESP_LOGD(TAG, "notify handle=%u failed rc=%d", handle, rc);
+    } else if (rc == 0) {
+        status_led_note_wireless_activity();
     }
 }
 

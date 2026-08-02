@@ -11,6 +11,7 @@ idf_component_register(
         "telemetry.c"
         "ble_telemetry.c"
         "wifi_telemetry.c"
+        "status_led.c"
     INCLUDE_DIRS
         "."
     REQUIRES
@@ -25,4 +26,5 @@ idf_component_register(
         lwip
         mdns
         esp_app_format
+        esp_driver_usb_serial_jtag
 )

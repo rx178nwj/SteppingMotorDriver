@@ -14,6 +14,7 @@
 #include "gear_monitor.h"
 #include "ble_telemetry.h"
 #include "wifi_telemetry.h"
+#include "status_led.h"
 
 static const char *TAG = "main";
 
@@ -36,7 +37,9 @@ static void gpio_safe_init(void)
                         (1ULL << GPIO_DIR2)       |
                         (1ULL << GPIO_M0)         |
                         (1ULL << GPIO_M1)         |
-                        (1ULL << GPIO_M2),
+                        (1ULL << GPIO_M2)         |
+                        (1ULL << GPIO_STATUS1_LED)|
+                        (1ULL << GPIO_STATUS2_LED),
         .mode         = GPIO_MODE_OUTPUT,
         .pull_up_en   = GPIO_PULLUP_DISABLE,
         .pull_down_en = GPIO_PULLDOWN_DISABLE,
@@ -58,6 +61,8 @@ static void gpio_safe_init(void)
     gpio_set_level(GPIO_M0, 1);
     gpio_set_level(GPIO_M1, 0);
     gpio_set_level(GPIO_M2, 1);
+    gpio_set_level(GPIO_STATUS1_LED, 0);
+    gpio_set_level(GPIO_STATUS2_LED, 0);
 }
 
 /* ------------------------------------------------------------------ */
@@ -129,6 +134,8 @@ void app_main(void)
         ESP_LOGE(TAG, "WiFi telemetry init failed: %s",
                  esp_err_to_name(wifi_err));
     }
+
+    ESP_ERROR_CHECK(status_led_init());
 
     ESP_LOGI(TAG, "SteppingMotorDriver firmware started");
 

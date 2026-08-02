@@ -2,6 +2,7 @@
 
 #include "config.h"
 #include "telemetry.h"
+#include "status_led.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -33,6 +34,7 @@ static volatile bool s_connected;
 static volatile uint32_t s_reconnect_delay_s = 1;
 static volatile int s_listen_fd = -1;
 static volatile int s_client_fd = -1;
+static volatile bool s_error;
 static esp_ip4_addr_t s_ip;
 static bool s_mdns_initialized;
 static bool s_mdns_service_active;
@@ -104,7 +106,12 @@ static void wifi_event_handler(void *arg, esp_event_base_t base,
         s_wifi_started = true;
         if (config_get_wifi_enable()) (void)esp_wifi_connect();
     } else if (base == WIFI_EVENT && id == WIFI_EVENT_STA_DISCONNECTED) {
+        wifi_event_sta_disconnected_t *event = event_data;
         s_connected = false;
+        if (config_get_wifi_enable()) {
+            s_error = true;
+            ESP_LOGW(TAG, "station disconnected reason=%u", event->reason);
+        }
         memset(&s_ip, 0, sizeof(s_ip));
         close_socket(&s_client_fd);
         close_socket(&s_listen_fd);
@@ -116,6 +123,7 @@ static void wifi_event_handler(void *arg, esp_event_base_t base,
         ip_event_got_ip_t *event = event_data;
         s_ip = event->ip_info.ip;
         s_connected = true;
+        s_error = false;
         s_reconnect_delay_s = 1;
         start_mdns_service();
         ESP_LOGI(TAG, "station connected " IPSTR, IP2STR(&s_ip));
@@ -206,6 +214,7 @@ static void telemetry_server_task(void *arg)
         if (s_listen_fd < 0) {
             s_listen_fd = create_server_socket();
             if (s_listen_fd < 0) {
+                s_error = true;
                 ESP_LOGW(TAG, "TCP server create failed errno=%d", errno);
                 vTaskDelay(pdMS_TO_TICKS(1000));
                 continue;
@@ -220,6 +229,7 @@ static void telemetry_server_task(void *arg)
                 continue;
             }
             s_client_fd = client;
+            s_error = false;
             received_total = 0;
         }
 
@@ -244,9 +254,12 @@ static void telemetry_server_task(void *arg)
         }
 
         if (!send_telemetry_cycle(s_client_fd)) {
+            s_error = true;
             close_socket(&s_client_fd);
             continue;
         }
+        s_error = false;
+        status_led_note_wireless_activity();
         uint8_t rate = config_get_wifi_telemetry_rate();
         vTaskDelay(pdMS_TO_TICKS(1000U / (rate ? rate : 10U)));
     }
@@ -256,26 +269,42 @@ esp_err_t wifi_telemetry_init(void)
 {
     if (s_initialized) return ESP_OK;
     esp_err_t err = esp_netif_init();
-    if (err != ESP_OK && err != ESP_ERR_INVALID_STATE) return err;
+    if (err != ESP_OK && err != ESP_ERR_INVALID_STATE) {
+        s_error = true;
+        return err;
+    }
     err = esp_event_loop_create_default();
-    if (err != ESP_OK && err != ESP_ERR_INVALID_STATE) return err;
+    if (err != ESP_OK && err != ESP_ERR_INVALID_STATE) {
+        s_error = true;
+        return err;
+    }
 
     s_netif = esp_netif_create_default_wifi_sta();
-    if (!s_netif) return ESP_ERR_NO_MEM;
+    if (!s_netif) {
+        s_error = true;
+        return ESP_ERR_NO_MEM;
+    }
     wifi_init_config_t init = WIFI_INIT_CONFIG_DEFAULT();
     err = esp_wifi_init(&init);
-    if (err != ESP_OK) return err;
+    if (err != ESP_OK) {
+        s_error = true;
+        return err;
+    }
     ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID,
                                                wifi_event_handler, NULL));
     ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP,
                                                wifi_event_handler, NULL));
     err = esp_wifi_set_mode(WIFI_MODE_STA);
-    if (err != ESP_OK) return err;
+    if (err != ESP_OK) {
+        s_error = true;
+        return err;
+    }
 
     if (xTaskCreate(reconnect_task, "WifiReconnect", 3072, NULL, 8,
                     &s_reconnect_task) != pdPASS ||
         xTaskCreate(telemetry_server_task, "WifiTelemetryTask", 5120, NULL, 8,
                     NULL) != pdPASS) {
+        s_error = true;
         return ESP_ERR_NO_MEM;
     }
     s_initialized = true;
@@ -283,6 +312,7 @@ esp_err_t wifi_telemetry_init(void)
     if (config_get_wifi_enable()) {
         err = apply_station_config();
         if (err == ESP_OK) err = esp_wifi_start();
+        s_error = err != ESP_OK;
         return err;
     }
     return ESP_OK;
@@ -293,17 +323,22 @@ esp_err_t wifi_telemetry_set_enabled(bool enabled)
     if (!s_initialized) return ESP_ERR_INVALID_STATE;
     if (enabled) {
         esp_err_t err = apply_station_config();
-        if (err != ESP_OK) return err;
-        if (!s_wifi_started) {
-            return esp_wifi_start();
+        if (err == ESP_OK) {
+            if (!s_wifi_started) {
+                err = esp_wifi_start();
+            } else {
+                err = esp_wifi_connect();
+            }
         }
-        return esp_wifi_connect();
+        s_error = err != ESP_OK;
+        return err;
     }
 
     close_socket(&s_client_fd);
     close_socket(&s_listen_fd);
     stop_mdns_service();
     s_connected = false;
+    s_error = false;
     memset(&s_ip, 0, sizeof(s_ip));
     if (s_wifi_started) {
         (void)esp_wifi_disconnect();
@@ -320,6 +355,7 @@ esp_err_t wifi_telemetry_reconfigure(void)
     (void)esp_wifi_disconnect();
     esp_err_t err = apply_station_config();
     if (err == ESP_OK && s_wifi_started) err = esp_wifi_connect();
+    s_error = err != ESP_OK;
     return err;
 }
 
@@ -344,4 +380,14 @@ void wifi_telemetry_format_status(char *buf, size_t size)
         snprintf(buf, size, "CONNECTED " IPSTR " RSSI=%d",
                  IP2STR(&s_ip), rssi);
     }
+}
+
+bool wifi_telemetry_has_client(void)
+{
+    return s_client_fd >= 0;
+}
+
+bool wifi_telemetry_has_error(void)
+{
+    return s_error;
 }

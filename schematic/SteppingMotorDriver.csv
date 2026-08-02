@@ -1,0 +1,55 @@
+Reference	Qty	Value	DNP	Exclude from BOM	Exclude from Board	Footprint	Datasheet
+A1	1	DRV8825_CH0				Library:DRV8825_Driver	https://www.pololu.com/product/2982
+A2	1	DRV8825_CH1				Library:DRV8825_Driver	https://www.pololu.com/product/2982
+A3	1	DRV8825_CH2				Library:DRV8825_Driver	https://www.pololu.com/product/2982
+C1,C2,C4,C7,C26	5	1uF				Capacitor_SMD:C_0603_1608Metric	
+C3	1	10uF				Capacitor_SMD:C_0603_1608Metric	
+C5,C8,C9,C20,C27,Ce1	6	0.1uF				Capacitor_SMD:C_0603_1608Metric	
+C6,C12,C19,C25,C47	5	0.1uF				Capacitor_SMD:C_0402_1005Metric	
+C10,C11,C13,C14,C15,C16,C17,C18,C21,C22,C23,C24	12	0.01u				Capacitor_SMD:C_0402_1005Metric	
+C28,C29	2	100uf				Capacitor_THT:CP_Radial_D5.0mm_P2.00mm	
+C30,C32,Cr1	3	100uF				Capacitor_THT:CP_Radial_D8.0mm_P3.50mm	
+D1	1	LED				LED_SMD:LED_0603_1608Metric	
+D2	1	RED LED				LED_SMD:LED_0603_1608Metric	
+D3	1	YELLOW LED				LED_SMD:LED_0603_1608Metric	
+D4	1	DRV EN LED				LED_SMD:LED_0603_1608Metric	
+D5	1	STP0 LED				LED_SMD:LED_0603_1608Metric	
+D6	1	STP1 LED				LED_SMD:LED_0603_1608Metric	
+D7	1	CHU20S30				Diode_SMD:D_SOD-323_HandSoldering	
+D8	1	STP2 LED				LED_SMD:LED_0603_1608Metric	
+D9	1	SLEEP LED				LED_SMD:LED_0603_1608Metric	
+IC1,IC2,IC3	3	AM26LV32IDR				SOIC127P600X175-16N	http://www.ti.com/lit/gpn/am26lv32
+J1	1	5077CR-16SMC2-BK-TR				5077CR-16SMC2-BK-TR:NELTRON_5077CR-16SMC2-BK-TR	
+J2	1	Barrel_Jack_Switch				Connector_BarrelJack:BarrelJack_GCT_DCJ200-10-A_Horizontal	
+J3	1	Conn_01x02_Pin				Connector_JST:JST_VH_B2P-VH-B_1x02_P3.96mm_Vertical	
+J4,J10,J12	3	Conn_01x04				Connector_JST:JST_PH_B4B-PH-K_1x04_P2.00mm_Vertical	
+J5,J6,J7	3	Conn_01x04_Pin				Connector_JST:JST_PH_B4B-PH-K_1x04_P2.00mm_Vertical	
+J8	1	Conn_01x02				Connector_JST:JST_PH_B2B-PH-K_1x02_P2.00mm_Vertical	
+J9,J11,J13	3	Conn_01x05				Connector_JST:JST_PH_B5B-PH-K_1x05_P2.00mm_Vertical	
+J15	1	Conn_01x06_MountingPin				Connector_FFC-FPC:TE_84953-6_1x06-1MP_P1.0mm_Horizontal	
+J30	1	MOTOR_CH0				Connector_JST:JST_XH_S4B-XH-A-1_1x04_P2.50mm_Horizontal	
+J31	1	MOTOR_CH1				Connector_JST:JST_XH_S4B-XH-A-1_1x04_P2.50mm_Horizontal	
+J32	1	MOTOR_CH2				Connector_JST:JST_XH_S4B-XH-A-1_1x04_P2.50mm_Horizontal	
+Q2	1	DMG3415				Package_TO_SOT_SMD:SOT-23	
+R1,R2	2	5.1k				Resistor_SMD:R_0402_1005Metric	
+R3,R4	2	22				Resistor_SMD:R_0402_1005Metric	
+R5,R7,R30	3	10k				Resistor_SMD:R_0402_1005Metric	
+R6,R8	2	4.7k				Resistor_SMD:R_0603_1608Metric	
+R9,R10,R11,R12,R21,R22,R24,R34	8	1k				Resistor_SMD:R_0603_1608Metric	
+R13,R14,R15,R16,R17,R18,R19,R20,R25,R26,R27,R28	12	16k				Resistor_SMD:R_0402_1005Metric	
+R23	1	100k				Resistor_SMD:R_0603_1608Metric	
+R29	1	68k				Resistor_SMD:R_0402_1005Metric	
+R31	1	10m				LED_SMD:LED_1206_3216Metric	
+R32	1	120				Resistor_SMD:R_0402_1005Metric	
+R33	1	5k				Resistor_SMD:R_0402_1005Metric	
+R35	1	10k				Resistor_SMD:R_0603_1608Metric	
+R38,R39,R40,R41,R42,R43	6	2.2k				Resistor_SMD:R_0603_1608Metric	
+SW1	1	RESET				Library:TVAF06-A020B-R	
+SW2	1	SW_Push				Library:TVAF06-A020B-R	
+U1	1	NCP361SN				Package_SO:TSOP-5_1.65x3.05mm_P0.95mm	https://www.onsemi.com/pdf/datasheet/ncp361-d.pdf
+U2	1	ESP32-S3-WROOM-1				RF_Module:ESP32-S3-WROOM-1	https://www.espressif.com/sites/default/files/documentation/esp32-s3-wroom-1_wroom-1u_datasheet_en.pdf
+U3	1	TCA9548APWR				Package_SO:TSSOP-24_4.4x7.8mm_P0.65mm	http://www.ti.com/lit/ds/symlink/tca9548a.pdf
+U4	1					Library:MainBoard	
+U5	1	LT6106				Package_TO_SOT_SMD:SOT-23-5	https://www.analog.com/media/en/technical-documentation/data-sheets/6106fb.pdf
+U6,U7,U8	3	NJM8532M				Package_SO:SOP-8_3.76x4.96mm_P1.27mm	http://www.njr.com/semicon/PDF/NJM2114_E.pdf
+U9	1	AMS1117-3.3				Package_TO_SOT_SMD:SOT-223-3_TabPin2	http://www.advanced-monolithic.com/pdf/ds1117.pdf

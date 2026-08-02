@@ -91,6 +91,28 @@ ESP32-S3-WROOM-1 を搭載した SteppingMotorDriver PCB 上で動作するフ�
 - ESP32-S3 の内蔵 USB Serial/JTAG コントローラを使用
 - USB ディスクリプタの `iSerialNumber` に、eFuse factory MAC アドレス由来の16進文字列（例: `AABBCCDDEEFF`）を設定する（F-COM-05）
 
+### 2.5 Status1 LED（USB-CDC接続・システム状態表示）
+
+| 項目 | 内容 |
+|------|------|
+| GPIO | GPIO46（出力、Status1 LED専用） |
+| 用途 | USB-CDC接続状態および軸のFAULT状態をユーザーに一目で提示する表示灯。無線（BLE/WiFi）側の表示灯である Status2 LED（GPIO47、[BLE_WIFI_REQUIREMENTS.md §3.1](BLE_WIFI_REQUIREMENTS.md)）と対になる「有線」側の表示灯 |
+| 駆動タスク | StatusTask（100ms周期、既存のハートビート処理と統合） |
+
+#### 表示パターン
+
+以下の優先順位（上ほど優先）で状態を反映する。
+
+| 優先度 | 状態 | LED挙動 | 周期（デフォルト、暫定値） | 条件 |
+|--------|------|---------|---------------------------|------|
+| 1（最優先） | FAULT | 高速点滅 | 8 Hz（Duty 50%、約62.5ms ON/OFF） | いずれかの軸が FAULT 状態（DRV_FAULT／OVERCURRENT／STALL、§3.1軸状態機械） |
+| 2 | USB通信中 | 点滅 | 2 Hz（Duty 50%、約250ms ON/OFF） | CommTask がコマンドを受信・応答処理中（`comm.c` のコマンド処理区間） |
+| 3 | USB接続確立 | 点灯（常時ON） | - | USB-CDC がホストとオープン済み（DTR アサート等で検出） |
+| 4（デフォルト） | USB未接続 | 消灯 | - | USB-CDC 未接続 |
+
+- 点滅周期（2Hz／8Hz）は暫定値とし、Status2 LED（BLE_WIFI_REQUIREMENTS.md §3.1）と同一の値を採用して両LEDの見え方を統一する。実機評価後に視認性の観点で調整可能とする（§9未解決事項に追加想定）。
+- 全軸が FAULT から復帰（`CLEAR_FAULT`）すれば、優先度2・3・4の判定に戻る。
+
 ---
 
 ## 3. 機能要件
@@ -1130,3 +1152,7 @@ F-I2C-02: 拡張デバイス対応（将来拡張）
 - `EVT FAULT` の reason から `DRV_HW` を削除、`ESTOP` / `OVERCURRENT` / `STALL` の 3 種に確定
 
 **反映先：** F-MOT-07（Section 3.1）、Section 4.5 イベント、Section 5.2 安全機能
+
+### 9.13 [Low] Status1 LED（GPIO46）点滅周期の妥当性
+
+Section 2.5 で追加した Status1 LED の点滅周期（通信中2Hz／FAULT 8Hz）は暫定値。BLE/WiFi側の Status2 LED（[BLE_WIFI_REQUIREMENTS.md §3.1](BLE_WIFI_REQUIREMENTS.md) §9.7）と同一値で揃えているが、実機評価で視認性を確認し、必要に応じて両LED同時に調整する。

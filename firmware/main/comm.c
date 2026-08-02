@@ -7,6 +7,7 @@
 #include "ble_telemetry.h"
 #include "wifi_telemetry.h"
 #include "telemetry.h"
+#include "status_led.h"
 
 #include <math.h>
 #include <string.h>
@@ -878,7 +879,10 @@ static void comm_task(void *arg)
 
         if (ch == '\n') {
             line[pos] = '\0';
-            if (pos > 0) dispatch(line);
+            if (pos > 0) {
+                status_led_note_usb_activity();
+                dispatch(line);
+            }
             pos = 0;
         } else {
             if (pos < COMM_CMD_MAX_LEN - 1) {

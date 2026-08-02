@@ -1,4 +1,4 @@
-# ギアアウトプット角度モニタ機能 要件定義・要求仕様・実装仕様
+﻿# ギアアウトプット角度モニタ機能 要件定義・要求仕様・実装仕様
 
 SteppingMotorDriver ファームウェアに、`multi_i2c_bridge` 経由で各軸ギアボックスの
 **アウトプット軸回転角度**（AS5600 磁気エンコーダ）を取得・モニタする機能を追加する。
@@ -8,8 +8,10 @@ SteppingMotorDriver ファームウェアに、`multi_i2c_bridge` 経由で各�
 | 対象 | SteppingMotorDriver ファームウェア（ESP32-S3, firmware/） |
 | 関連 | [firmware/REQUIREMENTS.md](firmware/REQUIREMENTS.md)（本体要件定義） |
 | 関連（外部） | multi_i2c_bridge/docs/[command_spec.md](../multi_i2c_bridge/docs/command_spec.md)（レジスタ確定仕様） / [i2c_architecture.md](../multi_i2c_bridge/docs/i2c_architecture.md)（通信アーキ・タイミング） / [as5600_config.md](../multi_i2c_bridge/docs/as5600_config.md)（センサ設定） / [controller_impl_notes.md](../multi_i2c_bridge/docs/controller_impl_notes.md)（実装注意点） |
-| 版 | 0.1（初版） |
-| 作成日 | 2026-07-25 |
+| 版 | 0.2（0位置設定コマンド追加） |
+| 作成日 | 2026-07-25（初版）／2026-08-01 改訂（F-GEAR-10 0位置設定コマンド追加） |
+
+> **2026-08-01 改訂の要点**：multi_i2c_bridge側に磁石取付誤差を補正する0位置オフセット機能（`CMD=ZERO_SET`/`ZERO_CLEAR`, [command_spec.md §4.10](../multi_i2c_bridge/docs/command_spec.md)）が追加されたことを受け、SteppingMotorDriver側にこれを発行するコマンドを追加した（F-GEAR-10）。**発行経路はUSB-CDC（制御アプリ）限定とし、BLE/WiFi経由では発行不可**とする（[BLE_WIFI_REQUIREMENTS.md §1.2 #4](BLE_WIFI_REQUIREMENTS.md) の「BLE/WiFi経由の書き込みコマンドは恒久的に対象外」という確定方針を維持するための設計判断、要否をユーザーと確認済み）。BLE/WiFi側では校正状態の**参照（Read）のみ**を追加する（[BLE_WIFI_REQUIREMENTS.md §4.1](BLE_WIFI_REQUIREMENTS.md) Gear Angle キャラクタリスティックに反映）。
 
 ---
 
@@ -199,6 +201,7 @@ USB-CDC 経由の既存コマンドセット（[REQUIREMENTS.md §4](firmware/RE
 | `GET GEAR_RAW <axis>` | axis: 0〜2 | センサ生角度取得（デバッグ用, 0〜360°, オフセット・方向補正前） | `OK 118.20` |
 | `GET GEAR_STATUS` | - | 全軸の健全性サマリー（JSON） | `OK {"bridge":"READY","axes":[{"ok":true,"deg":123.45},...]}` |
 | `GET GEAR_DEVIATION <axis>` | axis: 0〜2 | ホーミング時記録角度との差分（F-GEAR-05） | `OK 1.20` |
+| `GET GEAR_ZERO_STATUS` | - | CH0〜CH2 の bridge側0位置オフセット現在値（F-GEAR-10） | `OK {"axes":[{"axis":0,"zero_offset_raw":0},{"axis":1,"zero_offset_raw":1200},{"axis":2,"zero_offset_raw":0}]}` |
 
 **設定**
 
@@ -208,6 +211,8 @@ USB-CDC 経由の既存コマンドセット（[REQUIREMENTS.md §4](firmware/RE
 | `SET GEAR_DIR <axis> <+1\|-1>` | - | 方向反転係数設定（NVS 保存） |
 | `SET GEAR_ABS_CAPABLE <axis> <0\|1>` | - | 単回転絶対位置復元可否フラグ設定（NVS 保存, F-GEAR-05） |
 | `SET GEAR_DEVIATION_WARN <deg>` | deg: float | 乖離警告閾値設定（NVS 保存, デフォルト 5.0） |
+| `SET GEAR_ZERO <axis>` | axis: 0〜2 | 現在位置を当該軸の0位置として bridge へ設定（**USB-CDC限定、F-GEAR-10**） |
+| `SET GEAR_ZERO_CLEAR <axis>` | axis: 0〜2 | 当該軸の bridge側0位置オフセットを0へリセット（**USB-CDC限定、F-GEAR-10**） |
 
 **非同期イベント（[REQUIREMENTS.md §4.5](firmware/REQUIREMENTS.md) に追加）**
 
@@ -225,6 +230,7 @@ USB-CDC 経由の既存コマンドセット（[REQUIREMENTS.md §4](firmware/RE
 |--------|------|
 | `E013` | `GEAR_UNAVAILABLE`（bridge 未接続または応答不能） |
 | `E014` | `GEAR_VERSION_MISMATCH`（bridge の `VERSION` major 不一致） |
+| `E017` | `GEAR_ZERO_FAILED`（`SET GEAR_ZERO`/`GEAR_ZERO_CLEAR` が失敗。対象軸無効/無応答、bridge側`CMD`失敗、タイムアウトのいずれか。F-GEAR-10） |
 
 ### F-GEAR-07: エラー処理・堅牢性
 
@@ -263,6 +269,29 @@ USB-CDC 経由の既存コマンドセット（[REQUIREMENTS.md §4](firmware/RE
 - レジスタ読み出し周期（10ms）はモーション制御周期（1ms, F-MOT-04）より粗いため、将来クローズド
   ループに使う場合は周期短縮（最短 1ms、bridge 側 3ch 巡回律速 ~0.55-0.6ms、[i2c_architecture.md §5.5.3](../multi_i2c_bridge/docs/i2c_architecture.md)）が必要になる点を設計メモとして残す。
 
+### F-GEAR-10: 0位置設定（磁石取付誤差の較正）
+
+**目的**：AS5600 の磁石はギア出力軸に手作業で取り付けており、機械的に正確な0deg位置へ合わせられない。bridge側に追加された0位置オフセット機構（`ZERO_CH_SELECT`(0x52)/`CHn_ZERO_OFFSET`(0x60–0x6B)/`CMD=ZERO_SET(0x10)`/`CMD=ZERO_CLEAR(0x11)`、[command_spec.md §4.10](../multi_i2c_bridge/docs/command_spec.md)）を、SteppingMotorDriver 側のコマンドから発行できるようにする。
+
+**発行経路（確定）**：
+- **USB-CDC（制御アプリ）からのみ発行可能**とする。BLE/WiFi 経由では発行できない（[BLE_WIFI_REQUIREMENTS.md §1.2 #4](BLE_WIFI_REQUIREMENTS.md) の恒久方針を維持。0位置設定も「書き込みコマンド」の一種として扱い、無線側は状態参照（Read）のみに限定する、§4.1 BLE側反映）。
+- 較正操作は機構調整・組立時に人が意図して行う低頻度の保守操作であり、モーション制御中に不用意に発行されると角度基準が変化するため、通常のモーション制御コマンド（ENABLE/MOVE等）と同様に**USB-CDC（制御アプリ）専有の管理下**に置く。
+
+**動作**：
+1. `SET GEAR_ZERO <axis>`（axis: 0〜2）受信時、`GEAR_STATE` が `READY` であり、かつ対象軸が `STATUS_LO_M` 上 `CHn_OK=1`（磁石検出・通信正常）であることを確認する。いずれか満たさない場合は即座に `ERR E017 GEAR_ZERO_FAILED` を返す（bridge へのI2C発行自体を行わない）。
+2. bridge の `ZERO_CH_SELECT`(0x52) へ対象軸の該当ビットのみを書込む。
+3. bridge の `CMD`(0x50) へ `0x10`（`ZERO_SET`）を書込む。
+4. `CMD` レジスタを **10ms 間隔・タイムアウト 100ms** でポーリングし、`0x00`（idle=成功）を確認する。`0xFF`（失敗）またはタイムアウトの場合は `ERR E017 GEAR_ZERO_FAILED` を返す。
+5. 成功時は bridge から `CHn_ZERO_OFFSET`（対象軸分）を読み戻し、ログに記録した上で `OK zero_offset=<12bit値>` を返す。以後の `gear_angle_deg[axis]`（F-GEAR-03）は bridge 側で較正済みの `CHn_ANGLE` を入力として引き続き算出する（ソフトウェア側 `gear_angle_offset[axis]` はそのまま併用可能、下記「二重較正の注意」参照）。
+6. `SET GEAR_ZERO_CLEAR <axis>` は同様の手順で `CMD=ZERO_CLEAR(0x11)` を発行し、対象軸のオフセットを0へ戻す。こちらは対象軸が `DEGRADED`（無応答）でも許可する（bridge側 `ZERO_CLEAR` の仕様どおり、[command_spec.md §4.10](../multi_i2c_bridge/docs/command_spec.md)）。
+7. `GET GEAR_ZERO_STATUS` は CH0〜CH2 の `CHn_ZERO_OFFSET` 現在値（12bit生値）を返す（較正済みか未較正=0かをホストが判別できる）。
+
+**二重較正の注意**：本機能（bridge側 `CHn_ZERO_OFFSET`）は**磁石取付誤差という機構固有の較正**を担う。既存の `SET GEAR_OFFSET`（F-GEAR-03, SteppingMotorDriver側NVS `gear_angle_offset`）は**運用上の基準角度合わせ**（ロボットアーム座標系との整合等）を担う、独立したレイヤーである。両者は積み上げで適用されるため、磁石取付較正（本機能）を後から再実行すると、`gear_angle_offset` 側の再調整が必要になる場合がある点をログ・ドキュメントで明示する。通常の運用手順は「組立時に `SET GEAR_ZERO` で機構較正 → 座標系合わせに `SET GEAR_OFFSET` を必要なら追加」を推奨する。
+
+**エラー処理**：
+- bridge 未接続（`GEAR_STATE=UNAVAILABLE`）時は `ERR E013 GEAR_UNAVAILABLE` を返し、`ZERO_SET`/`ZERO_CLEAR` は発行しない。
+- 本機能の失敗はモーター制御・安全機構に一切影響しない（F-GEAR-07 の設計方針を継承）。
+
 ---
 
 ## 5. データフロー・bridge レジスタ対応表
@@ -277,7 +306,9 @@ USB-CDC 経由の既存コマンドセット（[REQUIREMENTS.md §4](firmware/RE
 | 0x46 | `CH_PRESENT` | 接続確認ログ（F-GEAR-01） | 起動時のみ |
 | 0x10〜0x1E | 角度+STATUSミラー+SAMPLE_LO（15バイト一括） | 通常運用の主読み出し（F-GEAR-02） | **10ms 周期** |
 | 0x04, 0x05 | `FAULT` / `CH_FAULT` | 診断ログ | 1Hz |
-| 0x50 | `CMD` | `CLEAR_FAULT` 発行（診断時のみ） | 必要時のみ |
+| 0x50 | `CMD` | `CLEAR_FAULT`／`ZERO_SET`／`ZERO_CLEAR` 発行（診断・較正時のみ, F-GEAR-10） | 必要時のみ |
+| 0x52 | `ZERO_CH_SELECT` | 0位置較正の対象軸選択（F-GEAR-10） | 必要時のみ |
+| 0x60〜0x6B | `CH0〜5_ZERO_OFFSET` | 較正結果の読み戻し・`GET GEAR_ZERO_STATUS`（F-GEAR-10） | 必要時のみ |
 
 ---
 
@@ -477,6 +508,7 @@ static float gear_raw_to_deg(uint16_t raw, uint8_t axis) {
 - [ ] 電源投入時絶対位置認識・ホーミング乖離検出（F-GEAR-05）
 - [ ] コマンドセット拡張（`GET GEAR_*` / `SET GEAR_*`, F-GEAR-06）
 - [ ] NVS `gear_config` 名前空間実装（F-GEAR-08）
+- [ ] 0位置設定コマンド実装（`SET GEAR_ZERO`/`GEAR_ZERO_CLEAR`/`GET GEAR_ZERO_STATUS`, F-GEAR-10）。multi_i2c_bridge側 `CMD=ZERO_SET/ZERO_CLEAR` 実装（未着手, [command_spec.md §10](../multi_i2c_bridge/docs/command_spec.md)）に依存
 - [ ] 実機疎通確認（bridge 実機との 15バイト一括リード, GPIO38/39 配線確認）
 - [ ] 回路図上の I2C プルアップ実装箇所の確認（bridge 側 or SteppingMotorDriver 側、二重実装でないこと）
 
