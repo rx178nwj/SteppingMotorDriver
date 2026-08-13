@@ -38,6 +38,13 @@ microstep_t config_get_microstep(void);
 void     config_set_idle_timeout(uint32_t ms);
 uint32_t config_get_idle_timeout(void);
 
+/* 保持電流モード（全軸共通。値はmotor_ctrl.hのhold_mode_tに対応） */
+void     config_set_hold_mode(uint32_t mode);
+uint32_t config_get_hold_mode(void);
+/* HOLD_REDUCEDのチョッピング比率 (1-100%) */
+void     config_set_hold_current_percent(uint32_t pct);
+uint32_t config_get_hold_current_percent(void);
+
 /* 通信ウォッチドッグタイムアウト (ms, 0=無効) */
 void     config_set_comm_timeout(uint32_t ms);
 uint32_t config_get_comm_timeout(void);
@@ -66,6 +73,18 @@ bool   config_get_gear_abs_capable(uint8_t axis);
 bool   config_get_gear_enable(uint8_t axis);
 float  config_get_gear_deviation_warn(void);
 float  config_get_gear_ratio(uint8_t axis);
+/* F-MOT-10 パラメータ（RAM 反映のみ、NVS へは SAVE コマンドで永続化）。 */
+bool   config_set_gear_ratio(uint8_t axis, float ratio);
+
+/* F-MOT-12 関節角度換算・POT 較正。 */
+uint32_t config_get_steps_per_rev(uint8_t axis);
+uint32_t config_get_encoder_ppr(uint8_t axis);
+float    config_get_pot_scale_deg(uint8_t axis);
+int32_t  config_get_pot_zero_offset(uint8_t axis);
+
+/* POT 較正値は SET コマンドから即時 NVS 保存する。 */
+bool config_set_pot_scale_deg(uint8_t axis, float deg_per_count);
+bool config_set_pot_zero_offset(uint8_t axis, int32_t adc_count);
 
 /* SET GEAR_* は即時 NVS 保存する。false は引数不正または NVS 失敗。 */
 bool config_set_gear_offset(uint8_t axis, float deg);

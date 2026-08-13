@@ -1,11 +1,17 @@
 #include "motor_ctrl.h"
+#include "adc_monitor.h"
+#include "config.h"
 #include "encoder.h"
 #include "gpio_config.h"
+
+#include <limits.h>
+#include <math.h>
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/rmt_tx.h"
 #include "driver/gpio.h"
+#include "driver/ledc.h"
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "freertos/portmacro.h"
@@ -27,6 +33,19 @@ static const char *TAG = "motor_ctrl";
 #define DEFAULT_ACCEL   50000UL   /* steps/sec² */
 #define DEFAULT_DECEL   50000UL   /* steps/sec² */
 #define DEFAULT_IDLE_TIMEOUT_MS  2000U
+#define DEFAULT_HOLD_CURRENT_PERCENT  30U
+
+/* ------------------------------------------------------------------ */
+/*  DRV_EN LEDC (保持電流モードのソフトウェアPWMチョッピング用)             */
+/*  DRV_EN はアクティブLow(励磁)のため、"percent" = 励磁時間の割合として    */
+/*  扱う (100 = 常時Low/フル励磁, 0 = 常時High/無励磁)。                    */
+/* ------------------------------------------------------------------ */
+#define DRV_EN_LEDC_TIMER    LEDC_TIMER_0
+#define DRV_EN_LEDC_CHANNEL  LEDC_CHANNEL_0
+#define DRV_EN_LEDC_MODE     LEDC_LOW_SPEED_MODE
+#define DRV_EN_LEDC_RES_BITS LEDC_TIMER_10_BIT
+#define DRV_EN_LEDC_FREQ_HZ  20000U   /* 可聴域外、DRV8825巻線インダクタンスに対し十分高速 */
+#define DRV_EN_LEDC_MAX_DUTY ((1U << DRV_EN_LEDC_RES_BITS) - 1U)
 
 /* 起動初速: 最初の RMT バッチを短時間で完了させる最低速度 */
 #define START_VEL_MIN    50.0f
@@ -91,6 +110,11 @@ typedef struct {
     int8_t               enc_dir;          /* エンコーダ方向: +1 (正) / -1 (逆接続) */
     uint16_t             mpc_x100;         /* microsteps_per_count × 100 (単位正規化) */
 
+    /* フォルトトレース（10ms間隔リングバッファ、GET FAULT_TRACE 用） */
+    fault_trace_sample_t trace_buf[FAULT_TRACE_CAPACITY];
+    uint16_t              trace_head;      /* 次に書き込むインデックス */
+    uint16_t              trace_count;     /* 有効サンプル数 (<= CAPACITY) */
+
     /* SYNC_MOVE (F-MOT-11) */
     bool                 sync_pending;     /* true = CommTask がパラメータ設定済み・MotorControlTask の START 待ち */
 
@@ -109,8 +133,16 @@ static axis_t   s_axes[NUM_AXES];
 static bool     s_drv_enabled = false;
 static uint32_t s_idle_timeout_ms = DEFAULT_IDLE_TIMEOUT_MS;
 
+/* 保持電流モード（全軸共通、DRV_ENが単一GPIOのため） */
+static hold_mode_t s_hold_mode              = HOLD_MODE_NORMAL;
+static uint8_t      s_hold_current_percent  = DEFAULT_HOLD_CURRENT_PERCENT;
+static bool          s_chopping_active      = false;   /* HOLD_REDUCEDでチョッピング中か */
+
 /* step_pos の ISR ↔ タスク競合を防ぐスピンロック (F-MOT-05 / 9.8) */
 static portMUX_TYPE s_step_pos_mux = portMUX_INITIALIZER_UNLOCKED;
+
+/* フォルトトレースリングバッファの MotorControlTask(書込) ↔ CommTask(読出) 競合防止 */
+static portMUX_TYPE s_trace_mux = portMUX_INITIALIZER_UNLOCKED;
 
 /* フォルト情報（最後の FAULT を記録） */
 static fault_info_t     s_last_fault   = { FAULT_NONE, 0, 0 };
@@ -143,6 +175,20 @@ static inline void axis_apply_motion_profile(axis_t *ax, uint32_t v_max,
     ax->motion_v_max = v_max;
     ax->motion_accel = accel;
     ax->motion_decel = decel;
+}
+
+/* ------------------------------------------------------------------ */
+/*  ヘルパー: DRV_EN を LEDC 経由で駆動する                              */
+/*  percent = 励磁(Low)時間の割合。100=常時Low(フル励磁)、0=常時High(無励磁) */
+/* ------------------------------------------------------------------ */
+static void drv_en_set_percent(uint8_t percent)
+{
+    if (percent > 100U) percent = 100U;
+    /* DRV_EN はアクティブLow: 励磁時間割合 = Low時間割合 なので、
+       LEDC の(Highレベル)デューティは (100 - percent) 側に対応させる。 */
+    uint32_t duty = (uint32_t)((100U - percent) * DRV_EN_LEDC_MAX_DUTY / 100U);
+    ledc_set_duty(DRV_EN_LEDC_MODE, DRV_EN_LEDC_CHANNEL, duty);
+    ledc_update_duty(DRV_EN_LEDC_MODE, DRV_EN_LEDC_CHANNEL);
 }
 
 /* ------------------------------------------------------------------ */
@@ -211,6 +257,48 @@ static bool IRAM_ATTR on_trans_done(rmt_channel_handle_t tx_chan,
 }
 
 /* ------------------------------------------------------------------ */
+/*  フォルトトレース記録 (10ms毎、全軸)                                  */
+/*  診断用の参考値のため、state/pos/enc間で厳密な同時刻性は保証しない。   */
+/* ------------------------------------------------------------------ */
+static void fault_trace_record_all(void)
+{
+    float current_mA = adc_get_current_mA();
+    int16_t current_i16 = (int16_t)(current_mA > 32767.0f ? 32767.0f
+        : (current_mA < -32768.0f ? -32768.0f : current_mA));
+
+    for (uint8_t i = 0; i < NUM_AXES; i++) {
+        axis_t *ax = &s_axes[i];
+
+        int32_t cur_pos;
+        taskENTER_CRITICAL(&s_step_pos_mux);
+        cur_pos = ax->step_pos;
+        taskEXIT_CRITICAL(&s_step_pos_mux);
+
+        int32_t enc_pos = encoder_get_pos(i);
+        int32_t enc_steps = (ax->mpc_x100 > 0)
+            ? (int32_t)((int64_t)enc_pos * (int64_t)ax->enc_dir
+                        * (int64_t)ax->mpc_x100 / 100LL)
+            : (int32_t)((int64_t)enc_pos * (int64_t)ax->enc_dir);
+        int32_t vel = ax->dir ? (int32_t)ax->current_vel : -(int32_t)ax->current_vel;
+
+        fault_trace_sample_t sample = {
+            .state      = (uint8_t)ax->state,
+            .step_pos   = cur_pos,
+            .enc_steps  = enc_steps,
+            .diff       = enc_steps - cur_pos,
+            .vel        = vel,
+            .current_mA = current_i16,
+        };
+
+        taskENTER_CRITICAL(&s_trace_mux);
+        ax->trace_buf[ax->trace_head] = sample;
+        ax->trace_head = (uint16_t)((ax->trace_head + 1) % FAULT_TRACE_CAPACITY);
+        if (ax->trace_count < FAULT_TRACE_CAPACITY) ax->trace_count++;
+        taskEXIT_CRITICAL(&s_trace_mux);
+    }
+}
+
+/* ------------------------------------------------------------------ */
 /*  MotorControlTask — 1ms ティック台形プロファイルエンジン              */
 /* ------------------------------------------------------------------ */
 static void motor_control_task(void *arg)
@@ -225,6 +313,7 @@ static void motor_control_task(void *arg)
         if (++enc_tick >= 10) {
             enc_tick = 0;
             encoder_update_10ms();
+            fault_trace_record_all();
         }
 
         /* --- SYNC_MOVE 開始フェーズ（F-MOT-11）: 同一ティック先頭で全 RMT を同時 enable --- */
@@ -251,27 +340,55 @@ static void motor_control_task(void *arg)
             }
         }
 
+        if (s_hold_mode != HOLD_MODE_NORMAL) {
+            /* HOLD_FULL / HOLD_REDUCED: アイドルタイムアウトによる無励磁遷移は行わない。
+               全軸アイドル中(!any_active)はHOLD_REDUCEDならDRV_ENをチョッピングし、
+               いずれかの軸が動き出した瞬間に即フル励磁へ復帰する。 */
+            for (int i = 0; i < NUM_AXES; i++) s_axes[i].idle_counter_ms = 0;
+            if (s_drv_enabled) {
+                if (s_hold_mode == HOLD_MODE_REDUCED && !any_active && !s_chopping_active) {
+                    drv_en_set_percent(s_hold_current_percent);
+                    s_chopping_active = true;
+                } else if (s_chopping_active &&
+                           (any_active || s_hold_mode != HOLD_MODE_REDUCED)) {
+                    drv_en_set_percent(100);
+                    s_chopping_active = false;
+                }
+            } else if (s_chopping_active) {
+                s_chopping_active = false;
+            }
+        }
+
         for (int i = 0; i < NUM_AXES; i++) {
             axis_t *ax = &s_axes[i];
 
-            /* --- アイドルカウンタ --- */
-            if (ax->state == AXIS_IDLE) {
-                ax->idle_counter_ms++;
-                if (s_idle_timeout_ms > 0 &&
-                    ax->idle_counter_ms >= s_idle_timeout_ms &&
-                    !any_active) {
-                    /* 全軸アイドル到達 → スリープ遷移（全軸共通信号は1回だけ操作） */
-                    if (s_drv_enabled) {
-                        gpio_set_level(GPIO_DRV_EN, 1);     /* コイル解除 */
-                        gpio_set_level(GPIO_DRV_SLEEP, 0);  /* スリープ   */
-                        s_drv_enabled = false;
+            /* --- アイドルカウンタ (NORMAL モードのみ有効、HOLD_FULL/HOLD_REDUCED は
+                   上のブロックで一括処理済みのためスキップ) --- */
+            if (s_hold_mode == HOLD_MODE_NORMAL) {
+                if (ax->state == AXIS_IDLE) {
+                    if (any_active) {
+                        /* DRV_EN / DRV_SLEEP は全軸共通。他軸の動作中は
+                           「全軸アイドル」時間に算入しない。 */
+                        ax->idle_counter_ms = 0;
+                    } else {
+                        ax->idle_counter_ms++;
                     }
-                    ax->state = AXIS_SLEEP;
+                    if (!any_active && s_idle_timeout_ms > 0 &&
+                        ax->idle_counter_ms >= s_idle_timeout_ms) {
+                        /* 全軸アイドル到達 → スリープ遷移（全軸共通信号は1回だけ操作） */
+                        if (s_drv_enabled) {
+                            drv_en_set_percent(0);              /* コイル解除 */
+                            gpio_set_level(GPIO_DRV_SLEEP, 0);  /* スリープ   */
+                            s_drv_enabled = false;
+                            s_chopping_active = false;
+                        }
+                        ax->state = AXIS_SLEEP;
+                        ax->idle_counter_ms = 0;
+                        ESP_LOGI(TAG, "Axis %d: idle timeout → SLEEP", i);
+                    }
+                } else if (ax->state != AXIS_SLEEP && ax->state != AXIS_FAULT) {
                     ax->idle_counter_ms = 0;
-                    ESP_LOGI(TAG, "Axis %d: idle timeout → SLEEP", i);
                 }
-            } else if (ax->state != AXIS_SLEEP && ax->state != AXIS_FAULT) {
-                ax->idle_counter_ms = 0;
             }
 
             /* --- 速度プロファイル更新 / HOMING 以外はスキップ --- */
@@ -508,8 +625,9 @@ static void motor_control_task(void *arg)
 
                         if (ax->disable_on_stop) {
                             ax->disable_on_stop = false;
-                            gpio_set_level(GPIO_DRV_EN, 1);
+                            drv_en_set_percent(0);
                             s_drv_enabled = false;
+                            s_chopping_active = false;
                         }
 
                         ESP_LOGI(TAG, "Axis %d: done, pos=%ld", i, (long)ax->step_pos);
@@ -565,6 +683,27 @@ static void motor_control_task(void *arg)
 /* ------------------------------------------------------------------ */
 void motor_ctrl_init(void)
 {
+    /* DRV_EN を LEDC (ハードウェアPWM) で駆動する設定。main.c の起動安全初期化
+       (raw gpio_set_level, 無励磁High) の後にここで一度だけ設定し、duty=0
+       (=無励磁High継続) から開始してグリッチなく引き継ぐ。 */
+    const ledc_timer_config_t drv_en_timer_cfg = {
+        .speed_mode      = DRV_EN_LEDC_MODE,
+        .duty_resolution = DRV_EN_LEDC_RES_BITS,
+        .timer_num       = DRV_EN_LEDC_TIMER,
+        .freq_hz         = DRV_EN_LEDC_FREQ_HZ,
+        .clk_cfg         = LEDC_AUTO_CLK,
+    };
+    ESP_ERROR_CHECK(ledc_timer_config(&drv_en_timer_cfg));
+    const ledc_channel_config_t drv_en_channel_cfg = {
+        .gpio_num   = GPIO_DRV_EN,
+        .speed_mode = DRV_EN_LEDC_MODE,
+        .channel    = DRV_EN_LEDC_CHANNEL,
+        .timer_sel  = DRV_EN_LEDC_TIMER,
+        .duty       = DRV_EN_LEDC_MAX_DUTY,   /* percent=0 相当: 常時High(無励磁) */
+        .hpoint     = 0,
+    };
+    ESP_ERROR_CHECK(ledc_channel_config(&drv_en_channel_cfg));
+
     for (int i = 0; i < NUM_AXES; i++) {
         axis_t *ax = &s_axes[i];
 
@@ -657,8 +796,9 @@ void motor_enable(void)
 
     gpio_set_level(GPIO_DRV_SLEEP, 1);   /* スリープ解除 */
     vTaskDelay(pdMS_TO_TICKS(1));         /* チャージポンプ安定待ち */
-    gpio_set_level(GPIO_DRV_EN, 0);       /* アクティブ Low: 励磁 */
+    drv_en_set_percent(100);              /* アクティブ Low: 励磁 */
     s_drv_enabled = true;
+    s_chopping_active = false;
 
     for (int i = 0; i < NUM_AXES; i++) {
         if (s_axes[i].state == AXIS_SLEEP) {
@@ -691,9 +831,15 @@ void motor_disable(void)
         rmt_stop_channel(ax);
         gpio_set_level(s_step_gpios[i], 0);
     }
-    gpio_set_level(GPIO_DRV_EN, 1);
+    drv_en_set_percent(0);
     s_drv_enabled = false;
+    s_chopping_active = false;
     ESP_LOGI(TAG, "DRV disabled");
+}
+
+bool motor_is_enabled(void)
+{
+    return s_drv_enabled;
 }
 
 /* ------------------------------------------------------------------ */
@@ -753,6 +899,23 @@ static bool start_motion(uint8_t axis, bool dir, int32_t target, bool pos_mode)
 /* ------------------------------------------------------------------ */
 /*  motor_move / motor_moveto                                           */
 /* ------------------------------------------------------------------ */
+bool motor_degrees_to_steps(uint8_t axis, float deg, int32_t *out_steps)
+{
+    if (axis >= NUM_AXES || !out_steps || !isfinite(deg)) return false;
+
+    uint32_t steps_per_rev = config_get_steps_per_rev(axis);
+    float gear_ratio = config_get_gear_ratio(axis);
+    if (steps_per_rev == 0 || !isfinite(gear_ratio) || gear_ratio <= 0.0f) {
+        return false;
+    }
+
+    double steps = round((double)deg * (double)steps_per_rev *
+                         (double)gear_ratio / 360.0);
+    if (steps < (double)INT32_MIN || steps > (double)INT32_MAX) return false;
+    *out_steps = (int32_t)steps;
+    return true;
+}
+
 bool motor_move(uint8_t axis, int32_t steps)
 {
     if (axis >= NUM_AXES || steps == 0) return (steps == 0);
@@ -856,8 +1019,9 @@ bool motor_stop_free(uint8_t axis)
 
     if (!ax->running) {
         /* 既に停止中: 即時コイル解除 */
-        gpio_set_level(GPIO_DRV_EN, 1);
+        drv_en_set_percent(0);
         s_drv_enabled = false;
+        s_chopping_active = false;
         return true;
     }
 
@@ -894,8 +1058,9 @@ void motor_estop(fault_reason_t reason)
     }
 
     /* DRV_EN → High（コイル励磁解除）: FAULT 遷移処理 手順2 */
-    gpio_set_level(GPIO_DRV_EN, 1);
+    drv_en_set_percent(0);
     s_drv_enabled = false;
+    s_chopping_active = false;
 
     /* フォルト情報記録 */
     s_last_fault.reason       = reason;
@@ -926,8 +1091,9 @@ bool motor_clear_fault(void)
     if (!any_fault) return false;   /* ERR E010: 非 FAULT 状態 */
 
     /* 1. DRV_EN → High（念のため確認） */
-    gpio_set_level(GPIO_DRV_EN, 1);
+    drv_en_set_percent(0);
     s_drv_enabled = false;
+    s_chopping_active = false;
 
     /* 2-3. DRV_RESET パルス（最低 10 µs、ここでは 1 ms） */
     gpio_set_level(GPIO_DRV_RESET, 0);
@@ -961,6 +1127,28 @@ bool motor_clear_fault(void)
 void motor_get_fault_info(fault_info_t *out)
 {
     if (out) *out = s_last_fault;
+}
+
+/* ------------------------------------------------------------------ */
+/*  motor_get_fault_trace  (GET FAULT_TRACE)                           */
+/* ------------------------------------------------------------------ */
+uint16_t motor_get_fault_trace(uint8_t axis, fault_trace_sample_t *out, uint16_t max_entries)
+{
+    if (axis >= NUM_AXES || !out || max_entries == 0) return 0;
+    axis_t *ax = &s_axes[axis];
+
+    taskENTER_CRITICAL(&s_trace_mux);
+    uint16_t count  = ax->trace_count;
+    uint16_t oldest = (uint16_t)((ax->trace_head + FAULT_TRACE_CAPACITY - count) % FAULT_TRACE_CAPACITY);
+    uint16_t copied = count < max_entries ? count : max_entries;
+    /* max_entries が保持件数より小さい場合は新しい方を優先して返す */
+    uint16_t skip  = (uint16_t)(count - copied);
+    uint16_t start = (uint16_t)((oldest + skip) % FAULT_TRACE_CAPACITY);
+    for (uint16_t i = 0; i < copied; i++) {
+        out[i] = ax->trace_buf[(start + i) % FAULT_TRACE_CAPACITY];
+    }
+    taskEXIT_CRITICAL(&s_trace_mux);
+    return copied;
 }
 
 /* ------------------------------------------------------------------ */
@@ -1022,6 +1210,32 @@ bool motor_set_idle_timeout(uint32_t timeout_ms)
 {
     s_idle_timeout_ms = timeout_ms;
     return true;
+}
+
+bool motor_set_hold_mode(hold_mode_t mode)
+{
+    if (mode != HOLD_MODE_NORMAL && mode != HOLD_MODE_FULL && mode != HOLD_MODE_REDUCED) {
+        return false;
+    }
+    s_hold_mode = mode;
+    return true;
+}
+
+hold_mode_t motor_get_hold_mode(void)
+{
+    return s_hold_mode;
+}
+
+bool motor_set_hold_current_percent(uint8_t percent)
+{
+    if (percent < 1U || percent > 100U) return false;
+    s_hold_current_percent = percent;
+    return true;
+}
+
+uint8_t motor_get_hold_current_percent(void)
+{
+    return s_hold_current_percent;
 }
 
 bool motor_set_soft_limit(uint8_t axis, int32_t min_p, int32_t max_p)

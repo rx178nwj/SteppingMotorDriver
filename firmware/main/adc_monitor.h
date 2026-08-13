@@ -27,6 +27,9 @@ float adc_get_voltage_V(void);
 /* フィルタ後生 mV 値（ch=0〜4） */
 int   adc_get_raw_mv(uint8_t ch);
 
+/* フィルタ後 ADC 生カウント（ch=0〜4、12bit）。F-MOT-12 の POT 換算用。 */
+int   adc_get_raw_count(uint8_t ch);
+
 /* 移動平均窓サイズ設定 (ch=0〜4、0xFF=全チャンネル一括、N=1〜64) */
 void  adc_set_filter_window(uint8_t ch, uint8_t n);
 

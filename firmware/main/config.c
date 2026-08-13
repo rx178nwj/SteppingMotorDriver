@@ -22,7 +22,10 @@ static const char *WIRELESS_NVS_NS = "wifi_config";
 #define DEF_MICROSTEP          32U
 #define DEF_IDLE_TIMEOUT_MS  2000U
 #define DEF_COMM_TIMEOUT_MS  5000U
+#define DEF_HOLD_MODE               0U   /* hold_mode_t: HOLD_MODE_NORMAL */
+#define DEF_HOLD_CURRENT_PERCENT   30U
 #define DEF_GEAR_DEVIATION_WARN_DEG 5.0f
+#define DEF_POT_SCALE_DEG       0.0879f
 
 /* 軸ごとのデフォルトプロファイル ID */
 static const motor_profile_id_t DEF_PROFILE_PER_AXIS[NUM_AXES] = {
@@ -37,12 +40,18 @@ static const motor_profile_id_t DEF_PROFILE_PER_AXIS[NUM_AXES] = {
 static microstep_t         s_microstep           = MICROSTEP_32;
 static uint32_t            s_idle_timeout_ms     = DEF_IDLE_TIMEOUT_MS;
 static uint32_t            s_comm_timeout_ms     = DEF_COMM_TIMEOUT_MS;
+static uint32_t            s_hold_mode           = DEF_HOLD_MODE;
+static uint32_t            s_hold_current_percent = DEF_HOLD_CURRENT_PERCENT;
 static motor_profile_id_t  s_profile[NUM_AXES];
 static float                s_gear_offset[NUM_AXES] = {0.0f, 0.0f, 0.0f};
 static int8_t               s_gear_dir[NUM_AXES] = {1, 1, 1};
 static bool                 s_gear_abs_capable[NUM_AXES] = {false, false, false};
 static bool                 s_gear_enable[NUM_AXES] = {true, true, true};
 static float                s_gear_ratio[NUM_AXES] = {1.0f, 1.0f, 1.0f};
+static float                s_pot_scale_deg[NUM_AXES] = {
+    DEF_POT_SCALE_DEG, DEF_POT_SCALE_DEG, DEF_POT_SCALE_DEG
+};
+static int32_t              s_pot_zero_offset[NUM_AXES] = {0, 0, 0};
 static float                s_gear_deviation_warn = DEF_GEAR_DEVIATION_WARN_DEG;
 static bool                 s_ble_enable = true;
 static bool                 s_wifi_enable = false;
@@ -62,6 +71,25 @@ static float u32_to_float(uint32_t bits)
     float value;
     memcpy(&value, &bits, sizeof(value));
     return value;
+}
+
+static bool save_pot_axis_config(uint8_t axis)
+{
+    nvs_handle_t h;
+    if (axis >= NUM_AXES || nvs_open(NVS_NS, NVS_READWRITE, &h) != ESP_OK) {
+        return false;
+    }
+
+    char key[16];
+    snprintf(key, sizeof(key), "pot_scale%u", (unsigned)axis);
+    esp_err_t err = nvs_set_u32(h, key, float_to_u32(s_pot_scale_deg[axis]));
+    if (err == ESP_OK) {
+        snprintf(key, sizeof(key), "pot_zero%u", (unsigned)axis);
+        err = nvs_set_i32(h, key, s_pot_zero_offset[axis]);
+    }
+    if (err == ESP_OK) err = nvs_commit(h);
+    nvs_close(h);
+    return err == ESP_OK;
 }
 
 static void load_gear_config(void)
@@ -234,12 +262,16 @@ void config_init(void)
     uint32_t ms      = DEF_MICROSTEP;
     uint32_t idle_ms = DEF_IDLE_TIMEOUT_MS;
     uint32_t comm_ms = DEF_COMM_TIMEOUT_MS;
+    uint32_t hold_mode = DEF_HOLD_MODE;
+    uint32_t hold_pct   = DEF_HOLD_CURRENT_PERCENT;
     float    volt_div = adc_get_volt_divider();
 
     if (err == ESP_OK) {
         nvs_get_u32(h, "microstep",    &ms);
         nvs_get_u32(h, "idle_timeout", &idle_ms);
         nvs_get_u32(h, "comm_timeout", &comm_ms);
+        nvs_get_u32(h, "hold_mode",    &hold_mode);
+        nvs_get_u32(h, "hold_pct",     &hold_pct);
         uint32_t volt_div_bits;
         if (nvs_get_u32(h, "volt_div", &volt_div_bits) == ESP_OK) {
             float saved_volt_div = u32_to_float(volt_div_bits);
@@ -334,6 +366,20 @@ void config_init(void)
             }
         }
 
+        /* POT 角度換算係数・ゼロ位置オフセット (F-MOT-12)。 */
+        s_pot_scale_deg[i] = DEF_POT_SCALE_DEG;
+        s_pot_zero_offset[i] = 0;
+        if (err == ESP_OK) {
+            uint32_t scale_bits;
+            snprintf(key, sizeof(key), "pot_scale%u", (unsigned)i);
+            if (nvs_get_u32(h, key, &scale_bits) == ESP_OK) {
+                float scale = u32_to_float(scale_bits);
+                if (isfinite(scale) && scale > 0.0f) s_pot_scale_deg[i] = scale;
+            }
+            snprintf(key, sizeof(key), "pot_zero%u", (unsigned)i);
+            (void)nvs_get_i32(h, key, &s_pot_zero_offset[i]);
+        }
+
         /* mpc_x100: プロファイルと現在マイクロステップから計算 */
         if (p && p->encoder_counts_per_rev > 0) {
             uint32_t mpc = ((uint32_t)p->full_steps_per_rev * ms * 100U)
@@ -357,9 +403,13 @@ void config_init(void)
     s_microstep       = (microstep_t)ms;
     s_idle_timeout_ms = idle_ms;
     s_comm_timeout_ms = comm_ms;
+    s_hold_mode           = (hold_mode <= HOLD_MODE_REDUCED) ? hold_mode : DEF_HOLD_MODE;
+    s_hold_current_percent = (hold_pct >= 1U && hold_pct <= 100U) ? hold_pct : DEF_HOLD_CURRENT_PERCENT;
 
     apply_microstep_gpio(s_microstep);
     motor_set_idle_timeout(s_idle_timeout_ms);
+    motor_set_hold_mode((hold_mode_t)s_hold_mode);
+    motor_set_hold_current_percent((uint8_t)s_hold_current_percent);
     adc_set_volt_divider(volt_div);
     load_gear_config();
     load_wireless_config();
@@ -402,10 +452,16 @@ bool config_save(void)
         snprintf(key, sizeof(key), "encdir%d",  i); nvs_set_u32(h, key, (uint32_t)(int32_t)motor_get_enc_dir(i));
         snprintf(key, sizeof(key), "gearratio%d", i);
         nvs_set_u32(h, key, float_to_u32(s_gear_ratio[i]));
+        snprintf(key, sizeof(key), "pot_scale%u", (unsigned)i);
+        nvs_set_u32(h, key, float_to_u32(s_pot_scale_deg[i]));
+        snprintf(key, sizeof(key), "pot_zero%u", (unsigned)i);
+        nvs_set_i32(h, key, s_pot_zero_offset[i]);
     }
     nvs_set_u32(h, "microstep",    (uint32_t)s_microstep);
     nvs_set_u32(h, "idle_timeout", s_idle_timeout_ms);
     nvs_set_u32(h, "comm_timeout", s_comm_timeout_ms);
+    nvs_set_u32(h, "hold_mode",    s_hold_mode);
+    nvs_set_u32(h, "hold_pct",     s_hold_current_percent);
     nvs_set_u32(h, "volt_div",     float_to_u32(adc_get_volt_divider()));
 
     esp_err_t err = nvs_commit(h);
@@ -446,6 +502,8 @@ void config_reset(void)
     s_microstep       = MICROSTEP_32;
     s_idle_timeout_ms = DEF_IDLE_TIMEOUT_MS;
     s_comm_timeout_ms = DEF_COMM_TIMEOUT_MS;
+    s_hold_mode           = DEF_HOLD_MODE;
+    s_hold_current_percent = DEF_HOLD_CURRENT_PERCENT;
 
     for (uint8_t i = 0; i < NUM_AXES; i++) {
         s_profile[i] = DEF_PROFILE_PER_AXIS[i];
@@ -457,6 +515,8 @@ void config_reset(void)
         s_gear_abs_capable[i] = false;
         s_gear_enable[i] = true;
         s_gear_ratio[i] = 1.0f;
+        s_pot_scale_deg[i] = DEF_POT_SCALE_DEG;
+        s_pot_zero_offset[i] = 0;
         if (p && p->encoder_counts_per_rev > 0) {
             uint32_t mpc = ((uint32_t)p->full_steps_per_rev * (uint32_t)MICROSTEP_32 * 100U)
                            / p->encoder_counts_per_rev;
@@ -465,6 +525,8 @@ void config_reset(void)
     }
     apply_microstep_gpio(s_microstep);
     motor_set_idle_timeout(s_idle_timeout_ms);
+    motor_set_hold_mode((hold_mode_t)s_hold_mode);
+    motor_set_hold_current_percent((uint8_t)s_hold_current_percent);
     adc_set_volt_divider(24.0f / 3.3f);
     s_gear_deviation_warn = DEF_GEAR_DEVIATION_WARN_DEG;
     s_ble_enable = true;
@@ -507,6 +569,11 @@ microstep_t config_get_microstep(void) { return s_microstep; }
 /* ------------------------------------------------------------------ */
 void     config_set_idle_timeout(uint32_t ms) { s_idle_timeout_ms = ms; }
 uint32_t config_get_idle_timeout(void)        { return s_idle_timeout_ms; }
+
+void     config_set_hold_mode(uint32_t mode)   { s_hold_mode = mode; }
+uint32_t config_get_hold_mode(void)            { return s_hold_mode; }
+void     config_set_hold_current_percent(uint32_t pct) { s_hold_current_percent = pct; }
+uint32_t config_get_hold_current_percent(void)          { return s_hold_current_percent; }
 
 /* ------------------------------------------------------------------ */
 /*  通信ウォッチドッグタイムアウト                                        */
@@ -595,6 +662,58 @@ float config_get_gear_deviation_warn(void)
 float config_get_gear_ratio(uint8_t axis)
 {
     return axis < NUM_AXES ? s_gear_ratio[axis] : 1.0f;
+}
+
+bool config_set_gear_ratio(uint8_t axis, float ratio)
+{
+    if (axis >= NUM_AXES || !isfinite(ratio) || ratio <= 0.0f) return false;
+    s_gear_ratio[axis] = ratio;
+    return true;
+}
+
+uint32_t config_get_steps_per_rev(uint8_t axis)
+{
+    const motor_profile_t *profile = config_get_motor_profile_data(axis);
+    if (!profile) return 0;
+    return (uint32_t)profile->full_steps_per_rev * (uint32_t)s_microstep;
+}
+
+uint32_t config_get_encoder_ppr(uint8_t axis)
+{
+    const motor_profile_t *profile = config_get_motor_profile_data(axis);
+    return profile ? (uint32_t)profile->encoder_ppr : 0;
+}
+
+float config_get_pot_scale_deg(uint8_t axis)
+{
+    return axis < NUM_AXES ? s_pot_scale_deg[axis] : 0.0f;
+}
+
+int32_t config_get_pot_zero_offset(uint8_t axis)
+{
+    return axis < NUM_AXES ? s_pot_zero_offset[axis] : 0;
+}
+
+bool config_set_pot_scale_deg(uint8_t axis, float deg_per_count)
+{
+    if (axis >= NUM_AXES || !isfinite(deg_per_count) || deg_per_count <= 0.0f) {
+        return false;
+    }
+    float old = s_pot_scale_deg[axis];
+    s_pot_scale_deg[axis] = deg_per_count;
+    if (save_pot_axis_config(axis)) return true;
+    s_pot_scale_deg[axis] = old;
+    return false;
+}
+
+bool config_set_pot_zero_offset(uint8_t axis, int32_t adc_count)
+{
+    if (axis >= NUM_AXES) return false;
+    int32_t old = s_pot_zero_offset[axis];
+    s_pot_zero_offset[axis] = adc_count;
+    if (save_pot_axis_config(axis)) return true;
+    s_pot_zero_offset[axis] = old;
+    return false;
 }
 
 bool config_set_gear_offset(uint8_t axis, float deg)

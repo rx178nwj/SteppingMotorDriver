@@ -38,6 +38,9 @@ SteppingMotorDriver ファームウェアの基本動作を USB-CDC 経由で検
   [T28] SET MICROSTEP 動的変更（有効値全種 / 無効値 E002 / モーション中 E004）
   [T29] COMM_TIMEOUT 実動作（2000ms 設定 → コマンド停止 → EVT 受信 → IDLE 確認）
   [T30] MOVETO + GET ENC 精度確認（step_pos / enc_pos 誤差チェック）※実機モーター必要
+  [T31] F-MOT-12 角度換算・MOVE_DEG/MOVETO_DEG・E008 ※実機モーター必要
+  [T32] F-MOT-12 POT スケール・ゼロ位置補正・引数エラー
+  [T33] 単軸動作中の他軸IDLEタイムアウト回帰 ※実機モーター必要
 
 依存: pip install pyserial
 """
@@ -1108,7 +1111,193 @@ def run_tests(r: TestRunner, c: MotorComm, no_motor: bool):
                     r.fail(f"MOVETO {tgt}: enc_pos={enc_pos}", enc_resp, f"≈{enc_expected} (±50)")
             except ValueError:
                 r.fail(f"MOVETO {tgt}: 数値パース失敗", f"{pos_resp} / {enc_resp}")
+
+        # ── T31: F-MOT-12 関節角度・角度指定移動 ──────────────
+        print("\n[T31] F-MOT-12 関節角度・MOVE_DEG/MOVETO_DEG")
+        c.send_ok("SET MICROSTEP 32")
+        c.send_ok("ENABLE")
+        resp = c.send("MOVETO_DEG 0 90")
+        r.check("MOVETO_DEG 0 90 → OK", resp, "OK")
+        for busy_cmd in ("MOVE 0 1", "MOVETO 0 0",
+                         "MOVE_DEG 0 1", "MOVETO_DEG 0 0"):
+            resp_busy = c.send(busy_cmd)
+            if resp_busy.startswith("ERR E008"):
+                r.ok(f"角度指定移動中 {busy_cmd} → ERR E008", resp_busy)
+            elif "IDLE" in c.send("GET STATE 0"):
+                r.skip(f"角度指定移動中 {busy_cmd} → ERR E008", "既に完了")
+            else:
+                r.fail(f"角度指定移動中 {busy_cmd}", resp_busy, "ERR E008")
+
+        deadline = time.monotonic() + 10.0
+        while time.monotonic() < deadline:
+            time.sleep(0.1)
+            state = c.send("GET STATE 0")
+            if "IDLE" in state or "SLEEP" in state or "FAULT" in state:
+                break
+        pos_resp = c.send("GET POS 0")
+        pos_deg_resp = c.send("GET POS_DEG 0")
+        enc_resp = c.send("GET ENC 0")
+        enc_deg_resp = c.send("GET ENC_DEG 0")
+        try:
+            step_pos = int(pos_resp.split()[-1])
+            pos_deg = float(pos_deg_resp.split()[-1])
+            enc_pos = int(enc_resp.split()[-1])
+            enc_deg = float(enc_deg_resp.split()[-1])
+            enc_deg_expected = enc_pos * 360.0 / (1000 * 4)
+            if abs(step_pos - 1600) <= 5 and abs(pos_deg - 90.0) <= 0.3:
+                r.ok("MOVETO_DEG 90° → 1600 steps / POS_DEG 90°",
+                     f"pos={step_pos}, deg={pos_deg:.3f}")
+            else:
+                r.fail("MOVETO_DEG 90° 換算", f"{pos_resp} / {pos_deg_resp}",
+                       "pos≈1600, deg≈90")
+            if abs(enc_deg - enc_deg_expected) <= 0.001:
+                r.ok("GET ENC_DEG が encoder_ppr×4 換算式と一致",
+                     f"enc={enc_pos}, deg={enc_deg:.3f}")
+            else:
+                r.fail("GET ENC_DEG 換算", enc_deg_resp,
+                       f"OK ≈{enc_deg_expected:.3f}")
+        except (ValueError, IndexError):
+            r.fail("GET POS_DEG/ENC_DEG 数値応答",
+                   f"{pos_deg_resp} / {enc_deg_resp}", "OK <float>")
+
+        # steps_per_rev はマイクロステップ変更に追従することを確認する。
+        c.send_ok("SET MICROSTEP 16")
+        changed_deg_resp = c.send("GET POS_DEG 0")
+        try:
+            changed_deg = float(changed_deg_resp.split()[-1])
+            if abs(changed_deg - 180.0) <= 0.3:
+                r.ok("steps_per_rev 変更が POS_DEG に反映", changed_deg_resp)
+            else:
+                r.fail("steps_per_rev 変更が POS_DEG に反映",
+                       changed_deg_resp, "OK ≈180.000")
+        except (ValueError, IndexError):
+            r.fail("steps_per_rev 変更後 POS_DEG", changed_deg_resp, "OK <float>")
+        c.send_ok("SET MICROSTEP 32")
+
+        resp = c.send("MOVETO_DEG 0 -45")
+        r.check("MOVETO_DEG 0 -45 → OK", resp, "OK")
+        deadline = time.monotonic() + 10.0
+        while time.monotonic() < deadline:
+            time.sleep(0.1)
+            state = c.send("GET STATE 0")
+            if "IDLE" in state or "SLEEP" in state or "FAULT" in state:
+                break
+        final_pos = c.send("GET POS 0")
+        try:
+            if abs(int(final_pos.split()[-1]) + 800) <= 5:
+                r.ok("MOVETO_DEG -45° → -800 steps", final_pos)
+            else:
+                r.fail("MOVETO_DEG -45° 換算", final_pos, "OK ≈-800")
+        except (ValueError, IndexError):
+            r.fail("MOVETO_DEG -45° 後 GET POS", final_pos, "OK <int>")
+
+        resp = c.send("MOVE_DEG 0 45")
+        r.check("MOVE_DEG 0 45 → OK", resp, "OK")
+        deadline = time.monotonic() + 10.0
+        while time.monotonic() < deadline:
+            time.sleep(0.1)
+            state = c.send("GET STATE 0")
+            if "IDLE" in state or "SLEEP" in state or "FAULT" in state:
+                break
+        relative_pos = c.send("GET POS 0")
+        try:
+            if abs(int(relative_pos.split()[-1])) <= 5:
+                r.ok("MOVE_DEG +45° → 相対 +800 steps", relative_pos)
+            else:
+                r.fail("MOVE_DEG +45° 換算", relative_pos, "OK ≈0")
+        except (ValueError, IndexError):
+            r.fail("MOVE_DEG +45° 後 GET POS", relative_pos, "OK <int>")
+
+        # ── T33: 他軸が IDLE でも単軸動作中は共通ドライバをスリープさせない ──
+        print("\n[T33] 単軸動作中のIDLEタイムアウト回帰")
+        c.send_ok("SET IDLE_TIMEOUT 300")
+        c.send_ok("SET VMAX 0 1000")
+        c.send_ok("ENABLE")
+        resp = c.send("MOVETO_DEG 0 90")
+        r.check("IDLE_TIMEOUTより長い単軸移動 → OK", resp, "OK")
+        time.sleep(0.5)
+        mid_state = c.send("GET STATE 0")
+        if any(name in mid_state for name in ("ACCEL", "CRUISE", "DECEL")):
+            r.ok("他軸IDLE中も軸0の動作を継続", mid_state)
+        else:
+            r.fail("他軸IDLE中の軸0状態", mid_state,
+                   "OK ACCEL/CRUISE/DECEL")
+
+        deadline = time.monotonic() + 10.0
+        while time.monotonic() < deadline:
+            time.sleep(0.1)
+            state = c.send("GET STATE 0")
+            if "IDLE" in state or "SLEEP" in state or "FAULT" in state:
+                break
+        timeout_pos = c.send("GET POS 0")
+        try:
+            if "FAULT" not in state and abs(int(timeout_pos.split()[-1]) - 1600) <= 5:
+                r.ok("タイムアウト超過後も移動完了", timeout_pos)
+            else:
+                r.fail("タイムアウト超過後の移動", f"{state} / {timeout_pos}",
+                       "IDLE/SLEEP, pos≈1600")
+        except (ValueError, IndexError):
+            r.fail("タイムアウト回帰 GET POS", timeout_pos, "OK <int>")
+
+        # 全軸停止後は通常どおりスリープする。
+        time.sleep(0.5)
+        sleep_states = [c.send(f"GET STATE {axis}") for axis in range(NUM_AXES)]
+        if all("SLEEP" in item for item in sleep_states):
+            r.ok("全軸停止後は共通ドライバがSLEEP", str(sleep_states))
+        else:
+            r.fail("全軸停止後のSLEEP遷移", str(sleep_states), "all SLEEP")
+
+        # 原点へ戻してテスト設定を復元。
+        c.send_ok("ENABLE")
+        c.send_ok("MOVETO_DEG 0 0")
+        deadline = time.monotonic() + 10.0
+        while time.monotonic() < deadline:
+            time.sleep(0.1)
+            state = c.send("GET STATE 0")
+            if "IDLE" in state or "SLEEP" in state or "FAULT" in state:
+                break
+        c.send_ok("SET VMAX 0 6400")
+        c.send_ok("SET IDLE_TIMEOUT 2000")
         c.send_ok("DISABLE")
+
+    # ── T32: F-MOT-12 POT 較正（モーター不要） ─────────────────
+    print("\n[T32] F-MOT-12 POT スケール・ゼロ位置補正")
+    r.check("GET POS_DEG 軸範囲外", c.send("GET POS_DEG 3"), "ERR E003")
+    r.check("MOVE_DEG 引数不足", c.send("MOVE_DEG 0"), "ERR E002")
+    r.check("MOVE_DEG 引数区切りなし", c.send("MOVE_DEG 0.5"), "ERR E002")
+    r.check("SET POT_SCALE 不正値", c.send("SET POT_SCALE 0 0"), "ERR E002")
+    r.check("SET POT_SCALE 0 0.1", c.send("SET POT_SCALE 0 0.1"), "OK")
+    before = c.send("GET POT_DEG 0")
+    r.check("SET POT_ZERO 0", c.send("SET POT_ZERO 0"), "OK")
+    zeroed = c.send("GET POT_DEG 0")
+    try:
+        raw_before = float(before.split()[-2])
+        raw_after, zero_after = map(float, zeroed.split()[-2:])
+        if abs(raw_after - raw_before) <= 2.0:
+            r.ok("SET POT_ZERO 後も raw 側を維持", zeroed)
+        else:
+            r.fail("SET POT_ZERO 後も raw 側を維持", zeroed,
+                   f"raw≈{raw_before:.3f}")
+        if abs(zero_after) <= 2.0:
+            r.ok("SET POT_ZERO 後 zeroed≈0", zeroed)
+        else:
+            r.fail("SET POT_ZERO 後 zeroed≈0", zeroed, "zeroed≈0")
+    except (ValueError, IndexError):
+        r.fail("GET POT_DEG 数値応答", f"{before} / {zeroed}",
+               "OK <raw_deg> <zeroed_deg>")
+
+    r.check("CLEAR POT_ZERO 0", c.send("CLEAR POT_ZERO 0"), "OK")
+    cleared = c.send("GET POT_DEG 0")
+    try:
+        raw_clear, zero_clear = map(float, cleared.split()[-2:])
+        if abs(raw_clear - zero_clear) <= 0.001:
+            r.ok("CLEAR POT_ZERO 後 raw==zeroed", cleared)
+        else:
+            r.fail("CLEAR POT_ZERO 後 raw==zeroed", cleared, "raw == zeroed")
+    except (ValueError, IndexError):
+        r.fail("CLEAR 後 GET POT_DEG 数値応答", cleared,
+               "OK <raw_deg> <zeroed_deg>")
+    c.send("SET POT_SCALE 0 0.0879")
 
 
 # ─────────────────────────────────────────────

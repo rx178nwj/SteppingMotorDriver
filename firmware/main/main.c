@@ -11,6 +11,7 @@
 #include "adc_monitor.h"
 #include "config.h"
 #include "comm.h"
+#include "error_log.h"
 #include "gear_monitor.h"
 #include "ble_telemetry.h"
 #include "wifi_telemetry.h"
@@ -117,6 +118,9 @@ void app_main(void)
 
     /* --- NVS からパラメータ読み込み・適用 --- */
     config_init();
+
+    /* --- エラーログリングバッファ初期化 (comm_send() が使用) --- */
+    error_log_init();
 
     /* --- USB-CDC + CommTask 起動 --- */
     comm_init();

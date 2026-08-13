@@ -2,6 +2,7 @@ idf_component_register(
     SRCS
         "main.c"
         "comm.c"
+        "error_log.c"
         "motor_ctrl.c"
         "config.c"
         "motor_specs.c"

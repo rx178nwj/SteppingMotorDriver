@@ -84,6 +84,16 @@ SteppingMotorDriver/
 - ステップパルス生成：**RMT ペリフェラル**（80 MHz、12.5 ns 分解能）
 - エンコーダデコード：**PCNT ペリフェラル**（4 逓倍）
 
+### ファームウェアのコンパイル
+
+- Claude Code でコンパイルするときは [firmware/README.md](firmware/README.md) の手順に従う。
+- このPCでは ESP-IDF v5.5 と Python 3.11 環境を明示してから `firmware` ディレクトリで
+  `idf.py build` を実行する。単に `idf.py build` だけを実行してコマンドが見つからない場合は、
+  ESP-IDF の環境有効化を省略しないこと。
+- 通常のコンパイルでは `idf.py set-target` や `idf.py fullclean` を実行しない。
+  ターゲットは既に `esp32s3` に設定済みで、これらは生成物や設定を消去・再生成するため、
+  明確な理由がある場合に限る。
+
 ### タスク構成
 
 | タスク | 優先度 | 周期 | 役割 |
@@ -167,6 +177,20 @@ SteppingMotorDriver/
 - 再接続後は `STATUS` コマンド 1 本でセッション再確立、ENABLE 不要でそのまま動作可能
 - `SET COMM_TIMEOUT <ms>`（0 = 無効）で変更可能
 - USB 切断は `tinyusb_cdcacm` の disconnection コールバックで検知
+
+### 保持電流モード（F-MOT-13、2026-08-09新設）
+
+- DRV8825 の実駆動電流（VREF）は各モジュール基板上の物理トリムポットで固定されており、ESP32 から
+  デジタル制御できない。そのため保持電流の可変は **`DRV_EN`（アクティブLow=励磁、全3軸共通の単一GPIO12）
+  を LEDC（ESP32-S3 内蔵ハードウェアPWM、20kHz固定）でチョッピングし、平均電流を疑似的に下げる**
+  近似方式を採用した（真の電流値制御ではない）。
+- `DRV_EN` が全軸共通信号のため、保持電流モードも軸単位ではなく **全軸共通のグローバル設定**
+  （`SET HOLD_MODE <0|1|2>`：0=NORMAL(既存アイドルタイムアウト)、1=HOLD_FULL(常時フル励磁)、
+  2=HOLD_REDUCED(全軸アイドル中のみ`SET HOLD_CURRENT_PERCENT`指定比率でチョッピング、モーション再開で
+  即フル励磁へ復帰)）。
+- `motor_ctrl.c` は `DRV_EN` の駆動を全経路で `drv_en_set_percent()`（LEDC duty 更新の薄いラッパー）に
+  統一しており、`gpio_set_level(GPIO_DRV_EN, ...)` は直接呼ばない（起動直後の安全初期化 `main.c` のみ例外、
+  LEDC 未初期化のため raw GPIO のまま）。
 
 ---
 

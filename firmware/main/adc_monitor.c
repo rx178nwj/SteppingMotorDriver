@@ -89,6 +89,7 @@ static int32_t ring_push(ring_t *r, int32_t mv)
 /*  モジュール状態                                                       */
 /* ------------------------------------------------------------------ */
 static ring_t                   s_ring[ADC_NUM_CH];
+static ring_t                   s_raw_ring[ADC_NUM_CH];
 static SemaphoreHandle_t        s_mutex;
 static adc_oneshot_unit_handle_t s_adc_handle;
 static adc_cali_handle_t        s_cali_handle;
@@ -171,6 +172,7 @@ static void adc_task(void *arg)
             }
 
             xSemaphoreTake(s_mutex, portMAX_DELAY);
+            ring_push(&s_raw_ring[ch], (int32_t)avg_raw);
             ring_push(&s_ring[ch], (int32_t)mv);
             xSemaphoreGive(s_mutex);
         }
@@ -201,6 +203,7 @@ void adc_monitor_init(void)
     /* リングバッファ初期化 */
     for (int i = 0; i < ADC_NUM_CH; i++) {
         ring_reset(&s_ring[i], ADC_FILTER_DEF, 0);
+        ring_reset(&s_raw_ring[i], ADC_FILTER_DEF, 0);
     }
 
     /* ADC1 ワンショットユニット初期化 */
@@ -260,6 +263,15 @@ int adc_get_raw_mv(uint8_t ch)
     return (int)mv;
 }
 
+int adc_get_raw_count(uint8_t ch)
+{
+    if (ch >= ADC_NUM_CH) return -1;
+    xSemaphoreTake(s_mutex, portMAX_DELAY);
+    int32_t raw = s_raw_ring[ch].last;
+    xSemaphoreGive(s_mutex);
+    return (int)raw;
+}
+
 void adc_set_filter_window(uint8_t ch, uint8_t n)
 {
     if (n < 1)  n = 1;
@@ -270,9 +282,11 @@ void adc_set_filter_window(uint8_t ch, uint8_t n)
         /* 全チャンネル一括 */
         for (int i = 0; i < ADC_NUM_CH; i++) {
             ring_reset(&s_ring[i], n, s_ring[i].last);
+            ring_reset(&s_raw_ring[i], n, s_raw_ring[i].last);
         }
     } else if (ch < ADC_NUM_CH) {
         ring_reset(&s_ring[ch], n, s_ring[ch].last);
+        ring_reset(&s_raw_ring[ch], n, s_raw_ring[ch].last);
     }
     xSemaphoreGive(s_mutex);
 }

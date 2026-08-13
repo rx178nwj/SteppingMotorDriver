@@ -105,7 +105,7 @@ ESP32-S3-WROOM-1 を搭載した SteppingMotorDriver PCB 上で動作するフ�
 
 | 優先度 | 状態 | LED挙動 | 周期（デフォルト、暫定値） | 条件 |
 |--------|------|---------|---------------------------|------|
-| 1（最優先） | FAULT | 高速点滅 | 8 Hz（Duty 50%、約62.5ms ON/OFF） | いずれかの軸が FAULT 状態（DRV_FAULT／OVERCURRENT／STALL、§3.1軸状態機械） |
+| 1（最優先） | FAULT | 高速点滅 | 8 Hz（Duty 50%、約62.5ms ON/OFF） | いずれかの軸が FAULT 状態（ESTOP／OVERCURRENT／STALL、§3.1軸状態機械。DRV8825 FAULT ピンは GPIO 未接続のため直接検知は不可、§9.12） |
 | 2 | USB通信中 | 点滅 | 2 Hz（Duty 50%、約250ms ON/OFF） | CommTask がコマンドを受信・応答処理中（`comm.c` のコマンド処理区間） |
 | 3 | USB接続確立 | 点灯（常時ON） | - | USB-CDC がホストとオープン済み（DTR アサート等で検出） |
 | 4（デフォルト） | USB未接続 | 消灯 | - | USB-CDC 未接続 |
@@ -298,9 +298,11 @@ uint32_t ticks = RMT_CLK_HZ / current_velocity_steps_per_sec;
 
 緊急停止の発動条件：
 - ソフトウェアコマンド `ESTOP`
+- ホーミングタイムアウト（F-MOT-09、`HOME` 開始後 `home_timeout_us` 経過）
 - 過電流検出（F-ADC-03）
 - 脱調検出（F-MOT-08 の偏差閾値超過）
-- ウォッチドッグタイムアウト
+
+**注意：通信ウォッチドッグタイムアウト（F-COM-04）は FAULT 遷移ではない。** `motor_stop()` による通常の台形減速停止 → IDLE 遷移であり、`EVT COMM_TIMEOUT` を送信するのみで軸は FAULT 状態にならず `CLEAR_FAULT` も不要（`STATUS` 送信のみで再開可能）。
 
 **FAULT 状態への遷移処理（全発動条件共通）：**
 1. 全軸 RMT 出力を即時無効化する
@@ -518,6 +520,75 @@ axis_mask: SYNC_MOVE で指定した軸のビットフィールド（例: 軸 0 
 | `v_home_fine` | uint32 | 500 | ホーミング精密探索速度（steps/sec） |
 | `back_off_steps` | uint32 | 200 | ホーミングバックオフ距離（steps） |
 | `comm_timeout_ms` | uint32 | 5,000 | 通信ウォッチドッグタイムアウト（ms、0 = 無効） |
+| `pot_scale_deg` | float | 0.0879 | POT角度換算係数（度/ADCカウント、12bit=4095カウント換算。デフォルトは0〜360°を4095カウントに割り付けた値、軸ごとに実測校正が必要） |
+| `pot_zero_offset` | int32 | 0 | POTゼロ位置補正オフセット（ADCカウント、`SET POT_ZERO`で現在値を記録） |
+
+---
+
+#### F-MOT-12: 関節角度出力（度単位）・POTゼロ位置補正
+
+**目的：** 実機組立検証・キャリブレーション時に、同一関節の3種のセンサ（POT・エンコーダ・ステップ位置）が
+示す角度を度単位で相互比較できるようにする（robot_arm_monitorの関節検証パネル、[robot_arm_monitor/REQUIREMENTS.md](../../robot_arm_monitor/REQUIREMENTS.md) F-RAM-VERIFYの唯一のデータソース）。
+
+**採用方針：** 角度換算はホスト側（robot_arm_monitor・制御アプリ）では行わず、**ファームウェア側で完結**させる
+（steps_per_rev/gear_ratio/encoder_ppr等の較正値はファームウェアが唯一の正であり、ホスト側に二重管理させない）。
+
+**ステップ位置角度（`GET POS_DEG`）・エンコーダ角度（`GET ENC_DEG`）：**
+- 既存の F-MOT-10 NVS パラメータ（`steps_per_rev`・`gear_ratio`・`encoder_ppr`）を用いて換算する
+- `pos_deg = (pos / steps_per_rev) * 360.0 / gear_ratio`
+- `enc_deg = (enc / (encoder_ppr * 4)) * 360.0 / gear_ratio`（PCNTは4逓倍のため`encoder_ppr`を4倍してから割る）
+- 新規NVSパラメータの追加は不要（既存 F-MOT-10 の値をそのまま流用）
+
+**POT角度（`GET POT_DEG`）・ゼロ位置補正：**
+- POTはステップ/エンコーダと異なり、モーター駆動系と独立した絶対角度センサ（分圧回路経由、[CLAUDE.md](../CLAUDE.md)）のため、
+  専用の較正パラメータ（`pot_scale_deg`・`pot_zero_offset`、上記 F-MOT-10 表に追加）を持つ
+- 「補正なし」角度：`pot_deg_raw = adc_raw[axis] * pot_scale_deg`（`adc_raw`はADCTaskのフィルタ後生カウント、F-ADC-01）
+- 「ゼロ位置補正あり」角度：`pot_deg_zeroed = (adc_raw[axis] - pot_zero_offset) * pot_scale_deg`
+- `SET POT_ZERO <axis>` コマンドで、その時点の `adc_raw[axis]` を `pot_zero_offset` としてNVSに保存する
+  （multi_i2c_bridgeの「0位置設定」機能と同様の設計思想。取付誤差の補正が目的で、機構上の物理ゼロ位置合わせは
+  オペレータが担保する）
+- `CLEAR POT_ZERO <axis>` コマンドで `pot_zero_offset` を0にリセットする
+- `SET POT_SCALE <axis> <deg_per_count>` コマンドで `pot_scale_deg` を校正する（POTの可動範囲とADCカウント範囲の
+  実測に基づき、ホスト側オペレータが算出した値を設定する想定。自動校正ウィザードは本版スコープ外）
+
+**相対・絶対移動の角度指定（`MOVE_DEG`/`MOVETO_DEG`）：**
+- 既存の `MOVE`/`MOVETO`（steps単位）と同じモーションロジック（台形プロファイル、F-MOT-04/05）を用い、
+  引数のみ度単位で受け取り内部でsteps換算する（`steps = deg * steps_per_rev * gear_ratio / 360.0`、四捨五入）
+- 換算後は既存の `MOVE`/`MOVETO` と完全に同じ実行パス・同時コマンドポリシー（E008等）に従う
+- 完了イベントも既存と同じ `EVT MOVE_DONE <axis>` を使う（度単位専用の新規イベントは設けない）
+
+**反映先：** Section 3.1（F-MOT-10 NVSテーブル）、Section 4.2（`MOVE_DEG`/`MOVETO_DEG`）、
+Section 4.3（`GET POS_DEG`/`GET ENC_DEG`/`GET POT_DEG`）、Section 4.4（`SET POT_SCALE`/`SET POT_ZERO`/`CLEAR POT_ZERO`）
+
+#### F-MOT-13: 保持電流モード（2026-08-09新設）
+
+**目的：** ロボットアーム関節は無励磁になると外力（自重等）で位置がずれるため、アイドル時にも
+励磁を維持できる「保持モード」を設ける。DRV8825の実駆動電流（VREF）は各モジュール基板上の
+物理トリムポットで固定されており、ESP32からデジタル制御できないため、**`DRV_EN`
+（アクティブLow＝励磁、全3軸共通の単一GPIO、[CLAUDE.md](../CLAUDE.md)）をLEDC（ハードウェアPWM、
+20kHz固定）でチョッピングし、平均電流を疑似的に下げることで保持電流可変を近似する**方式を採用する。
+`DRV_EN`が全軸共通のため、本モードは**軸単位ではなく基板全体で共通のグローバル設定**とする。
+
+**3モード（`SET HOLD_MODE <0|1|2>`）：**
+
+| 値 | 名称 | 動作 |
+|---|------|------|
+| 0 | NORMAL（デフォルト、既存動作） | `SET IDLE_TIMEOUT`経過で`DRV_EN`=High（無励磁）・`AXIS_SLEEP`遷移（既存挙動のまま） |
+| 1 | HOLD_FULL | アイドルタイムアウトによる無励磁遷移を無効化。アイドル中も`DRV_EN`=Low（100%、フル電流）を維持し続ける |
+| 2 | HOLD_REDUCED | アイドルタイムアウトを無効化。全軸アイドルになった瞬間から`DRV_EN`を`SET HOLD_CURRENT_PERCENT`指定の比率でPWMチョッピングし、平均電流を下げつつ保持する。いずれかの軸が動き出した瞬間、即座にチョッピングを止め100%（フル電流）へ復帰する |
+
+- `SET HOLD_CURRENT_PERCENT <1-100>`：HOLD_REDUCEDのチョッピング比率（%、100=フル電流相当、既定30）。
+- `SET HOLD_MODE`/`SET HOLD_CURRENT_PERCENT`は`SET IDLE_TIMEOUT`と同様、モーション中も変更可能
+  （チョッピングは全軸アイドル時のみ作動するため、実行中のモーションを妨げない）。
+- チョッピング周波数はDRV8825巻線インダクタンスに対して十分高速（電気的時定数より短周期）かつ可聴域外の
+  20kHz固定とし、コマンドでは変更しない（実装定数、`motor_ctrl.c`の`DRV_EN_LEDC_FREQ_HZ`）。
+- `SET/GET HOLD_MODE`・`SET/GET HOLD_CURRENT_PERCENT`はNVSへ即時書き込みせず、`SAVE`コマンドで
+  永続化する（`SET IDLE_TIMEOUT`と同じパターン）。
+
+**反映先：** Section 4.3（`GET HOLD_MODE`/`GET HOLD_CURRENT_PERCENT`）、
+Section 4.4（`SET HOLD_MODE`/`SET HOLD_CURRENT_PERCENT`）
+
+---
 
 ### 3.2 エンコーダ読み取り（3ch）
 
@@ -664,6 +735,46 @@ float current_mA = v_adc_mv * CURRENT_CONV_FACTOR;  /* × 2.4 */
 
 **反映先：** Section 2.4（USB通信）、Section 4.3（GET BOARD_ID コマンド）、Section 4.6（E012 追加）
 
+#### F-COM-06: エラーログ（FAULT/エラー系イベントの履歴保持）
+
+**目的：** `ESP_LOGI`/`ESP_LOGW`/`ESP_LOGE` はUARTデバッグコンソール（GPIO43/44）にのみ出力され、
+USB-CDC/BLE接続のホストからは参照できない。FAULT発生・コマンド拒否・通信タイムアウト等の異常系イベントを
+接続後にさかのぼって確認できるよう、ファームウェア内にリングバッファで履歴を保持する。
+
+**実装内容：**
+- 直近 24 件（`ERROR_LOG_CAPACITY`）の異常系イベントをリングバッファに保持する（超過時は最古を上書き）
+- 記録対象：全ての `ERR <code> ...` 応答、および `EVT <name> ...` のうち成功系（`MOVE_DONE` / `HOME_DONE` /
+  `SYNC_DONE` / `GEAR_RECOVERED` / `GEAR_AVAILABLE`）を除く全イベント（`FAULT` / `COMM_TIMEOUT` /
+  `OVERCURRENT` / `LIMIT_HIT` / `MOVE_ABORTED` / `SYNC_ABORTED` / `HOME_TIMEOUT` / `GEAR_DEGRADED` /
+  `GEAR_UNAVAILABLE` / `GEAR_DEVIATION_WARN` 等）
+- 各エントリは発生時刻（`esp_timer_get_time()`、ブート起点のマイクロ秒）・単調増加シーケンス番号・
+  コード・詳細メッセージを保持する
+- `GET LOG` で履歴全件を取得、`LOG_CLEAR` で明示的に消去する（`CLEAR_FAULT` と同じく自動クリアは行わない）
+- BLE（読み取り専用）にも最新1件+シーケンス番号を通知経由で公開する（[BLE_WIFI_REQUIREMENTS.md §4.1](BLE_WIFI_REQUIREMENTS.md) Error Log キャラクタリスティック参照）。
+  複数基板同時運用時にBLE経由で異常発生に気づけるようにする目的で、全履歴ではなく最新1件のみとする
+  （BLE MTU制約のため、全履歴が必要な場合はUSB-CDCの `GET LOG` を使用する）。WiFi側は本タスクではスコープ外
+  （robot_arm_monitorはBLEのみを使用するため）
+
+**反映先：** Section 4.3（`GET LOG`/`LOG_CLEAR`）、[BLE_WIFI_REQUIREMENTS.md §4.1](BLE_WIFI_REQUIREMENTS.md)（Error Log キャラクタリスティック）
+
+#### F-COM-07: フォルトトレース（STALL等のエラー直前挙動解析用リングバッファ）
+
+**目的：** `GET LOG`（F-COM-06）はイベント発生の事実のみを記録し、発生直前の位置・速度・エンコーダ偏差の
+時系列推移は残らない。STALL/OVERCURRENT等の原因切り分けには直前挙動の時系列データが必要なため、
+軸ごとに一定間隔でサンプリングしたリングバッファを保持する。
+
+**実装内容：**
+- 軸ごとに 10ms 間隔で以下を `fault_trace_sample_t` としてリングバッファに記録する（直近 400 件 = 4 秒分、
+  `FAULT_TRACE_CAPACITY`/`FAULT_TRACE_INTERVAL_MS`）：軸状態（`axis_state_t`）・`step_pos`・
+  `enc_steps`（F-MOT-08 の脱調判定と同じ換算式）・`diff`（`enc_steps - step_pos`）・符号付き速度・
+  電流値（`GET ADC 4` と同一センサ、全軸共通値を参考記録）
+- 記録は状態に関わらず常時継続する（FAULT発生時も凍結しない）。ホスト側（control_app）が
+  `EVT FAULT` 受信直後に `GET FAULT_TRACE` を発行して取得することを前提とする
+- `GET FAULT_TRACE <axis>` で古い→新しい順に全件をJSON配列で返す（サンプル間隔は固定のため個々の
+  タイムスタンプは持たず、応答の `interval_ms` から呼び出し側が経過時間を逆算する）
+
+**反映先：** Section 4.3（`GET FAULT_TRACE`）
+
 ---
 
 ## 4. コマンドセット
@@ -685,6 +796,8 @@ axis: 0〜2  または  ALL
 |---------|------|------|--------|
 | `MOVE <axis> <steps>` | steps: ±int32 | 相対移動（台形プロファイル） | `OK` |
 | `MOVETO <axis> <pos>` | pos: int32 | 絶対位置移動 | `OK` |
+| `MOVE_DEG <axis> <deg>` | deg: ±float | 相対移動（度単位、F-MOT-12。内部でstepsへ換算し`MOVE`と同一経路で実行） | `OK`（完了時 `EVT MOVE_DONE <axis>`） |
+| `MOVETO_DEG <axis> <deg>` | deg: float | 絶対位置移動（度単位、F-MOT-12。内部でstepsへ換算し`MOVETO`と同一経路で実行） | `OK`（完了時 `EVT MOVE_DONE <axis>`） |
 | `SYNC_MOVE <n> <ax0> <st0> [<ax1> <st1>...]` | n:2〜3, ax:0〜2, st:±int32 | 多軸同期移動（F-MOT-11） | `OK`（完了時 `EVT SYNC_DONE <mask>`） |
 | `VEL <axis> <speed>` | speed: int32（負=逆転） | 速度制御モード（連続回転） | `OK` |
 | `STOP <axis>` | ALL 可 | 減速停止 | `OK` |
@@ -702,10 +815,21 @@ axis: 0〜2  または  ALL
 | `GET POS <axis>` | - | ステップカウンタ位置取得 | `OK 12800` |
 | `GET ENC <axis>` | - | エンコーダカウンタ取得 | `OK 51200` |
 | `GET VEL <axis>` | - | 現在速度取得（steps/sec） | `OK 5000` |
+| `GET VMAX <axis>` | - | 最高速度設定値取得（steps/sec） | `OK 10000` |
+| `GET ACCEL <axis>` | - | 加速度設定値取得（steps/sec²） | `OK 20000` |
+| `GET DECEL <axis>` | - | 減速度設定値取得（steps/sec²） | `OK 20000` |
 | `GET ADC <ch>` | - | ADC 電流値取得（mA） | `OK 850` |
 | `GET STATE <axis>` | - | 軸状態取得 | `OK IDLE` |
 | `GET FAULT_INFO` | - | 最後のフォルト情報取得（F-MOT-07c） | `OK OVERCURRENT 0x02 1234567890` |
+| `GET LOG` | - | エラーログ履歴取得（最大24件、古い→新しい順、F-COM-06） | `OK [{"t":123456,"seq":3,"code":"E005","msg":"FAULT"},...]` |
+| `LOG_CLEAR` | - | エラーログ履歴を消去（F-COM-06） | `OK` |
+| `GET FAULT_TRACE <axis>` | - | 10ms間隔・直近400件（4秒分）のstate/step_pos/enc_steps/diff/vel/電流トレース取得（F-COM-07、古い→新しい順、上書き式リングバッファ・凍結なし） | `OK {"interval_ms":10,"axis":0,"count":400,"samples":[[2,12800,12790,-10,5000,850],...]}`（各要素は`[state,step_pos,enc_steps,diff,vel,current_mA]`、stateはaxis_state_t数値） |
 | `GET BOARD_ID` | - | 基板固有ID取得（F-COM-05） | `OK AABBCCDDEEFF` |
+| `GET POS_DEG <axis>` | - | ステップ位置の角度換算値取得（F-MOT-12） | `OK 45.230` |
+| `GET ENC_DEG <axis>` | - | エンコーダ位置の角度換算値取得（F-MOT-12） | `OK 45.180` |
+| `GET POT_DEG <axis>` | - | POT角度取得（補正なし・ゼロ位置補正ありの2値、F-MOT-12） | `OK 45.560 0.120`（raw zeroed の順） |
+| `GET HOLD_MODE` | - | 保持電流モード取得（F-MOT-13） | `OK 2` |
+| `GET HOLD_CURRENT_PERCENT` | - | HOLD_REDUCEDのチョッピング比率取得（F-MOT-13） | `OK 30` |
 | `STATUS` | - | 全軸サマリー（JSON） | `OK {...}` |
 
 **GET STATE の返却値**
@@ -724,16 +848,24 @@ axis: 0〜2  または  ALL
 
 | コマンド | 引数 | 説明 |
 |---------|------|------|
-| `SET MICROSTEP <div>` | 1/2/4/8/16/32 | マイクロステップ設定（全停止後のみ） |
+| `SET MICROSTEP <div>` | 1/2/4/8/16/32 | マイクロステップ設定（全軸共通・全停止後のみ） |
+| `GET MICROSTEP` | - | マイクロステップ分周比取得（全軸共通） |
 | `SET VMAX <axis> <v>` | steps/sec | 最高速度設定（NVS 保存） |
 | `SET ACCEL <axis> <a>` | steps/sec² | 加速度設定（NVS 保存） |
 | `SET DECEL <axis> <d>` | steps/sec² | 減速度設定（NVS 保存） |
 | `SET ADC_FILTER <ch\|ALL> <N>` | N: 1〜64 | ADC 移動平均窓サイズ設定（1=フィルタ無効）（NVS 保存） |
-| `SET CURRENT_LIMIT <axis> <mA>` | mA | 過電流閾値設定 |
+| `SET CURRENT_LIMIT <axis> <mA>` | mA | 過電流閾値設定（`axis`引数は構文上の互換のためのみで実際は全軸共通1センサの閾値、F-ADC-03） |
+| `GET CURRENT_LIMIT` | - | 過電流閾値取得（全軸共通） |
 | `SET HOME_DIR <axis> <dir>` | +1 or -1 | ホーミング方向設定 |
 | `SET IDLE_TIMEOUT <ms>` | ms | アイドルスリープ時間設定 |
+| `SET HOLD_MODE <mode>` | 0=NORMAL/1=HOLD_FULL/2=HOLD_REDUCED | 保持電流モード設定（全軸共通、F-MOT-13） |
+| `SET HOLD_CURRENT_PERCENT <pct>` | 1〜100 | HOLD_REDUCEDのチョッピング比率設定（NVS 保存、F-MOT-13） |
 | `SET COMM_TIMEOUT <ms>` | ms | 通信ウォッチドッグタイムアウト設定（0=無効） |
-| `SET STALL_FAULT <axis> <steps>` | steps | 脱調フォルト閾値設定 |
+| `SET STALL_FAULT <axis> <steps>` | steps | 脱調フォルト閾値設定（軸ごと、モーション中は拒否・E004） |
+| `GET STALL_FAULT <axis>` | - | 脱調フォルト閾値取得（軸ごと） |
+| `SET POT_SCALE <axis> <deg_per_count>` | float | POT角度換算係数の校正（NVS 保存、F-MOT-12） |
+| `SET POT_ZERO <axis>` | - | 現在のPOT ADC生値をゼロ位置オフセットとして記録（NVS 保存、F-MOT-12） |
+| `CLEAR POT_ZERO <axis>` | - | POTゼロ位置オフセットを0にリセット（NVS 保存、F-MOT-12） |
 | `SAVE` | - | 現在の設定を NVS に保存 |
 | `LOAD` | - | NVS から設定を読み込み |
 | `RESET_CONFIG` | - | 設定を工場出荷デフォルトに戻す |
@@ -762,10 +894,11 @@ axis: 0〜2  または  ALL
 | `E002` | 引数不足または型エラー |
 | `E003` | 軸番号範囲外（0〜2 以外） |
 | `E004` | モーション中に設定変更不可 |
-| `E005` | フォルト状態（ESTOP で解除が必要） |
+| `E005` | フォルト状態（軸が `AXIS_FAULT`。原因は `ESTOP`コマンド／ホーミングタイムアウト／`OVERCURRENT`／`STALL` のいずれか、F-MOT-07。復帰は `CLEAR_FAULT` のみ、F-MOT-07b。`ESTOP` コマンドの再送では解除されない） |
 | `E006` | ソフトリミット到達 |
 | `E007` | ホーミング未完了（絶対位置移動不可） |
 | `E008` | モーション実行中のモーションコマンド（MOTION_IN_PROGRESS） |
+| `E009` | DRV 未有効化状態でのモーションコマンド（NOT_ENABLED、`ENABLE` が必要） |
 | `E010` | FAULT 状態ではない（NOT_IN_FAULT） |
 | `E011` | SYNC_MOVE 軸番号重複（DUPLICATE_AXIS） |
 | `E012` | 基板固有ID取得不可（BOARD_ID_UNAVAILABLE、eFuse 異常等） |
@@ -834,7 +967,7 @@ firmware/
 ```
           ┌─────────────────────────────────────────────────────┐
           │                     FAULT                           │
-          │              (DRV_FAULT / OVERCURRENT / STALL)      │
+          │              (ESTOP / OVERCURRENT / STALL)          │
           ▼                                                     │
        [FAULT] ──CLEAR_FAULT──► [SLEEP]                         │
           ▲                      │                             │
@@ -946,12 +1079,33 @@ void motor_control_1ms_tick(axis_t *ax) {
 - [x] 回帰テスト（T28〜T30 実機 PASS 2026-06-23）
   - [x] T26 後も axis0..2 の `vmax / accel / decel` が不変であることを確認
 
+### Phase 6：関節角度出力（度単位）・POTゼロ位置補正（F-MOT-12、USB-CDC実装・実機確認済み）
+- [x] `GET POS_DEG`/`GET ENC_DEG`（既存 F-MOT-10 パラメータからの角度換算）
+- [x] `GET POT_DEG`（補正なし・ゼロ位置補正あり2値）
+- [x] `SET POT_SCALE`/`SET POT_ZERO`/`CLEAR POT_ZERO`（NVS 保存）
+- [x] `MOVE_DEG`/`MOVETO_DEG`（既存 `MOVE`/`MOVETO` と同一実行経路への角度→steps換算）
+- [x] USB-CDC 実機動作確認（COM41 / Board ID `441BF6C8C148`、2026-08-08）
+  - [x] T31: 軸0を `MOVETO_DEG 90°` → `MOVETO_DEG -45°` → `MOVE_DEG +45°`で最終0°へ復帰、steps/角度換算・`E008`・エンコーダ追従を確認
+  - [x] T32: POTスケール・ゼロ位置設定/解除・引数エラーを確認
+  - [x] T33: 単軸動作中は他軸のIDLE時間を算入せず、全軸停止後のみ共通ドライバがSLEEPへ遷移することを確認
+- [ ] BLE Joint Angle キャラクタリスティック（[BLE_WIFI_REQUIREMENTS.md §4.1](BLE_WIFI_REQUIREMENTS.md)）への反映
+- [ ] 実機での POT スケール・ゼロ位置校正手順の検証（robot_arm_monitor F-RAM-VERIFY パネルでの動作確認）
+
+### Phase 7：保持電流モード（F-MOT-13、DRV_EN LEDC PWMチョッピング）
+- [x] `hold_mode_t`（NORMAL/HOLD_FULL/HOLD_REDUCED）・`SET/GET HOLD_MODE`・`SET/GET HOLD_CURRENT_PERCENT`実装
+- [x] `DRV_EN`をLEDC（20kHz固定）駆動へ統一し、`drv_en_set_percent()`経由に一本化
+- [x] MotorControlTaskの全軸アイドル判定にチョッピング開始/停止ロジックを統合
+- [x] NVS永続化（`SET IDLE_TIMEOUT`と同じ即時適用+`SAVE`永続化パターン）
+- [x] ESP-IDFビルド確認（`idf.py build`成功）
+- [ ] 実機でのDRV_EN波形確認（オシロ/テスタ、20kHz・指定デューティでのチョッピング動作、モーション開始時の即時100%復帰）
+
 ---
 
 ## 8. 制約事項・注意点
 
 - ESP32-S3 の ADC は 3.3V 単電源のため、負電圧の検出はできない（NJM2114でオフセット処理が必要）
-- DRV_EN と DRV_SLEEP は全軸共通信号のため、軸単位のスリープ制御は不可
+- DRV_EN と DRV_SLEEP は全軸共通信号のため、軸単位のスリープ制御は不可（同じ理由で保持電流モード F-MOT-13 も軸単位ではなく全軸共通のグローバル設定）
+- DRV8825の実駆動電流（VREF）は各モジュール基板上の物理トリムポットで固定されており、ESP32からデジタル制御できない（F-MOT-13の保持電流可変はDRV_ENのPWMチョッピングによる近似であり、真の電流値制御ではない）
 - ESP32-S3 の ADC は非線形特性があるため、キャリブレーション（esp_adc_cal）を必ず適用する
 - USB-CDC は PC 側のドライバ不要（ESP32-S3 は USB Full Speed 対応）
 
@@ -1156,3 +1310,23 @@ F-I2C-02: 拡張デバイス対応（将来拡張）
 ### 9.13 [Low] Status1 LED（GPIO46）点滅周期の妥当性
 
 Section 2.5 で追加した Status1 LED の点滅周期（通信中2Hz／FAULT 8Hz）は暫定値。BLE/WiFi側の Status2 LED（[BLE_WIFI_REQUIREMENTS.md §3.1](BLE_WIFI_REQUIREMENTS.md) §9.7）と同一値で揃えているが、実機評価で視認性を確認し、必要に応じて両LED同時に調整する。
+
+### 9.14 [解決済み] MOVE/MOVETO/MOVE_DEG/MOVETO_DEG の失敗理由が E006 SOFT_LIMIT に誤集約
+
+**問題：** `start_motion()`（内部ヘルパー）は「DRV 未有効化（ENABLE 未実行、またはアイドルタイムアウトによる自動無効化後）」「軸が FAULT 状態」「RMT 起動失敗」のいずれでも `false` を返す。従来の `comm.c` はこの `false` を区別せず一律 `ERR E006 SOFT_LIMIT` として返していたため、実際にはソフトリミットに達していない失敗（未 ENABLE・FAULT）まで「ソフトリミット到達」と誤表示していた。なお実際のソフトリミット超過は `start_motion()` 内で `target` を `max_pos`/`min_pos` にクランプして正常に動作を開始するため、単軸コマンドの `false` 応答が本来の意味で SOFT_LIMIT になることはほぼ無い。
+
+**対応：** `MOVE` / `MOVETO` / `MOVE_DEG` / `MOVETO_DEG` の各コマンドで、`motor_move`/`motor_moveto` 呼び出し前に以下の判定を追加：
+
+1. 対象軸が `AXIS_FAULT` 状態 → `ERR E005 FAULT`（`SYNC_MOVE` の既存チェックと同様）
+2. DRV 未有効化（新設 `motor_is_enabled()`） → `ERR E009 NOT_ENABLED`（新エラーコード）
+3. 上記に該当しない場合のみ `motor_move`/`motor_moveto` を呼び出し、`false` が返れば従来通り `ERR E006 SOFT_LIMIT`
+
+**反映先：** Section 4.2（`MOVE`/`MOVETO`/`MOVE_DEG`/`MOVETO_DEG` の事前チェック順序）、Section 4.6（E009 追加）、`motor_ctrl.h`/`motor_ctrl.c`（`motor_is_enabled()` 追加）
+
+### 9.15 [解決済み] エラーログの蓄積・遡及参照ができない（F-COM-06 追加）
+
+**問題：** 9.14 の調査過程で判明した根本的なギャップ。ファームウェアの異常系イベント（FAULT・コマンド拒否・通信タイムアウト等）は `ESP_LOGI` 相当としてUARTデバッグコンソールにのみ出力され、USB-CDC/BLE接続のホストアプリからは一切参照できなかった。`fault_info_t`（`GET FAULT_INFO`）も直近1件のみの保持で、接続前に発生した異常や複数回のFAULTの履歴は失われていた。
+
+**対応：** `error_log` モジュール（`error_log.h`/`error_log.c`）を新設し、直近24件の異常系イベントをリングバッファで保持。`comm.c` の `comm_send()`（全ての `ERR`/`EVT` 応答が通る唯一のフックポイント）で自動分類・記録するため、個別コマンドハンドラの改修は不要。`GET LOG`/`LOG_CLEAR` コマンド（USB-CDC）と、Error Log キャラクタリスティック（BLE、最新1件+シーケンス番号のみ、読み取り専用）から取得可能にした。`SteppingMotorDriver/monitor_app`（USB接続）は `GET LOG` で全履歴を、`robot_arm_monitor`（BLE接続）は既存の生ログ表示機構（`rawLog`）へ新キャラクタリスティックの通知が自動的に流れ込む形で対応する。
+
+**反映先：** F-COM-06（Section 3.4）、Section 4.3（`GET LOG`/`LOG_CLEAR`）、[BLE_WIFI_REQUIREMENTS.md §4.1](BLE_WIFI_REQUIREMENTS.md)（Error Log キャラクタリスティック）、`error_log.h`/`error_log.c`（新設）

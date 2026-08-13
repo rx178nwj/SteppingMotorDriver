@@ -130,6 +130,10 @@ BLE・WiFiは同一のStatus2 LEDを共有し、以下の優先順位（上ほ�
 | Power/ADC | Read, Notify | 10 Hz（100ms、デフォルト） | `{"pot":[v0,v1,v2],"current_mA":850,"voltage_mV":24100}` | `GET ADC` の集約 |
 | Fault Info | Read, Notify | 変化時 + 1Hz keepalive | `{"reason":"OVERCURRENT","axis_mask":2,"timestamp_us":1234567890}` | `GET FAULT_INFO` |
 | Gear Angle | Read, Notify | 10 Hz（gear monitor 有効時のみ、[GEAR_ANGLE_MONITOR_REQUIREMENTS.md](GEAR_ANGLE_MONITOR_REQUIREMENTS.md) 実装後） | `[{"axis":0,"angle_deg":123.4,"state":"OK","zero_calibrated":true},...]`（未実装時は `{"state":"UNAVAILABLE"}`） | `GET GEAR_ANGLE`／`GET GEAR_ZERO_STATUS`（将来, [GEAR_ANGLE_MONITOR_REQUIREMENTS.md F-GEAR-10](GEAR_ANGLE_MONITOR_REQUIREMENTS.md)） |
+| Joint Angle | Read, Notify | 10 Hz（100ms、デフォルト。[REQUIREMENTS.md F-MOT-12](REQUIREMENTS.md) 実装後） | `[{"axis":0,"pos_deg":45.230,"enc_deg":45.180,"pot_deg_raw":45.560,"pot_deg_zeroed":0.120},...]`（3軸分の配列） | `GET POS_DEG`/`GET ENC_DEG`/`GET POT_DEG` の集約（[REQUIREMENTS.md F-MOT-12](REQUIREMENTS.md)） |
+| Error Log | Read, Notify | 変化時（新規イベント発生時） | `{"seq":3,"t":1234567890,"code":"E005","msg":"FAULT"}`（最新1件のみ。未発生時は `{"seq":0,"t":0,"code":"NONE","msg":""}`） | `GET LOG` の最新1件相当（[REQUIREMENTS.md F-COM-06](REQUIREMENTS.md)）。全履歴が必要な場合はUSB-CDCの `GET LOG` を使用する（BLE MTU制約のため全履歴はBLE非対応） |
+
+Joint Angleの正式UUIDは `7c9e1006-6a3d-4b89-a712-5f4e8d2c0100`、Error Logの正式UUIDは `7c9e1007-6a3d-4b89-a712-5f4e8d2c0100`とする。3軸JSONのNotifyを1パケットで扱うため、ATT希望MTUは512バイトとする。
 
 **書き込み可能なキャラクタリスティックは設けない**（CCCD＝Notify有効化のためのクライアント設定記述子を除く）。これにより §1.2 #4 の恒久対象外方針をプロトコルレベルで担保する。
 

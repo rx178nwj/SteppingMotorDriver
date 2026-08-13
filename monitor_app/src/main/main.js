@@ -15,7 +15,9 @@ const ALLOWED_COMMANDS = [
   /^CLEAR_FAULT$/,
   /^HOME [0-2]$/,
   /^VEL [0-2] -?\d+$/,
-  /^(?:MOVE|MOVETO) [0-2] -?\d+$/
+  /^(?:MOVE|MOVETO) [0-2] -?\d+$/,
+  /^GET LOG$/,
+  /^LOG_CLEAR$/
 ];
 
 function createWindow() {

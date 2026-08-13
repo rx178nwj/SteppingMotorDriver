@@ -1,10 +1,13 @@
 #include "telemetry.h"
 
 #include "adc_monitor.h"
+#include "config.h"
 #include "encoder.h"
+#include "error_log.h"
 #include "gear_monitor.h"
 #include "motor_ctrl.h"
 
+#include <math.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -121,6 +124,20 @@ bool telemetry_format_fault(char *buf, size_t size)
     return n >= 0 && (size_t)n < size;
 }
 
+bool telemetry_format_error_log_latest(char *buf, size_t size)
+{
+    error_log_entry_t entry;
+    if (!error_log_get_latest(&entry)) {
+        int n = snprintf(buf, size, "{\"seq\":0,\"t\":0,\"code\":\"NONE\",\"msg\":\"\"}");
+        return n >= 0 && (size_t)n < size;
+    }
+    int n = snprintf(buf, size,
+                     "{\"seq\":%lu,\"t\":%lld,\"code\":\"%s\",\"msg\":\"%s\"}",
+                     (unsigned long)entry.seq, (long long)entry.timestamp_us,
+                     entry.code, entry.message);
+    return n >= 0 && (size_t)n < size;
+}
+
 bool telemetry_format_gear_angle(char *buf, size_t size)
 {
     if (gear_monitor_get_state() != GEAR_STATE_READY) {
@@ -139,6 +156,45 @@ bool telemetry_format_gear_angle(char *buf, size_t size)
                      axis == 0 ? "" : ",", (unsigned)axis,
                      available ? (double)gear.angle_deg : 0.0,
                      available ? "OK" : "UNAVAILABLE")) {
+            return false;
+        }
+    }
+    return appendf(buf, size, &used, "]");
+}
+
+bool telemetry_format_joint_angle(char *buf, size_t size)
+{
+    size_t used = 0;
+    if (!appendf(buf, size, &used, "[")) return false;
+
+    for (uint8_t axis = 0; axis < NUM_AXES; axis++) {
+        axis_status_t status;
+        if (!motor_get_status(axis, &status)) return false;
+
+        uint32_t steps_per_rev = config_get_steps_per_rev(axis);
+        uint32_t encoder_ppr = config_get_encoder_ppr(axis);
+        float gear_ratio = config_get_gear_ratio(axis);
+        float pot_scale = config_get_pot_scale_deg(axis);
+        int32_t pot_zero = config_get_pot_zero_offset(axis);
+        int pot_raw = adc_get_raw_count(axis);
+        if (steps_per_rev == 0 || encoder_ppr == 0 ||
+            !isfinite(gear_ratio) || gear_ratio <= 0.0f ||
+            !isfinite(pot_scale) || pot_scale <= 0.0f || pot_raw < 0) {
+            return false;
+        }
+
+        double pos_deg = (double)status.pos * 360.0 /
+                         ((double)steps_per_rev * (double)gear_ratio);
+        double enc_deg = (double)encoder_get_pos(axis) * 360.0 /
+                         ((double)encoder_ppr * 4.0 * (double)gear_ratio);
+        double pot_deg_raw = (double)pot_raw * (double)pot_scale;
+        double pot_deg_zeroed = ((double)pot_raw - (double)pot_zero) *
+                                (double)pot_scale;
+        if (!appendf(buf, size, &used,
+                     "%s{\"axis\":%u,\"pos_deg\":%.3f,\"enc_deg\":%.3f,"
+                     "\"pot_deg_raw\":%.3f,\"pot_deg_zeroed\":%.3f}",
+                     axis == 0 ? "" : ",", (unsigned)axis,
+                     pos_deg, enc_deg, pot_deg_raw, pot_deg_zeroed)) {
             return false;
         }
     }

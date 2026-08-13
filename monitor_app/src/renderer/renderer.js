@@ -13,11 +13,13 @@ const messageElement = $('#message');
 const logOutput = $('#log-output');
 const eventOutput = $('#event-output');
 const axisSelect = $('#axis-select');
+const fetchLogButton = $('#fetch-log-button');
 
 const ERROR_MESSAGES = {
   E001: '不明なコマンドです。', E002: '引数が不正です。', E003: '軸番号が範囲外です。',
   E004: '動作中は設定を変更できません。', E005: 'フォルト状態です。', E006: 'ソフトリミットに到達しました。',
   E007: 'ホーミングが完了していません。', E008: '別のモーションを実行中です。',
+  E009: 'DRVが未有効化です（ENABLEが必要）。',
   E010: 'フォルト状態ではありません。', E011: '軸番号が重複しています。', E012: '基板IDを取得できません。'
 };
 
@@ -162,6 +164,7 @@ function updateControls() {
   disconnectButton.disabled = busy || !connected;
   estopButton.disabled = !connected;
   controlFieldset.disabled = !connected;
+  fetchLogButton.disabled = !connected;
 }
 
 function showMessage(text, isError = false) {
@@ -186,6 +189,36 @@ function addLog(container, entry, direction = entry.direction) {
   container.append(row);
   while (container.children.length > 500) container.firstElementChild.remove();
   container.scrollTop = container.scrollHeight;
+}
+
+function addHistoryLogRow(text) {
+  const row = document.createElement('div');
+  row.className = 'log-row evt';
+  row.textContent = text;
+  eventOutput.append(row);
+  while (eventOutput.children.length > 500) eventOutput.firstElementChild.remove();
+  eventOutput.scrollTop = eventOutput.scrollHeight;
+}
+
+async function fetchErrorLogHistory() {
+  if (!connected) return;
+  try {
+    const response = await window.motorMonitor.sendCommand('GET LOG');
+    if (!response.startsWith('OK ')) {
+      showMessage(`エラー履歴取得に失敗しました: ${response}`, true);
+      return;
+    }
+    const entries = JSON.parse(response.slice(3));
+    for (const entry of entries) {
+      const bootSeconds = (entry.t / 1e6).toFixed(3);
+      addHistoryLogRow(`[履歴 boot+${bootSeconds}s]  ${entry.code}  ${entry.msg}`);
+    }
+    showMessage(entries.length
+      ? `接続前の履歴を含むエラーログを${entries.length}件取得しました。`
+      : 'エラー履歴はありません。');
+  } catch (error) {
+    showMessage(`エラー履歴取得に失敗しました: ${error.message}`, true);
+  }
 }
 
 function handleEvent(entry) {
@@ -227,6 +260,7 @@ window.addEventListener('pointerup', stopJog);
 window.addEventListener('pointercancel', stopJog);
 window.addEventListener('blur', stopJog);
 $('#clear-log-button').addEventListener('click', () => logOutput.replaceChildren());
+fetchLogButton.addEventListener('click', fetchErrorLogHistory);
 $('#clear-event-button').addEventListener('click', () => eventOutput.replaceChildren());
 window.motorMonitor.onState(renderState);
 window.motorMonitor.onLog((entry) => addLog(logOutput, entry));

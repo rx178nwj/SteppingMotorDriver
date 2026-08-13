@@ -1,4 +1,5 @@
 #include "comm.h"
+#include "error_log.h"
 #include "motor_ctrl.h"
 #include "encoder.h"
 #include "adc_monitor.h"
@@ -57,6 +58,14 @@ static const char *fault_reason_name(fault_reason_t r)
     case FAULT_STALL:       return "STALL";
     default:                return "NONE";
     }
+}
+
+/* 単軸モーションコマンド (MOVE/MOVETO/MOVE_DEG/MOVETO_DEG) の開始前 FAULT 確認用 */
+static bool axis_in_fault(uint8_t axis)
+{
+    axis_status_t st;
+    motor_get_status(axis, &st);
+    return st.state == AXIS_FAULT;
 }
 
 /* ------------------------------------------------------------------ */
@@ -139,6 +148,48 @@ static void send_gear_unavailable_error(void)
     } else {
         comm_send("ERR E013 GEAR_UNAVAILABLE\n");
     }
+}
+
+static const char *command_args(const char *line, const char *command)
+{
+    size_t len = strlen(command);
+    if (strncmp(line, command, len) != 0 ||
+        (line[len] != '\0' && line[len] != ' ')) {
+        return NULL;
+    }
+    const char *args = line + len;
+    while (*args == ' ') args++;
+    return args;
+}
+
+static bool parse_axis_arg(const char *args, long *axis)
+{
+    if (!args || *args == '\0') return false;
+    char *end;
+    long value = strtol(args, &end, 10);
+    if (end == args) return false;
+    while (*end == ' ') end++;
+    if (*end != '\0') return false;
+    *axis = value;
+    return true;
+}
+
+static bool parse_axis_float_args(const char *args, long *axis, float *value)
+{
+    if (!args || *args == '\0') return false;
+    char *end;
+    long parsed_axis = strtol(args, &end, 10);
+    if (end == args || *end != ' ') return false;
+    args = end;
+    while (*args == ' ') args++;
+    if (*args == '\0') return false;
+    float parsed_value = strtof(args, &end);
+    if (end == args) return false;
+    while (*end == ' ') end++;
+    if (*end != '\0') return false;
+    *axis = parsed_axis;
+    *value = parsed_value;
+    return true;
 }
 
 /* ------------------------------------------------------------------ */
@@ -290,12 +341,64 @@ static void dispatch(const char *line)
     }
 
     /* ---------- モーション ---------- */
+    const char *args = command_args(line, "MOVE_DEG");
+    if (args) {
+        long parsed_axis;
+        float deg;
+        int32_t converted;
+        if (!parse_axis_float_args(args, &parsed_axis, &deg)) {
+            comm_send("ERR E002 INVALID_ARG\n");
+        } else if (parsed_axis < 0 || parsed_axis >= NUM_AXES) {
+            comm_send("ERR E003 INVALID_AXIS\n");
+        } else if (!motor_degrees_to_steps((uint8_t)parsed_axis, deg, &converted)) {
+            comm_send("ERR E002 INVALID_ARG\n");
+        } else if (motor_is_moving((uint8_t)parsed_axis)) {
+            comm_send("ERR E008 MOTION_IN_PROGRESS\n");
+        } else if (axis_in_fault((uint8_t)parsed_axis)) {
+            comm_send("ERR E005 FAULT\n");
+        } else if (!motor_is_enabled()) {
+            comm_send("ERR E009 NOT_ENABLED\n");
+        } else {
+            comm_send(motor_move((uint8_t)parsed_axis, converted)
+                      ? "OK\n" : "ERR E006 SOFT_LIMIT\n");
+        }
+        return;
+    }
+
+    args = command_args(line, "MOVETO_DEG");
+    if (args) {
+        long parsed_axis;
+        float deg;
+        int32_t converted;
+        if (!parse_axis_float_args(args, &parsed_axis, &deg)) {
+            comm_send("ERR E002 INVALID_ARG\n");
+        } else if (parsed_axis < 0 || parsed_axis >= NUM_AXES) {
+            comm_send("ERR E003 INVALID_AXIS\n");
+        } else if (!motor_degrees_to_steps((uint8_t)parsed_axis, deg, &converted)) {
+            comm_send("ERR E002 INVALID_ARG\n");
+        } else if (motor_is_moving((uint8_t)parsed_axis)) {
+            comm_send("ERR E008 MOTION_IN_PROGRESS\n");
+        } else if (axis_in_fault((uint8_t)parsed_axis)) {
+            comm_send("ERR E005 FAULT\n");
+        } else if (!motor_is_enabled()) {
+            comm_send("ERR E009 NOT_ENABLED\n");
+        } else {
+            comm_send(motor_moveto((uint8_t)parsed_axis, converted)
+                      ? "OK\n" : "ERR E006 SOFT_LIMIT\n");
+        }
+        return;
+    }
+
     int steps;
     if (sscanf(line, "MOVE %u %d", &axis, &steps) == 2) {
         if (axis >= NUM_AXES) {
             comm_send("ERR E003 INVALID_AXIS\n");
         } else if (motor_is_moving((uint8_t)axis)) {
             comm_send("ERR E008 MOTION_IN_PROGRESS\n");
+        } else if (axis_in_fault((uint8_t)axis)) {
+            comm_send("ERR E005 FAULT\n");
+        } else if (!motor_is_enabled()) {
+            comm_send("ERR E009 NOT_ENABLED\n");
         } else {
             comm_send(motor_move((uint8_t)axis, steps) ? "OK\n" : "ERR E006 SOFT_LIMIT\n");
         }
@@ -308,6 +411,10 @@ static void dispatch(const char *line)
             comm_send("ERR E003 INVALID_AXIS\n");
         } else if (motor_is_moving((uint8_t)axis)) {
             comm_send("ERR E008 MOTION_IN_PROGRESS\n");
+        } else if (axis_in_fault((uint8_t)axis)) {
+            comm_send("ERR E005 FAULT\n");
+        } else if (!motor_is_enabled()) {
+            comm_send("ERR E009 NOT_ENABLED\n");
         } else {
             comm_send(motor_moveto((uint8_t)axis, pos) ? "OK\n" : "ERR E006 SOFT_LIMIT\n");
         }
@@ -389,8 +496,78 @@ static void dispatch(const char *line)
         }
         return;
     }
+    if (strcmp(line, "RECOVER") == 0) {
+        /* CLEAR_FAULT (FAULT状態でなければ no-op) → ENABLE を1コマンドにまとめた復帰用ショートカット。 */
+        motor_clear_fault();
+        motor_enable();
+        comm_send("OK\n");
+        return;
+    }
 
     /* ---------- GET ---------- */
+    args = command_args(line, "GET POS_DEG");
+    if (args) {
+        long parsed_axis;
+        axis_status_t st;
+        if (!parse_axis_arg(args, &parsed_axis)) {
+            comm_send("ERR E002 INVALID_ARG\n");
+        } else if (parsed_axis < 0 || parsed_axis >= NUM_AXES) {
+            comm_send("ERR E003 INVALID_AXIS\n");
+        } else if (!motor_get_status((uint8_t)parsed_axis, &st)) {
+            comm_send("ERR E003 INVALID_AXIS\n");
+        } else {
+            uint32_t steps_per_rev = config_get_steps_per_rev((uint8_t)parsed_axis);
+            float gear_ratio = config_get_gear_ratio((uint8_t)parsed_axis);
+            if (steps_per_rev == 0 || !isfinite(gear_ratio) || gear_ratio <= 0.0f) {
+                comm_send("ERR E002 INVALID_PARAM\n");
+            } else {
+                double deg = (double)st.pos * 360.0 /
+                             ((double)steps_per_rev * (double)gear_ratio);
+                comm_sendf("OK %.3f\n", deg);
+            }
+        }
+        return;
+    }
+
+    args = command_args(line, "GET ENC_DEG");
+    if (args) {
+        long parsed_axis;
+        if (!parse_axis_arg(args, &parsed_axis)) {
+            comm_send("ERR E002 INVALID_ARG\n");
+        } else if (parsed_axis < 0 || parsed_axis >= NUM_AXES) {
+            comm_send("ERR E003 INVALID_AXIS\n");
+        } else {
+            uint32_t encoder_ppr = config_get_encoder_ppr((uint8_t)parsed_axis);
+            float gear_ratio = config_get_gear_ratio((uint8_t)parsed_axis);
+            if (encoder_ppr == 0 || !isfinite(gear_ratio) || gear_ratio <= 0.0f) {
+                comm_send("ERR E002 INVALID_PARAM\n");
+            } else {
+                double deg = (double)encoder_get_pos((uint8_t)parsed_axis) * 360.0 /
+                             ((double)encoder_ppr * 4.0 * (double)gear_ratio);
+                comm_sendf("OK %.3f\n", deg);
+            }
+        }
+        return;
+    }
+
+    args = command_args(line, "GET POT_DEG");
+    if (args) {
+        long parsed_axis;
+        if (!parse_axis_arg(args, &parsed_axis)) {
+            comm_send("ERR E002 INVALID_ARG\n");
+        } else if (parsed_axis < 0 || parsed_axis >= NUM_AXES) {
+            comm_send("ERR E003 INVALID_AXIS\n");
+        } else {
+            int raw = adc_get_raw_count((uint8_t)parsed_axis);
+            float scale = config_get_pot_scale_deg((uint8_t)parsed_axis);
+            int32_t zero = config_get_pot_zero_offset((uint8_t)parsed_axis);
+            double raw_deg = (double)raw * (double)scale;
+            double zeroed_deg = ((double)raw - (double)zero) * (double)scale;
+            comm_sendf("OK %.3f %.3f\n", raw_deg, zeroed_deg);
+        }
+        return;
+    }
+
     if (sscanf(line, "GET STATE %u", &axis) == 1) {
         axis_status_t st;
         if (!motor_get_status((uint8_t)axis, &st)) {
@@ -423,6 +600,41 @@ static void dispatch(const char *line)
             comm_send("ERR E003 INVALID_AXIS\n");
         } else {
             comm_sendf("OK %ld\n", (long)encoder_get_pos((uint8_t)axis));
+        }
+        return;
+    }
+    if (sscanf(line, "GET VMAX %u", &axis) == 1) {
+        axis_status_t st;
+        if (!motor_get_status((uint8_t)axis, &st)) {
+            comm_send("ERR E003 INVALID_AXIS\n");
+        } else {
+            comm_sendf("OK %lu\n", (unsigned long)st.v_max);
+        }
+        return;
+    }
+    if (sscanf(line, "GET ACCEL %u", &axis) == 1) {
+        axis_status_t st;
+        if (!motor_get_status((uint8_t)axis, &st)) {
+            comm_send("ERR E003 INVALID_AXIS\n");
+        } else {
+            comm_sendf("OK %lu\n", (unsigned long)st.accel);
+        }
+        return;
+    }
+    if (sscanf(line, "GET DECEL %u", &axis) == 1) {
+        axis_status_t st;
+        if (!motor_get_status((uint8_t)axis, &st)) {
+            comm_send("ERR E003 INVALID_AXIS\n");
+        } else {
+            comm_sendf("OK %lu\n", (unsigned long)st.decel);
+        }
+        return;
+    }
+    if (sscanf(line, "GET GEAR_RATIO %u", &axis) == 1) {
+        if (axis >= NUM_AXES) {
+            comm_send("ERR E003 INVALID_AXIS\n");
+        } else {
+            comm_sendf("OK %.4f\n", (double)config_get_gear_ratio((uint8_t)axis));
         }
         return;
     }
@@ -519,8 +731,92 @@ static void dispatch(const char *line)
                    (long long)fi.timestamp_us);
         return;
     }
+    if (strcmp(line, "GET LOG") == 0) {
+        static error_log_entry_t entries[ERROR_LOG_CAPACITY];   /* ≈1.9KB、CommTaskスタック節約のためBSSに配置 */
+        uint32_t n = error_log_dump(entries, ERROR_LOG_CAPACITY);
+        comm_send("OK [");
+        for (uint32_t i = 0; i < n; i++) {
+            comm_sendf("%s{\"t\":%lld,\"seq\":%lu,\"code\":\"%s\",\"msg\":\"%s\"}",
+                       i == 0 ? "" : ",",
+                       (long long)entries[i].timestamp_us,
+                       (unsigned long)entries[i].seq,
+                       entries[i].code, entries[i].message);
+        }
+        comm_send("]\n");
+        return;
+    }
+    if (strcmp(line, "LOG_CLEAR") == 0) {
+        error_log_clear();
+        comm_send("OK\n");
+        return;
+    }
+    /* GET FAULT_TRACE <axis>: 10ms間隔・直近400件（4秒分）のstate/pos/enc/diff/vel/電流トレース */
+    if (sscanf(line, "GET FAULT_TRACE %u", &axis) == 1) {
+        if (axis >= NUM_AXES) {
+            comm_send("ERR E003 INVALID_AXIS\n");
+        } else {
+            static fault_trace_sample_t trace[FAULT_TRACE_CAPACITY];
+            uint16_t n = motor_get_fault_trace((uint8_t)axis, trace, FAULT_TRACE_CAPACITY);
+            comm_sendf("OK {\"interval_ms\":%u,\"axis\":%u,\"count\":%u,\"samples\":[",
+                       (unsigned)FAULT_TRACE_INTERVAL_MS, (unsigned)axis, (unsigned)n);
+            /* CommTaskのスタック(4096B)を圧迫しないよう static でBSSに置く（dispatch()内の
+               他コマンドのローカル変数と合わせてスタックオーバーフローを起こした実績あり） */
+            static char chunk[224];
+            size_t used = 0;
+            for (uint16_t i = 0; i < n; i++) {
+                /* worst case ("," + "[" + 1桁state + 4×int32(符号込み最大11桁) + 1桁×3カンマ
+                   + current_mA(最大6桁) + "]") ≈ 59 バイト。余裕を見て80。 */
+                static char item[80];
+                int len = snprintf(item, sizeof(item), "%s[%d,%ld,%ld,%ld,%ld,%d]",
+                                   i == 0 ? "" : ",",
+                                   (int)trace[i].state, (long)trace[i].step_pos,
+                                   (long)trace[i].enc_steps, (long)trace[i].diff,
+                                   (long)trace[i].vel, (int)trace[i].current_mA);
+                if (len < 0) len = 0;
+                if (len >= (int)sizeof(item)) len = (int)sizeof(item) - 1;   /* snprintf切り詰め時の安全弁 */
+                if (used + (size_t)len >= sizeof(chunk)) {
+                    chunk[used] = '\0';
+                    comm_send(chunk);
+                    used = 0;
+                }
+                memcpy(chunk + used, item, (size_t)len);
+                used += (size_t)len;
+            }
+            chunk[used] = '\0';
+            comm_send(chunk);
+            comm_send("]}\n");
+        }
+        return;
+    }
     if (strcmp(line, "GET BOARD_ID") == 0) {
         comm_sendf("OK %s\n", telemetry_board_id());
+        return;
+    }
+    if (strcmp(line, "GET HOLD_MODE") == 0) {
+        comm_sendf("OK %u\n", (unsigned)motor_get_hold_mode());
+        return;
+    }
+    /* GET STALL_FAULT <axis>: 脱調フォルト閾値取得（軸ごと、F-MOT-08） */
+    if (sscanf(line, "GET STALL_FAULT %u", &axis) == 1) {
+        if (axis >= NUM_AXES) {
+            comm_send("ERR E003 INVALID_AXIS\n");
+        } else {
+            comm_sendf("OK %lu\n", (unsigned long)motor_get_stall_fault_th((uint8_t)axis));
+        }
+        return;
+    }
+    /* GET CURRENT_LIMIT: 過電流フォルト閾値取得（全軸共通・単一ADCセンサのため） */
+    if (strcmp(line, "GET CURRENT_LIMIT") == 0) {
+        comm_sendf("OK %.1f\n", (double)adc_get_overcurrent_th());
+        return;
+    }
+    /* GET MICROSTEP: マイクロステップ分周比取得（全軸共通、M0/M1/M2が全軸共通GPIOのため） */
+    if (strcmp(line, "GET MICROSTEP") == 0) {
+        comm_sendf("OK %d\n", (int)config_get_microstep());
+        return;
+    }
+    if (strcmp(line, "GET HOLD_CURRENT_PERCENT") == 0) {
+        comm_sendf("OK %u\n", (unsigned)motor_get_hold_current_percent());
         return;
     }
     if (strcmp(line, "GET BLE_STATUS") == 0) {
@@ -571,6 +867,38 @@ static void dispatch(const char *line)
     unsigned val;
     /* モーション中の SET は拒否 */
     if (strncmp(line, "SET ", 4) == 0) {
+        args = command_args(line, "SET POT_SCALE");
+        if (args) {
+            long parsed_axis;
+            float scale;
+            if (!parse_axis_float_args(args, &parsed_axis, &scale)) {
+                comm_send("ERR E002 INVALID_ARG\n");
+            } else if (parsed_axis < 0 || parsed_axis >= NUM_AXES) {
+                comm_send("ERR E003 INVALID_AXIS\n");
+            } else if (!isfinite(scale) || scale <= 0.0f) {
+                comm_send("ERR E002 INVALID_PARAM\n");
+            } else {
+                comm_send(config_set_pot_scale_deg((uint8_t)parsed_axis, scale)
+                          ? "OK\n" : "ERR E007 NVS_FAIL\n");
+            }
+            return;
+        }
+
+        args = command_args(line, "SET POT_ZERO");
+        if (args) {
+            long parsed_axis;
+            if (!parse_axis_arg(args, &parsed_axis)) {
+                comm_send("ERR E002 INVALID_ARG\n");
+            } else if (parsed_axis < 0 || parsed_axis >= NUM_AXES) {
+                comm_send("ERR E003 INVALID_AXIS\n");
+            } else {
+                int raw = adc_get_raw_count((uint8_t)parsed_axis);
+                comm_send(config_set_pot_zero_offset((uint8_t)parsed_axis, raw)
+                          ? "OK\n" : "ERR E007 NVS_FAIL\n");
+            }
+            return;
+        }
+
         /* COMM_TIMEOUT と ADC_FILTER はモーション中でも変更可 — 先に処理 */
         if (sscanf(line, "SET COMM_TIMEOUT %u", &val) == 1) {
             s_wdog_ms      = val;
@@ -584,6 +912,24 @@ static void dispatch(const char *line)
             motor_set_idle_timeout(val);
             config_set_idle_timeout(val);
             comm_send("OK\n");
+            return;
+        }
+        if (sscanf(line, "SET HOLD_MODE %u", &val) == 1) {
+            if (!motor_set_hold_mode((hold_mode_t)val)) {
+                comm_send("ERR E002 INVALID_ARG\n");
+            } else {
+                config_set_hold_mode(val);
+                comm_send("OK\n");
+            }
+            return;
+        }
+        if (sscanf(line, "SET HOLD_CURRENT_PERCENT %u", &val) == 1) {
+            if (val < 1 || val > 100 || !motor_set_hold_current_percent((uint8_t)val)) {
+                comm_send("ERR E002 INVALID_ARG\n");
+            } else {
+                config_set_hold_current_percent(val);
+                comm_send("OK\n");
+            }
             return;
         }
 
@@ -799,6 +1145,14 @@ static void dispatch(const char *line)
             return;
         }
         {
+            float gear_ratio_val;
+            if (sscanf(line, "SET GEAR_RATIO %u %f", &axis, &gear_ratio_val) == 2) {
+                comm_send(config_set_gear_ratio((uint8_t)axis, gear_ratio_val)
+                          ? "OK\n" : "ERR E002 INVALID_PARAM\n");
+                return;
+            }
+        }
+        {
             int enc_dir_val;
             if (sscanf(line, "SET ENC_DIR %u %d", &axis, &enc_dir_val) == 2) {
                 comm_send(motor_set_enc_dir((uint8_t)axis, (int8_t)enc_dir_val)
@@ -814,6 +1168,20 @@ static void dispatch(const char *line)
         }
 
         comm_send("ERR E001 UNKNOWN_CMD\n");
+        return;
+    }
+
+    args = command_args(line, "CLEAR POT_ZERO");
+    if (args) {
+        long parsed_axis;
+        if (!parse_axis_arg(args, &parsed_axis)) {
+            comm_send("ERR E002 INVALID_ARG\n");
+        } else if (parsed_axis < 0 || parsed_axis >= NUM_AXES) {
+            comm_send("ERR E003 INVALID_AXIS\n");
+        } else {
+            comm_send(config_set_pot_zero_offset((uint8_t)parsed_axis, 0)
+                      ? "OK\n" : "ERR E007 NVS_FAIL\n");
+        }
         return;
     }
 
@@ -923,13 +1291,71 @@ void comm_init(void)
     motor_set_idle_timeout(config_get_idle_timeout());
 
     ESP_LOGI(TAG, "CommTask starting (USB Serial/JTAG via VFS)");
-    xTaskCreate(comm_task,     "CommTask",     4096, NULL, 10, NULL);
+    /* dispatch() は多数のGETコマンドを1関数で処理し、各コマンドのローカル配列
+       （GET LOGのentries[24]≈1.8KB等）がスタックフレームに積み上がるため、
+       4096Bでは実際にスタックオーバーフローが発生した。余裕を見て8192Bに拡大。 */
+    xTaskCreate(comm_task,     "CommTask",     8192, NULL, 10, NULL);
     xTaskCreate(watchdog_task, "WatchdogTask", 2048, NULL,  5, NULL);
     xTaskCreate(status_task,   "StatusTask",   2048, NULL,  5, NULL);
 }
 
+/* comm_send() が良性(成功)イベントとして記録対象から除外する EVT 名 */
+static const char *const BENIGN_EVENTS[] = {
+    "MOVE_DONE", "HOME_DONE", "SYNC_DONE", "GEAR_RECOVERED", "GEAR_AVAILABLE",
+};
+
+static bool is_benign_event(const char *name, size_t name_len)
+{
+    for (size_t i = 0; i < sizeof(BENIGN_EVENTS) / sizeof(BENIGN_EVENTS[0]); i++) {
+        if (strlen(BENIGN_EVENTS[i]) == name_len &&
+            strncmp(name, BENIGN_EVENTS[i], name_len) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/*
+ * comm_send() は全ての ERR/EVT 応答が通る唯一のフックポイント。
+ * ここで FAULT/エラー系イベントのみを error_log に記録する
+ * (ESP_LOGI 相当の一般情報ログ・OK/HB/STATUS 等は対象外)。
+ */
+static void maybe_record_error_log(const char *msg)
+{
+    bool is_err = strncmp(msg, "ERR ", 4) == 0;
+    bool is_evt = !is_err && strncmp(msg, "EVT ", 4) == 0;
+    if (!is_err && !is_evt) return;
+
+    const char *rest = msg + 4;
+    const char *token_end = rest;
+    while (*token_end && *token_end != ' ' && *token_end != '\n' && *token_end != '\r') token_end++;
+    size_t token_len = (size_t)(token_end - rest);
+    if (token_len == 0) return;
+
+    if (is_evt && is_benign_event(rest, token_len)) return;
+
+    char code[24];   /* error_log.h の error_log_entry_t.code と同じサイズを維持すること */
+    size_t code_len = token_len < sizeof(code) - 1 ? token_len : sizeof(code) - 1;
+    memcpy(code, rest, code_len);
+    code[code_len] = '\0';
+
+    const char *message = token_end;
+    while (*message == ' ') message++;
+    size_t message_len = strlen(message);
+    while (message_len > 0 && (message[message_len - 1] == '\n' || message[message_len - 1] == '\r')) {
+        message_len--;
+    }
+    char clean_message[40];
+    if (message_len >= sizeof(clean_message)) message_len = sizeof(clean_message) - 1;
+    memcpy(clean_message, message, message_len);
+    clean_message[message_len] = '\0';
+
+    error_log_record(code, clean_message);
+}
+
 void comm_send(const char *msg)
 {
+    maybe_record_error_log(msg);
     xSemaphoreTake(s_tx_mutex, portMAX_DELAY);
     fputs(msg, stdout);
     fflush(stdout);

@@ -9,5 +9,6 @@ bool telemetry_format_device_info(char *buf, size_t size);
 bool telemetry_format_axis_status(char *buf, size_t size);
 bool telemetry_format_power(char *buf, size_t size);
 bool telemetry_format_fault(char *buf, size_t size);
+bool telemetry_format_error_log_latest(char *buf, size_t size);
 bool telemetry_format_gear_angle(char *buf, size_t size);
-
+bool telemetry_format_joint_angle(char *buf, size_t size);

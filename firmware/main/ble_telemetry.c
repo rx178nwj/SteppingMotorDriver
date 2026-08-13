@@ -1,6 +1,7 @@
 #include "ble_telemetry.h"
 
 #include "config.h"
+#include "error_log.h"
 #include "gear_monitor.h"
 #include "telemetry.h"
 #include "status_led.h"
@@ -26,7 +27,7 @@
 
 /* Public UUIDs, canonical form:
  * service 7c9e1000-6a3d-4b89-a712-5f4e8d2c0100
- * chars   7c9e1001..1005-6a3d-4b89-a712-5f4e8d2c0100
+ * chars   7c9e1001..1006-6a3d-4b89-a712-5f4e8d2c0100
  */
 #define SMD_UUID(value) BLE_UUID128_INIT(                              \
     0x00, 0x01, 0x2c, 0x8d, 0x4e, 0x5f, 0x12, 0xa7,                  \
@@ -39,6 +40,8 @@ enum telemetry_characteristic {
     CHR_POWER,
     CHR_FAULT,
     CHR_GEAR_ANGLE,
+    CHR_JOINT_ANGLE,
+    CHR_ERROR_LOG,
 };
 
 static const char *TAG = "ble_telemetry";
@@ -48,17 +51,23 @@ static const ble_uuid128_t s_axis_status_uuid = SMD_UUID(0x1002);
 static const ble_uuid128_t s_power_uuid = SMD_UUID(0x1003);
 static const ble_uuid128_t s_fault_uuid = SMD_UUID(0x1004);
 static const ble_uuid128_t s_gear_uuid = SMD_UUID(0x1005);
+static const ble_uuid128_t s_joint_angle_uuid = SMD_UUID(0x1006);
+static const ble_uuid128_t s_error_log_uuid = SMD_UUID(0x1007);
 
 static uint16_t s_device_info_handle;
 static uint16_t s_axis_status_handle;
 static uint16_t s_power_handle;
 static uint16_t s_fault_handle;
 static uint16_t s_gear_handle;
+static uint16_t s_joint_angle_handle;
+static uint16_t s_error_log_handle;
 static uint16_t s_conn_handle = BLE_HS_CONN_HANDLE_NONE;
 static bool s_notify_axis;
 static bool s_notify_power;
 static bool s_notify_fault;
 static bool s_notify_gear;
+static bool s_notify_joint_angle;
+static bool s_notify_error_log;
 static bool s_synced;
 static bool s_encrypted;
 static bool s_initialized;
@@ -100,6 +109,8 @@ static bool format_characteristic(enum telemetry_characteristic chr,
     case CHR_POWER:       return telemetry_format_power(buf, size);
     case CHR_FAULT:       return telemetry_format_fault(buf, size);
     case CHR_GEAR_ANGLE:  return telemetry_format_gear_angle(buf, size);
+    case CHR_JOINT_ANGLE: return telemetry_format_joint_angle(buf, size);
+    case CHR_ERROR_LOG:   return telemetry_format_error_log_latest(buf, size);
     default:              return false;
     }
 }
@@ -113,7 +124,7 @@ static int characteristic_access(uint16_t conn_handle, uint16_t attr_handle,
         return BLE_ATT_ERR_WRITE_NOT_PERMITTED;
     }
 
-    char json[320];
+    char json[512];
     if (!format_characteristic((enum telemetry_characteristic)(intptr_t)arg,
                                json, sizeof(json))) {
         ESP_LOGE(TAG, "GATT read format failed, conn=%u attr=%u chr=%d",
@@ -171,6 +182,20 @@ static const struct ble_gatt_svc_def s_services[] = {
                 .val_handle = &s_gear_handle,
                 .flags = READ_NOTIFY_ENCRYPTED,
             },
+            {
+                .uuid = &s_joint_angle_uuid.u,
+                .access_cb = characteristic_access,
+                .arg = (void *)(intptr_t)CHR_JOINT_ANGLE,
+                .val_handle = &s_joint_angle_handle,
+                .flags = READ_NOTIFY_ENCRYPTED,
+            },
+            {
+                .uuid = &s_error_log_uuid.u,
+                .access_cb = characteristic_access,
+                .arg = (void *)(intptr_t)CHR_ERROR_LOG,
+                .val_handle = &s_error_log_handle,
+                .flags = READ_NOTIFY_ENCRYPTED,
+            },
             {0},
         },
     },
@@ -179,7 +204,7 @@ static const struct ble_gatt_svc_def s_services[] = {
 
 static void notify_json(uint16_t handle, enum telemetry_characteristic chr)
 {
-    char json[320];
+    char json[512];
     if (!format_characteristic(chr, json, sizeof(json))) return;
     struct os_mbuf *om = ble_hs_mbuf_from_flat(json, strlen(json));
     if (!om) return;
@@ -196,6 +221,7 @@ static void notification_task(void *arg)
     (void)arg;
     char last_fault[128] = "";
     unsigned fault_keepalive_ticks = 0;
+    uint32_t last_error_log_seq = 0;
 
     for (;;) {
         vTaskDelay(pdMS_TO_TICKS(100));
@@ -205,6 +231,9 @@ static void notification_task(void *arg)
         if (s_notify_power) notify_json(s_power_handle, CHR_POWER);
         if (s_notify_gear && gear_monitor_get_state() == GEAR_STATE_READY) {
             notify_json(s_gear_handle, CHR_GEAR_ANGLE);
+        }
+        if (s_notify_joint_angle) {
+            notify_json(s_joint_angle_handle, CHR_JOINT_ANGLE);
         }
 
         char fault[128];
@@ -219,6 +248,12 @@ static void notification_task(void *arg)
             if (changed) {
                 memcpy(last_fault, fault, strlen(fault) + 1);
             }
+        }
+
+        uint32_t seq = error_log_get_seq();
+        if (s_notify_error_log && seq != last_error_log_seq) {
+            notify_json(s_error_log_handle, CHR_ERROR_LOG);
+            last_error_log_seq = seq;
         }
     }
 }
@@ -328,6 +363,8 @@ static int gap_event(struct ble_gap_event *event, void *arg)
         s_conn_handle = BLE_HS_CONN_HANDLE_NONE;
         s_encrypted = false;
         s_notify_axis = s_notify_power = s_notify_fault = s_notify_gear = false;
+        s_notify_joint_angle = false;
+        s_notify_error_log = false;
         s_status = config_get_ble_enable()
                        ? BLE_TELEMETRY_ADVERTISING : BLE_TELEMETRY_DISABLED;
         start_advertising();
@@ -371,6 +408,10 @@ static int gap_event(struct ble_gap_event *event, void *arg)
             s_notify_fault = event->subscribe.cur_notify;
         } else if (event->subscribe.attr_handle == s_gear_handle) {
             s_notify_gear = event->subscribe.cur_notify;
+        } else if (event->subscribe.attr_handle == s_joint_angle_handle) {
+            s_notify_joint_angle = event->subscribe.cur_notify;
+        } else if (event->subscribe.attr_handle == s_error_log_handle) {
+            s_notify_error_log = event->subscribe.cur_notify;
         }
         break;
 
@@ -450,7 +491,7 @@ esp_err_t ble_telemetry_init(void)
     int rc = ble_gatts_count_cfg(s_services);
     if (rc == 0) rc = ble_gatts_add_svcs(s_services);
     if (rc == 0) rc = ble_svc_gap_device_name_set(s_device_name);
-    if (rc == 0) rc = ble_att_set_preferred_mtu(185);
+    if (rc == 0) rc = ble_att_set_preferred_mtu(512);
     if (rc != 0) {
         ESP_LOGE(TAG, "GATT initialization failed rc=%d", rc);
         s_status = BLE_TELEMETRY_ERROR;
