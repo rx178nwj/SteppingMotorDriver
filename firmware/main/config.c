@@ -26,6 +26,7 @@ static const char *WIRELESS_NVS_NS = "wifi_config";
 #define DEF_HOLD_CURRENT_PERCENT   30U
 #define DEF_GEAR_DEVIATION_WARN_DEG 5.0f
 #define DEF_POT_SCALE_DEG       0.0879f
+#define DEF_OC_TH_MA          6000.0f   /* adc_monitor.c の ADC_OC_TH_DEF と一致させること */
 
 /* 軸ごとのデフォルトプロファイル ID */
 static const motor_profile_id_t DEF_PROFILE_PER_AXIS[NUM_AXES] = {
@@ -265,6 +266,7 @@ void config_init(void)
     uint32_t hold_mode = DEF_HOLD_MODE;
     uint32_t hold_pct   = DEF_HOLD_CURRENT_PERCENT;
     float    volt_div = adc_get_volt_divider();
+    float    oc_th_mA = adc_get_overcurrent_th();
 
     if (err == ESP_OK) {
         nvs_get_u32(h, "microstep",    &ms);
@@ -277,6 +279,13 @@ void config_init(void)
             float saved_volt_div = u32_to_float(volt_div_bits);
             if (isfinite(saved_volt_div) && saved_volt_div > 0.0f) {
                 volt_div = saved_volt_div;
+            }
+        }
+        uint32_t oc_th_bits;
+        if (nvs_get_u32(h, "oc_th", &oc_th_bits) == ESP_OK) {
+            float saved_oc_th = u32_to_float(oc_th_bits);
+            if (isfinite(saved_oc_th) && saved_oc_th > 0.0f) {
+                oc_th_mA = saved_oc_th;
             }
         }
     }
@@ -355,6 +364,15 @@ void config_init(void)
         int8_t enc_dir = (enc_dir_u32 == (uint32_t)(int32_t)-1) ? -1 : 1;
         motor_set_enc_dir(i, enc_dir);
 
+        /* モータータイプ (motor_type: 0=CLOSED_LOOP エンコーダ付き[既定], 1=OPEN_LOOP エンコーダなし) */
+        uint32_t motor_type_u32 = (uint32_t)MOTOR_TYPE_CLOSED_LOOP;
+        if (err == ESP_OK) {
+            snprintf(key, sizeof(key), "mtype%d", i);
+            nvs_get_u32(h, key, &motor_type_u32);
+        }
+        motor_set_motor_type(i, (motor_type_u32 == (uint32_t)MOTOR_TYPE_OPEN_LOOP)
+                                 ? MOTOR_TYPE_OPEN_LOOP : MOTOR_TYPE_CLOSED_LOOP);
+
         /* gear_ratio は既存 F-MOT-10 パラメータ。未保存時は 1.0。 */
         s_gear_ratio[i] = 1.0f;
         if (err == ESP_OK) {
@@ -411,6 +429,7 @@ void config_init(void)
     motor_set_hold_mode((hold_mode_t)s_hold_mode);
     motor_set_hold_current_percent((uint8_t)s_hold_current_percent);
     adc_set_volt_divider(volt_div);
+    adc_set_overcurrent_th(oc_th_mA);
     load_gear_config();
     load_wireless_config();
 
@@ -450,6 +469,7 @@ bool config_save(void)
         snprintf(key, sizeof(key), "hofs%d",    i); nvs_set_u32(h, key, (uint32_t)motor_get_home_offset_steps(i));
         snprintf(key, sizeof(key), "hdir%d",    i); nvs_set_u32(h, key, (uint32_t)(int32_t)motor_get_home_dir(i));
         snprintf(key, sizeof(key), "encdir%d",  i); nvs_set_u32(h, key, (uint32_t)(int32_t)motor_get_enc_dir(i));
+        snprintf(key, sizeof(key), "mtype%d",   i); nvs_set_u32(h, key, (uint32_t)motor_get_motor_type(i));
         snprintf(key, sizeof(key), "gearratio%d", i);
         nvs_set_u32(h, key, float_to_u32(s_gear_ratio[i]));
         snprintf(key, sizeof(key), "pot_scale%u", (unsigned)i);
@@ -463,6 +483,7 @@ bool config_save(void)
     nvs_set_u32(h, "hold_mode",    s_hold_mode);
     nvs_set_u32(h, "hold_pct",     s_hold_current_percent);
     nvs_set_u32(h, "volt_div",     float_to_u32(adc_get_volt_divider()));
+    nvs_set_u32(h, "oc_th",        float_to_u32(adc_get_overcurrent_th()));
 
     esp_err_t err = nvs_commit(h);
     nvs_close(h);
@@ -510,6 +531,7 @@ void config_reset(void)
         const motor_profile_t *p = motor_spec_get_profile(s_profile[i]);
         if (p) apply_profile_params(i, p);
         motor_set_enc_dir(i, 1);
+        motor_set_motor_type(i, MOTOR_TYPE_CLOSED_LOOP);
         s_gear_offset[i] = 0.0f;
         s_gear_dir[i] = 1;
         s_gear_abs_capable[i] = false;
@@ -528,6 +550,7 @@ void config_reset(void)
     motor_set_hold_mode((hold_mode_t)s_hold_mode);
     motor_set_hold_current_percent((uint8_t)s_hold_current_percent);
     adc_set_volt_divider(24.0f / 3.3f);
+    adc_set_overcurrent_th(DEF_OC_TH_MA);
     s_gear_deviation_warn = DEF_GEAR_DEVIATION_WARN_DEG;
     s_ble_enable = true;
     s_wifi_enable = false;

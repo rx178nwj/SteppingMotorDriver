@@ -590,6 +590,46 @@ Section 4.4（`SET HOLD_MODE`/`SET HOLD_CURRENT_PERCENT`）
 
 ---
 
+#### F-MOT-14: モータータイプ（軸ごとのエンコーダ有無設定、2026-08-13新設）
+
+**目的：** 全3軸が閉ループ（エンコーダ付き）前提だった設計を改め、軸ごとにエンコーダ非搭載の
+ステッピングモーター（オープンループ）を選択できるようにする。
+
+**設定（`SET MOTOR_TYPE <axis> <0|1>` / `GET MOTOR_TYPE <axis>`、軸ごと）：**
+
+| 値 | 名称 | 動作 |
+|---|------|------|
+| 0 | `MOTOR_TYPE_CLOSED_LOOP`（デフォルト） | 既存動作のまま：脱調検出（F-MOT-08）・PCNT/Z相エンコーダ初期化・Z相ホーミング有効 |
+| 1 | `MOTOR_TYPE_OPEN_LOOP` | 脱調検出を無効化。PCNT/Z相GPIOは初期化しない（未接続GPIOのフローティングノイズ誤カウント防止）。ホーミングは multi_i2c_bridge（AS5600、F-GEAR系）の絶対角度を用いる |
+
+**オープンループ軸のホーミング（`HOME <axis>`）：**
+
+- gear_monitor（multi_i2c_bridge 経由 AS5600）が示す出力軸の較正済み絶対角度
+  （0度＝「0位置設定」機能で磁石取付誤差を補正済みの原点）へ向けて、通常の`MOVETO`と
+  同一の台形速度プロファイルで移動する。Z相インデックス探索は行わない
+- gear_monitor が `UNAVAILABLE`／未較正（該当軸の角度センサ未 `enabled`／`ok`）の場合は
+  `HOME` を拒否する（軸は動かない）
+- 移動完了時、`home_offset_steps`（既存 F-MOT-10 パラメータ）を現在位置として確定し、
+  蓄積したオープンループ位置ドリフトを補正する。以降は `gear_monitor_mark_home()` に
+  よりギア角度モニタの乖離検出（F-GEAR系）の基準点も更新される
+- タイムアウトは既存の通信ウォッチドッグ・SOFT_LIMIT等、通常モーションと同じ保護機構に従う
+  （Z相ホーミング専用の`HOME_TIMEOUT_US`は適用されない）
+
+**制約：**
+
+- `SET MOTOR_TYPE` はモーション中（`motor_is_moving()`）は拒否する（E008）
+- `GET ENC <axis>` / `GET ENC_DEG <axis>` はオープンループ軸に対して `ERR E002 INVALID_PARAM`
+  を返す（未装備のため）
+- `SET/GET MOTOR_TYPE` はNVSへ即時書き込みせず、`SAVE`コマンドで永続化する
+  （`SET ENC_DIR`と同じパターン）
+- BLE `JOINT_ANGLE` テレメトリ（F-MOT-12）は、いずれかの軸がオープンループでも他軸分まで
+  丸ごと失敗しない。各軸オブジェクトに`enc_available`等の有効性フラグを追加し、
+  オープンループ軸は `enc_deg` を無効値として個別に示す
+
+**反映先：** Section 3.2（エンコーダ初期化のスキップ条件）、Section 4.4（`SET/GET MOTOR_TYPE`）
+
+---
+
 ### 3.2 エンコーダ読み取り（3ch）
 
 #### F-ENC-01: 位置カウント
@@ -863,6 +903,8 @@ axis: 0〜2  または  ALL
 | `SET COMM_TIMEOUT <ms>` | ms | 通信ウォッチドッグタイムアウト設定（0=無効） |
 | `SET STALL_FAULT <axis> <steps>` | steps | 脱調フォルト閾値設定（軸ごと、モーション中は拒否・E004） |
 | `GET STALL_FAULT <axis>` | - | 脱調フォルト閾値取得（軸ごと） |
+| `SET MOTOR_TYPE <axis> <0\|1>` | 0=CLOSED_LOOP/1=OPEN_LOOP | モータータイプ設定（軸ごと、モーション中は拒否・E008、F-MOT-14） |
+| `GET MOTOR_TYPE <axis>` | - | モータータイプ取得（軸ごと、F-MOT-14） |
 | `SET POT_SCALE <axis> <deg_per_count>` | float | POT角度換算係数の校正（NVS 保存、F-MOT-12） |
 | `SET POT_ZERO <axis>` | - | 現在のPOT ADC生値をゼロ位置オフセットとして記録（NVS 保存、F-MOT-12） |
 | `CLEAR POT_ZERO <axis>` | - | POTゼロ位置オフセットを0にリセット（NVS 保存、F-MOT-12） |

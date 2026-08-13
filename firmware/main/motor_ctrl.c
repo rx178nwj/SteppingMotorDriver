@@ -2,6 +2,7 @@
 #include "adc_monitor.h"
 #include "config.h"
 #include "encoder.h"
+#include "gear_monitor.h"
 #include "gpio_config.h"
 
 #include <limits.h>
@@ -110,6 +111,10 @@ typedef struct {
     int8_t               enc_dir;          /* エンコーダ方向: +1 (正) / -1 (逆接続) */
     uint16_t             mpc_x100;         /* microsteps_per_count × 100 (単位正規化) */
 
+    /* モータータイプ（エンコーダ有無） */
+    motor_type_t         motor_type;
+    bool                  home_pending;    /* true = オープンループホーミングの完了待ち (AXIS_DECEL完了時に確定処理) */
+
     /* フォルトトレース（10ms間隔リングバッファ、GET FAULT_TRACE 用） */
     fault_trace_sample_t trace_buf[FAULT_TRACE_CAPACITY];
     uint16_t              trace_head;      /* 次に書き込むインデックス */
@@ -161,6 +166,8 @@ static volatile bool     s_sync_start_pending = false; /* 開始待ちフラグ 
 static volatile bool     s_sync_active        = false; /* 同期実行中 */
 static motor_sync_cb_t   s_sync_done_cb       = NULL;
 static motor_sync_cb_t   s_sync_aborted_cb    = NULL;
+
+static void finish_open_loop_home(uint8_t axis);
 
 static inline void axis_apply_base_profile(axis_t *ax)
 {
@@ -274,18 +281,23 @@ static void fault_trace_record_all(void)
         cur_pos = ax->step_pos;
         taskEXIT_CRITICAL(&s_step_pos_mux);
 
-        int32_t enc_pos = encoder_get_pos(i);
-        int32_t enc_steps = (ax->mpc_x100 > 0)
-            ? (int32_t)((int64_t)enc_pos * (int64_t)ax->enc_dir
-                        * (int64_t)ax->mpc_x100 / 100LL)
-            : (int32_t)((int64_t)enc_pos * (int64_t)ax->enc_dir);
+        int32_t enc_steps = 0;
+        int32_t diff      = 0;
+        if (ax->motor_type == MOTOR_TYPE_CLOSED_LOOP) {
+            int32_t enc_pos = encoder_get_pos(i);
+            enc_steps = (ax->mpc_x100 > 0)
+                ? (int32_t)((int64_t)enc_pos * (int64_t)ax->enc_dir
+                            * (int64_t)ax->mpc_x100 / 100LL)
+                : (int32_t)((int64_t)enc_pos * (int64_t)ax->enc_dir);
+            diff = enc_steps - cur_pos;
+        }
         int32_t vel = ax->dir ? (int32_t)ax->current_vel : -(int32_t)ax->current_vel;
 
         fault_trace_sample_t sample = {
             .state      = (uint8_t)ax->state,
             .step_pos   = cur_pos,
-            .enc_steps  = enc_steps,
-            .diff       = enc_steps - cur_pos,
+            .enc_steps  = enc_steps,   /* オープンループ軸は常に0（未計装） */
+            .diff       = diff,
             .vel        = vel,
             .current_mA = current_i16,
         };
@@ -405,9 +417,10 @@ static void motor_control_task(void *arg)
             cur_pos = ax->step_pos;
             taskEXIT_CRITICAL(&s_step_pos_mux);
 
-            /* --- 脱調検出 (ACCEL/CRUISE/DECEL 中のみ) --- */
-            if (ax->state == AXIS_ACCEL || ax->state == AXIS_CRUISE ||
-                ax->state == AXIS_DECEL) {
+            /* --- 脱調検出 (ACCEL/CRUISE/DECEL 中のみ、エンコーダ付き軸のみ) --- */
+            if (ax->motor_type == MOTOR_TYPE_CLOSED_LOOP &&
+                (ax->state == AXIS_ACCEL || ax->state == AXIS_CRUISE ||
+                 ax->state == AXIS_DECEL)) {
                 int32_t enc_pos = encoder_get_pos((uint8_t)i);
                 /* enc_pos (counts) を motor_steps 単位に正規化して比較
                    enc_steps = enc_pos × enc_dir × (microsteps_per_count)
@@ -632,7 +645,9 @@ static void motor_control_task(void *arg)
 
                         ESP_LOGI(TAG, "Axis %d: done, pos=%ld", i, (long)ax->step_pos);
 
-                        if (was_pos_mode && s_move_done_cb) {
+                        if (ax->home_pending) {
+                            finish_open_loop_home((uint8_t)i);
+                        } else if (was_pos_mode && s_move_done_cb) {
                             s_move_done_cb((uint8_t)i);
                         }
 
@@ -756,6 +771,8 @@ void motor_ctrl_init(void)
         ax->enc_dir            = 1;
         ax->mpc_x100           = 160;   /* ME1K 1000PPR×4 / (200×32 µsteps) = 0.625 → ×100=160 */
         ax->sync_pending       = false;
+        ax->motor_type         = MOTOR_TYPE_CLOSED_LOOP;
+        ax->home_pending       = false;
 
         ax->home_phase         = 0;
         ax->home_dir           = -1;
@@ -805,7 +822,8 @@ void motor_enable(void)
             s_axes[i].state = AXIS_IDLE;
             s_axes[i].idle_counter_ms = 0;
         }
-        if (resync && s_axes[i].mpc_x100 > 0 && s_axes[i].enc_dir != 0) {
+        if (resync && s_axes[i].motor_type == MOTOR_TYPE_CLOSED_LOOP &&
+            s_axes[i].mpc_x100 > 0 && s_axes[i].enc_dir != 0) {
             /* enc_pos = step_pos × 100 / (enc_dir × mpc_x100)
                → enc_steps = enc_pos × enc_dir × mpc_x100 / 100 = step_pos */
             int32_t cur;
@@ -965,6 +983,7 @@ bool motor_vel(uint8_t axis, int32_t vel_signed)
         /* MOVE/MOVETO 実行中 or 逆方向: 減速停止後に VEL モードへ移行 */
         bool was_pos          = ax->pos_mode;
         ax->pos_mode          = false;
+        ax->home_pending      = false;   /* オープンループホーミング中の割り込みは中断扱い */
         ax->vel_pending       = true;
         ax->vel_pending_speed = speed;
         ax->vel_pending_dir   = dir;
@@ -1007,6 +1026,7 @@ bool motor_stop(uint8_t axis)
 
     ax->pos_mode        = false;
     ax->disable_on_stop = false;
+    ax->home_pending    = false;   /* オープンループホーミング中の STOP は中断扱い */
     ax->state           = AXIS_DECEL;
     ESP_LOGI(TAG, "Axis %d: STOP (decel)", axis);
     return true;
@@ -1027,6 +1047,7 @@ bool motor_stop_free(uint8_t axis)
 
     ax->pos_mode        = false;
     ax->disable_on_stop = true;   /* DECEL 完了後にコイル解除 */
+    ax->home_pending    = false;  /* オープンループホーミング中の STOP は中断扱い */
     ax->state           = AXIS_DECEL;
     ESP_LOGI(TAG, "Axis %d: STOP_FREE (decel then disable)", axis);
     return true;
@@ -1053,6 +1074,7 @@ void motor_estop(fault_reason_t reason)
         ax->current_vel  = 0.0f;
         ax->state        = AXIS_FAULT;
         ax->sync_pending = false;
+        ax->home_pending = false;
         rmt_stop_channel(ax);
         gpio_set_level(s_step_gpios[i], 0);
     }
@@ -1412,6 +1434,75 @@ bool motor_set_home_params(uint8_t axis, uint32_t v_coarse, uint32_t v_fine,
 /*  Phase 3: ホーミング / 脱調検出                                      */
 /* ================================================================== */
 
+/* オープンループ軸（motor_type == MOTOR_TYPE_OPEN_LOOP）のホーミング完了処理。
+   multi_i2c_bridge (AS5600) の絶対角度で校正済みの角度0を home_offset_steps に
+   割り当て、蓄積したオープンループ位置ドリフトを補正する。 */
+static void finish_open_loop_home(uint8_t axis)
+{
+    axis_t *ax = &s_axes[axis];
+
+    taskENTER_CRITICAL(&s_step_pos_mux);
+    ax->step_pos = ax->home_offset_steps;
+    taskEXIT_CRITICAL(&s_step_pos_mux);
+
+    ax->home_pending    = false;
+    ax->idle_counter_ms = 0;
+
+    gear_monitor_mark_home(axis);
+
+    ESP_LOGI(TAG, "Axis %d: OPEN_LOOP HOME done offset=%ld",
+             axis, (long)ax->home_offset_steps);
+    if (s_home_done_cb) s_home_done_cb(axis);
+}
+
+/* オープンループ軸のホーミング開始。gear_monitor (AS5600) が示す出力軸絶対角度
+   (角度0 = 較正済み原点。「0位置設定」機能で磁石取付誤差は補正済み) へ向けて
+   通常のMOVETOと同じ台形プロファイルで移動する。完了は AXIS_DECEL 完了検知
+   (home_pending フラグ) 経由で finish_open_loop_home() が担う。 */
+static bool start_open_loop_home(uint8_t axis)
+{
+    axis_t *ax = &s_axes[axis];
+
+    gear_axis_status_t gs;
+    if (!gear_monitor_get_axis_status(axis, &gs) || !gs.enabled || !gs.ok) {
+        ESP_LOGW(TAG, "Axis %d: HOME rejected — gear angle sensor not ready", axis);
+        return false;
+    }
+
+    /* angle_deg は 0-360 の較正済み絶対角。最短方向で 0 へ向かう差分 (-180..180]。 */
+    float delta_deg = gs.angle_deg;
+    if (delta_deg > 180.0f) delta_deg -= 360.0f;
+
+    int32_t delta_steps;
+    if (!motor_degrees_to_steps(axis, -delta_deg, &delta_steps)) {
+        ESP_LOGW(TAG, "Axis %d: HOME rejected — invalid step/gear ratio config", axis);
+        return false;
+    }
+
+    taskENTER_CRITICAL(&s_step_pos_mux);
+    int32_t cur = ax->step_pos;
+    taskEXIT_CRITICAL(&s_step_pos_mux);
+    int32_t target = cur + delta_steps;
+
+    ax->home_phase   = 0;
+    ax->home_pending = true;
+
+    if (!start_motion(axis, delta_steps >= 0, target, true)) {
+        ax->home_pending = false;
+        return false;
+    }
+
+    if (!ax->running) {
+        /* start_motion() が「既に目標位置」として即時 return した場合
+           (delta_steps が丸めで 0 になったケース): 同期的に完了処理する。 */
+        finish_open_loop_home(axis);
+    }
+
+    ESP_LOGI(TAG, "Axis %d: OPEN_LOOP HOMING start angle=%.2f delta_steps=%ld",
+             axis, (double)gs.angle_deg, (long)delta_steps);
+    return true;
+}
+
 bool motor_home(uint8_t axis)
 {
     if (axis >= NUM_AXES) return false;
@@ -1422,6 +1513,10 @@ bool motor_home(uint8_t axis)
     if (!s_drv_enabled) {
         ESP_LOGW(TAG, "Axis %d: HOME rejected — call ENABLE first", axis);
         return false;
+    }
+
+    if (ax->motor_type == MOTOR_TYPE_OPEN_LOOP) {
+        return start_open_loop_home(axis);
     }
 
     /* 残留 Z イベントをクリアして誤検知を防ぐ */
@@ -1478,6 +1573,22 @@ bool motor_set_enc_dir(uint8_t axis, int8_t dir)
     if (axis >= NUM_AXES) return false;
     if (dir != 1 && dir != -1) return false;
     s_axes[axis].enc_dir = dir;
+    return true;
+}
+
+motor_type_t motor_get_motor_type(uint8_t axis)
+{
+    if (axis >= NUM_AXES) return MOTOR_TYPE_CLOSED_LOOP;
+    return s_axes[axis].motor_type;
+}
+
+bool motor_set_motor_type(uint8_t axis, motor_type_t type)
+{
+    if (axis >= NUM_AXES) return false;
+    if (type != MOTOR_TYPE_CLOSED_LOOP && type != MOTOR_TYPE_OPEN_LOOP) return false;
+    if (motor_is_moving(axis)) return false;   /* 動作中の切替は禁止 */
+    s_axes[axis].motor_type   = type;
+    s_axes[axis].home_pending = false;
     return true;
 }
 

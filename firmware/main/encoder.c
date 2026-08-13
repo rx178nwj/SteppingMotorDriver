@@ -1,5 +1,6 @@
 #include "encoder.h"
 #include "gpio_config.h"
+#include "motor_ctrl.h"
 
 #include <string.h>
 #include "freertos/FreeRTOS.h"
@@ -38,6 +39,7 @@ static const uint8_t k_gpio_z[NUM_AXES] = { GPIO_ENC0_Z, GPIO_ENC1_Z, GPIO_ENC2_
    ==================================================================== */
 typedef struct {
     pcnt_unit_handle_t  unit;
+    bool                enabled;       /* true = PCNT/Z相 GPIO 初期化済み (CLOSED_LOOP軸のみ) */
 
     /* 32bit 位置 = pos_accum + pcnt_raw_count
        pos_accum は PCNT オーバーフロー ISR のみが更新する。         */
@@ -191,8 +193,16 @@ void encoder_init(void)
 
     int64_t now = esp_timer_get_time();
     for (uint8_t i = 0; i < NUM_AXES; i++) {
+        if (motor_get_motor_type(i) == MOTOR_TYPE_OPEN_LOOP) {
+            /* オープンループ軸: エンコーダ未配線を前提に PCNT/Z相 GPIO を
+               初期化しない（未接続 GPIO のフローティングノイズを誤カウント
+               しないようにするため）。encoder_get_pos() 等は 0 を返す。   */
+            ESP_LOGI(TAG, "Axis %d: OPEN_LOOP — encoder init skipped", i);
+            continue;
+        }
         init_pcnt_axis(i);
         init_z_gpio(i);
+        s_ax[i].enabled       = true;
         s_ax[i].t_snap_us    = now;
         s_ax[i].last_move_us = now;
     }
@@ -214,6 +224,7 @@ int32_t encoder_get_pos(uint8_t axis)
 {
     if (axis >= NUM_AXES) return 0;
     encoder_axis_t *ax = &s_ax[axis];
+    if (!ax->enabled) return 0;   /* OPEN_LOOP軸: PCNT未初期化 */
     int32_t accum;
     int     raw1, raw2;
     do {
@@ -232,6 +243,7 @@ void encoder_set_pos(uint8_t axis, int32_t pos)
 {
     if (axis >= NUM_AXES) return;
     encoder_axis_t *ax = &s_ax[axis];
+    if (!ax->enabled) return;   /* OPEN_LOOP軸: PCNT未初期化 */
 
     taskENTER_CRITICAL(&ax->mux);
     pcnt_unit_clear_count(ax->unit);   /* PCNT raw → 0 */
@@ -271,6 +283,7 @@ void encoder_update_10ms(void)
 
     for (uint8_t i = 0; i < NUM_AXES; i++) {
         encoder_axis_t *ax = &s_ax[i];
+        if (!ax->enabled) continue;   /* OPEN_LOOP軸: PCNT未初期化 */
         int32_t pos_now = encoder_get_pos(i);
         int64_t dt_us   = now_us - ax->t_snap_us;
         if (dt_us <= 0) continue;

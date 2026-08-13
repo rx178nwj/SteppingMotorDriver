@@ -177,24 +177,36 @@ bool telemetry_format_joint_angle(char *buf, size_t size)
         float pot_scale = config_get_pot_scale_deg(axis);
         int32_t pot_zero = config_get_pot_zero_offset(axis);
         int pot_raw = adc_get_raw_count(axis);
-        if (steps_per_rev == 0 || encoder_ppr == 0 ||
-            !isfinite(gear_ratio) || gear_ratio <= 0.0f ||
-            !isfinite(pot_scale) || pot_scale <= 0.0f || pot_raw < 0) {
-            return false;
-        }
 
-        double pos_deg = (double)status.pos * 360.0 /
-                         ((double)steps_per_rev * (double)gear_ratio);
-        double enc_deg = (double)encoder_get_pos(axis) * 360.0 /
-                         ((double)encoder_ppr * 4.0 * (double)gear_ratio);
-        double pot_deg_raw = (double)pot_raw * (double)pot_scale;
-        double pot_deg_zeroed = ((double)pot_raw - (double)pot_zero) *
-                                (double)pot_scale;
+        /* 各項目は他軸・他項目と独立に有効/無効を判定する。
+           OPEN_LOOP 軸（エンコーダなし）が1軸でもあると enc_deg のみ無効になり、
+           以前のようにテレメトリ全体（全軸分）が丸ごと失敗することはない。   */
+        bool pos_available = steps_per_rev > 0 &&
+                              isfinite(gear_ratio) && gear_ratio > 0.0f;
+        bool enc_available = pos_available && encoder_ppr > 0 &&
+                              motor_get_motor_type(axis) == MOTOR_TYPE_CLOSED_LOOP;
+        bool pot_available = isfinite(pot_scale) && pot_scale > 0.0f && pot_raw >= 0;
+
+        double pos_deg = pos_available
+            ? (double)status.pos * 360.0 / ((double)steps_per_rev * (double)gear_ratio)
+            : 0.0;
+        double enc_deg = enc_available
+            ? (double)encoder_get_pos(axis) * 360.0 /
+              ((double)encoder_ppr * 4.0 * (double)gear_ratio)
+            : 0.0;
+        double pot_deg_raw = pot_available ? (double)pot_raw * (double)pot_scale : 0.0;
+        double pot_deg_zeroed = pot_available
+            ? ((double)pot_raw - (double)pot_zero) * (double)pot_scale
+            : 0.0;
+
         if (!appendf(buf, size, &used,
-                     "%s{\"axis\":%u,\"pos_deg\":%.3f,\"enc_deg\":%.3f,"
-                     "\"pot_deg_raw\":%.3f,\"pot_deg_zeroed\":%.3f}",
+                     "%s{\"axis\":%u,\"pos_deg\":%.3f,\"pos_available\":%s,"
+                     "\"enc_deg\":%.3f,\"enc_available\":%s,"
+                     "\"pot_deg_raw\":%.3f,\"pot_deg_zeroed\":%.3f,\"pot_available\":%s}",
                      axis == 0 ? "" : ",", (unsigned)axis,
-                     pos_deg, enc_deg, pot_deg_raw, pot_deg_zeroed)) {
+                     pos_deg, pos_available ? "true" : "false",
+                     enc_deg, enc_available ? "true" : "false",
+                     pot_deg_raw, pot_deg_zeroed, pot_available ? "true" : "false")) {
             return false;
         }
     }

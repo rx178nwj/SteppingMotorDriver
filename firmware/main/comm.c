@@ -536,6 +536,8 @@ static void dispatch(const char *line)
             comm_send("ERR E002 INVALID_ARG\n");
         } else if (parsed_axis < 0 || parsed_axis >= NUM_AXES) {
             comm_send("ERR E003 INVALID_AXIS\n");
+        } else if (motor_get_motor_type((uint8_t)parsed_axis) == MOTOR_TYPE_OPEN_LOOP) {
+            comm_send("ERR E002 INVALID_PARAM\n");   /* OPEN_LOOP軸: エンコーダ未装備 */
         } else {
             uint32_t encoder_ppr = config_get_encoder_ppr((uint8_t)parsed_axis);
             float gear_ratio = config_get_gear_ratio((uint8_t)parsed_axis);
@@ -598,6 +600,8 @@ static void dispatch(const char *line)
     if (sscanf(line, "GET ENC %u", &axis) == 1) {
         if (axis >= NUM_AXES) {
             comm_send("ERR E003 INVALID_AXIS\n");
+        } else if (motor_get_motor_type((uint8_t)axis) == MOTOR_TYPE_OPEN_LOOP) {
+            comm_send("ERR E002 INVALID_PARAM\n");   /* OPEN_LOOP軸: エンコーダ未装備 */
         } else {
             comm_sendf("OK %ld\n", (long)encoder_get_pos((uint8_t)axis));
         }
@@ -635,6 +639,14 @@ static void dispatch(const char *line)
             comm_send("ERR E003 INVALID_AXIS\n");
         } else {
             comm_sendf("OK %.4f\n", (double)config_get_gear_ratio((uint8_t)axis));
+        }
+        return;
+    }
+    if (sscanf(line, "GET MOTOR_TYPE %u", &axis) == 1) {
+        if (axis >= NUM_AXES) {
+            comm_send("ERR E003 INVALID_AXIS\n");
+        } else {
+            comm_sendf("OK %u\n", (unsigned)motor_get_motor_type((uint8_t)axis));
         }
         return;
     }
@@ -1157,6 +1169,22 @@ static void dispatch(const char *line)
             if (sscanf(line, "SET ENC_DIR %u %d", &axis, &enc_dir_val) == 2) {
                 comm_send(motor_set_enc_dir((uint8_t)axis, (int8_t)enc_dir_val)
                           ? "OK\n" : "ERR E002 INVALID_PARAM\n");
+                return;
+            }
+        }
+        {
+            unsigned motor_type_val;
+            if (sscanf(line, "SET MOTOR_TYPE %u %u", &axis, &motor_type_val) == 2) {
+                if (axis >= NUM_AXES) {
+                    comm_send("ERR E003 INVALID_AXIS\n");
+                } else if (motor_type_val > (unsigned)MOTOR_TYPE_OPEN_LOOP) {
+                    comm_send("ERR E002 INVALID_PARAM\n");
+                } else if (motor_is_moving((uint8_t)axis)) {
+                    comm_send("ERR E008 MOTION_IN_PROGRESS\n");
+                } else {
+                    comm_send(motor_set_motor_type((uint8_t)axis, (motor_type_t)motor_type_val)
+                              ? "OK\n" : "ERR E002 INVALID_PARAM\n");
+                }
                 return;
             }
         }

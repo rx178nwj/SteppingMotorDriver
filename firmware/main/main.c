@@ -110,14 +110,15 @@ void app_main(void)
     /* --- RMT モーター制御初期化 --- */
     motor_ctrl_init();
 
-    /* --- PCNT エンコーダー初期化 (3ch, 4逓倍) --- */
-    encoder_init();
-
     /* --- ADC モニター初期化 (5ch, ADCTask 起動) --- */
     adc_monitor_init();
 
-    /* --- NVS からパラメータ読み込み・適用 --- */
+    /* --- NVS からパラメータ読み込み・適用 (motor_type を含む。encoder_init() より先に
+           実行し、オープンループ軸の PCNT/Z相 GPIO 初期化スキップ判定に使う) --- */
     config_init();
+
+    /* --- PCNT エンコーダー初期化 (motor_type==CLOSED_LOOP の軸のみ) --- */
+    encoder_init();
 
     /* --- エラーログリングバッファ初期化 (comm_send() が使用) --- */
     error_log_init();
