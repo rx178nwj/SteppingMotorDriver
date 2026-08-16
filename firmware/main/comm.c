@@ -650,6 +650,14 @@ static void dispatch(const char *line)
         }
         return;
     }
+    if (sscanf(line, "GET DRIVER_TYPE %u", &axis) == 1) {
+        if (axis >= NUM_AXES) {
+            comm_send("ERR E003 INVALID_AXIS\n");
+        } else {
+            comm_sendf("OK %u\n", (unsigned)motor_get_driver_type((uint8_t)axis));
+        }
+        return;
+    }
 
     if (sscanf(line, "GET GEAR_ANGLE %u", &axis) == 1) {
         gear_axis_status_t gear;
@@ -1183,6 +1191,22 @@ static void dispatch(const char *line)
                     comm_send("ERR E008 MOTION_IN_PROGRESS\n");
                 } else {
                     comm_send(motor_set_motor_type((uint8_t)axis, (motor_type_t)motor_type_val)
+                              ? "OK\n" : "ERR E002 INVALID_PARAM\n");
+                }
+                return;
+            }
+        }
+        {
+            unsigned driver_type_val;
+            if (sscanf(line, "SET DRIVER_TYPE %u %u", &axis, &driver_type_val) == 2) {
+                if (axis >= NUM_AXES) {
+                    comm_send("ERR E003 INVALID_AXIS\n");
+                } else if (driver_type_val > (unsigned)DRIVER_TYPE_EXTERNAL) {
+                    comm_send("ERR E002 INVALID_PARAM\n");
+                } else if (motor_is_moving((uint8_t)axis)) {
+                    comm_send("ERR E008 MOTION_IN_PROGRESS\n");
+                } else {
+                    comm_send(motor_set_driver_type((uint8_t)axis, (driver_type_t)driver_type_val)
                               ? "OK\n" : "ERR E002 INVALID_PARAM\n");
                 }
                 return;

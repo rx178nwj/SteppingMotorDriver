@@ -113,6 +113,9 @@ typedef struct {
 
     /* モータータイプ（エンコーダ有無） */
     motor_type_t         motor_type;
+
+    /* ドライバタイプ（外付けドライバはフォトカプラ経由でSTEP/DIR反転） */
+    driver_type_t        driver_type;
     bool                  home_pending;    /* true = オープンループホーミングの完了待ち (AXIS_DECEL完了時に確定処理) */
 
     /* フォルトトレース（10ms間隔リングバッファ、GET FAULT_TRACE 用） */
@@ -185,17 +188,61 @@ static inline void axis_apply_motion_profile(axis_t *ax, uint32_t v_max,
 }
 
 /* ------------------------------------------------------------------ */
+/*  ヘルパー: 共有 DRV_EN ラインの実効アクティブレベル判定                  */
+/*  オンボード DRV8825 はアクティブLow(EN=0で励磁)。外付けドライバ(TB6600等)*/
+/*  は実測によりENA=1(High)でENABLEのため、極性が正反対。同一GPIOを共有   */
+/*  するため、いずれかの軸が外付けドライバ(DRIVER_TYPE_EXTERNAL)を使用    */
+/*  している場合はライン全体をアクティブHighへ切り替える。               */
+/* ------------------------------------------------------------------ */
+static bool drv_en_active_high(void)
+{
+    for (int i = 0; i < NUM_AXES; i++) {
+        if (s_axes[i].driver_type == DRIVER_TYPE_EXTERNAL) return true;
+    }
+    return false;
+}
+
+static uint8_t s_drv_en_last_percent = 0U;   /* drv_en_active_high() 変化時の再適用用 */
+
+/* ------------------------------------------------------------------ */
 /*  ヘルパー: DRV_EN を LEDC 経由で駆動する                              */
-/*  percent = 励磁(Low)時間の割合。100=常時Low(フル励磁)、0=常時High(無励磁) */
+/*  percent = 励磁時間の割合。100=常時アクティブ(フル励磁)、0=常時非アクティブ(無励磁) */
 /* ------------------------------------------------------------------ */
 static void drv_en_set_percent(uint8_t percent)
 {
     if (percent > 100U) percent = 100U;
-    /* DRV_EN はアクティブLow: 励磁時間割合 = Low時間割合 なので、
-       LEDC の(Highレベル)デューティは (100 - percent) 側に対応させる。 */
-    uint32_t duty = (uint32_t)((100U - percent) * DRV_EN_LEDC_MAX_DUTY / 100U);
+    s_drv_en_last_percent = percent;
+
+    /* active_high: 外部ドライバ使用時はHighデューティ=励磁割合。
+       active_low  (既定): DRV8825はアクティブLowのため、Lowデューティ=励磁割合。 */
+    uint32_t duty = drv_en_active_high()
+        ? (uint32_t)(percent * DRV_EN_LEDC_MAX_DUTY / 100U)
+        : (uint32_t)((100U - percent) * DRV_EN_LEDC_MAX_DUTY / 100U);
     ledc_set_duty(DRV_EN_LEDC_MODE, DRV_EN_LEDC_CHANNEL, duty);
     ledc_update_duty(DRV_EN_LEDC_MODE, DRV_EN_LEDC_CHANNEL);
+}
+
+/* ------------------------------------------------------------------ */
+/*  ヘルパー: 外付けドライバ（フォトカプラ経由）の STEP/DIR 極性反転        */
+/*  オンボード DRV8825: STEP アイドル=Low, アクティブパルス=High (直結)     */
+/*  外付け(TB6600等): アノード5V/カソード信号 → GPIO Low でLED点灯(有効)   */
+/*                     のためアイドル=High, アクティブパルス=Low          */
+/* ------------------------------------------------------------------ */
+static inline int step_idle_level(const axis_t *ax)
+{
+    return (ax->driver_type == DRIVER_TYPE_EXTERNAL) ? 1 : 0;
+}
+
+static inline int step_active_level(const axis_t *ax)
+{
+    return (ax->driver_type == DRIVER_TYPE_EXTERNAL) ? 0 : 1;
+}
+
+static inline int dir_out_level(const axis_t *ax)
+{
+    bool level = ax->dir;
+    if (ax->driver_type == DRIVER_TYPE_EXTERNAL) level = !level;
+    return level ? 1 : 0;
 }
 
 /* ------------------------------------------------------------------ */
@@ -224,7 +271,7 @@ static esp_err_t rmt_kick(axis_t *ax)
 {
     const rmt_transmit_config_t cfg = {
         .loop_count      = RMT_LOOP_COUNT,
-        .flags.eot_level = 0,
+        .flags.eot_level = step_idle_level(ax),
     };
     return rmt_transmit(ax->tx_chan, ax->copy_enc,
                         &ax->sym, sizeof(rmt_symbol_word_t), &cfg);
@@ -468,7 +515,7 @@ static void motor_control_task(void *arg)
                     if (!ax->running) {
                         /* バックオフ開始: home_dir 逆方向に back_off_steps */
                         ax->dir = !(ax->home_dir > 0);
-                        gpio_set_level(s_dir_gpios[i], ax->dir ? 1 : 0);
+                        gpio_set_level(s_dir_gpios[i], dir_out_level(ax));
                         /* DIR セットアップ: RMT HIGH 期間 2µs で 650ns 要件を満たす */
                         ax->home_backoff_target = cur_pos +
                             (int32_t)ax->back_off_steps *
@@ -494,7 +541,7 @@ static void motor_control_task(void *arg)
                     if (!ax->running) {
                         /* fine homing 開始: home_dir 方向 */
                         ax->dir = (ax->home_dir > 0);
-                        gpio_set_level(s_dir_gpios[i], ax->dir ? 1 : 0);
+                        gpio_set_level(s_dir_gpios[i], dir_out_level(ax));
                         encoder_take_z_event((uint8_t)i); /* 残留イベントクリア */
                         ax->current_vel = (float)ax->v_home_fine;
                         set_rmt_freq(ax, ax->current_vel);
@@ -624,7 +671,7 @@ static void motor_control_task(void *arg)
                         ax->current_vel     = START_VEL_MIN;
                         ax->disable_on_stop = false;
 
-                        gpio_set_level(s_dir_gpios[i], ax->dir ? 1 : 0);
+                        gpio_set_level(s_dir_gpios[i], dir_out_level(ax));
                         /* DIR セットアップ: RMT 最初の LOW 期間（2µs）で 650ns 保証 */
 
                         ax->state           = AXIS_ACCEL;
@@ -714,7 +761,7 @@ void motor_ctrl_init(void)
         .speed_mode = DRV_EN_LEDC_MODE,
         .channel    = DRV_EN_LEDC_CHANNEL,
         .timer_sel  = DRV_EN_LEDC_TIMER,
-        .duty       = DRV_EN_LEDC_MAX_DUTY,   /* percent=0 相当: 常時High(無励磁) */
+        .duty       = DRV_EN_LEDC_MAX_DUTY,   /* 初期状態は全軸ONBOARD(アクティブLow)前提: percent=0相当・常時High(無励磁) */
         .hpoint     = 0,
     };
     ESP_ERROR_CHECK(ledc_channel_config(&drv_en_channel_cfg));
@@ -739,8 +786,9 @@ void motor_ctrl_init(void)
         const rmt_tx_event_callbacks_t cbs = { .on_trans_done = on_trans_done };
         ESP_ERROR_CHECK(rmt_tx_register_event_callbacks(ax->tx_chan, &cbs, ax));
 
-        ax->sym.level0 = 1;
-        ax->sym.level1 = 0;
+        ax->driver_type = DRIVER_TYPE_ONBOARD;
+        ax->sym.level0  = step_active_level(ax);
+        ax->sym.level1  = step_idle_level(ax);
         set_rmt_freq(ax, DEFAULT_VMAX);
 
         ESP_ERROR_CHECK(rmt_enable(ax->tx_chan));
@@ -813,7 +861,7 @@ void motor_enable(void)
 
     gpio_set_level(GPIO_DRV_SLEEP, 1);   /* スリープ解除 */
     vTaskDelay(pdMS_TO_TICKS(1));         /* チャージポンプ安定待ち */
-    drv_en_set_percent(100);              /* アクティブ Low: 励磁 */
+    drv_en_set_percent(100);              /* フル励磁 (極性は drv_en_active_high() に従う) */
     s_drv_enabled = true;
     s_chopping_active = false;
 
@@ -847,7 +895,7 @@ void motor_disable(void)
         ax->current_vel = 0.0f;
         ax->state       = AXIS_IDLE;
         rmt_stop_channel(ax);
-        gpio_set_level(s_step_gpios[i], 0);
+        gpio_set_level(s_step_gpios[i], step_idle_level(ax));
     }
     drv_en_set_percent(0);
     s_drv_enabled = false;
@@ -885,7 +933,7 @@ static bool start_motion(uint8_t axis, bool dir, int32_t target, bool pos_mode)
 
     /* DIR 設定 (STEP 開始前に 650ns 以上確保 — 1ms delay で十分) */
     ax->dir = dir;
-    gpio_set_level(s_dir_gpios[axis], dir ? 1 : 0);
+    gpio_set_level(s_dir_gpios[axis], dir_out_level(ax));
     vTaskDelay(pdMS_TO_TICKS(1));
 
     ax->target_pos      = target;
@@ -1076,7 +1124,7 @@ void motor_estop(fault_reason_t reason)
         ax->sync_pending = false;
         ax->home_pending = false;
         rmt_stop_channel(ax);
-        gpio_set_level(s_step_gpios[i], 0);
+        gpio_set_level(s_step_gpios[i], step_idle_level(ax));
     }
 
     /* DRV_EN → High（コイル励磁解除）: FAULT 遷移処理 手順2 */
@@ -1334,7 +1382,7 @@ bool motor_sync_move(uint8_t n, const uint8_t *axes, const int32_t *steps)
 
         /* DIR GPIO セット（DIR セットアップ時間は直後の vTaskDelay で確保） */
         ax->dir = dir;
-        gpio_set_level(s_dir_gpios[axes[i]], dir ? 1 : 0);
+        gpio_set_level(s_dir_gpios[axes[i]], dir_out_level(ax));
 
         /* 現在位置と目標を確定 */
         taskENTER_CRITICAL(&s_step_pos_mux);
@@ -1530,7 +1578,7 @@ bool motor_home(uint8_t axis)
 
     /* DIR 設定 */
     ax->dir = (ax->home_dir > 0);
-    gpio_set_level(s_dir_gpios[axis], ax->dir ? 1 : 0);
+    gpio_set_level(s_dir_gpios[axis], dir_out_level(ax));
     vTaskDelay(pdMS_TO_TICKS(1));   /* DIR セットアップ時間 */
 
     ax->current_vel = (float)ax->v_home_coarse;
@@ -1592,6 +1640,35 @@ bool motor_set_motor_type(uint8_t axis, motor_type_t type)
     return true;
 }
 
+driver_type_t motor_get_driver_type(uint8_t axis)
+{
+    if (axis >= NUM_AXES) return DRIVER_TYPE_ONBOARD;
+    return s_axes[axis].driver_type;
+}
+
+bool motor_set_driver_type(uint8_t axis, driver_type_t type)
+{
+    if (axis >= NUM_AXES) return false;
+    if (type != DRIVER_TYPE_ONBOARD && type != DRIVER_TYPE_EXTERNAL) return false;
+    if (motor_is_moving(axis)) return false;   /* 動作中の切替は禁止 */
+
+    axis_t *ax = &s_axes[axis];
+    ax->driver_type = type;
+
+    /* STEP パルス極性・DIR 出力レベルを新しい極性へ即時反映 */
+    ax->sym.level0 = step_active_level(ax);
+    ax->sym.level1 = step_idle_level(ax);
+    if (!ax->running) {
+        gpio_set_level(s_step_gpios[axis], step_idle_level(ax));
+        gpio_set_level(s_dir_gpios[axis], dir_out_level(ax));
+    }
+
+    /* 共有 DRV_EN の実効アクティブレベルが変わった可能性があるため、
+       現在の励磁割合を新しい極性で再適用する。 */
+    drv_en_set_percent(s_drv_en_last_percent);
+    return true;
+}
+
 uint16_t motor_get_mpc_x100(uint8_t axis)
 {
     if (axis >= NUM_AXES) return 160;
@@ -1634,15 +1711,15 @@ bool motor_test_pulse(uint8_t axis, uint32_t freq_hz)
         rmt_stop_channel(ax);
     }
 
-    ax->sym.level0    = 1;
+    ax->sym.level0    = step_active_level(ax);
     ax->sym.duration0 = (uint16_t)STEP_HIGH_TICKS;
-    ax->sym.level1    = 0;
+    ax->sym.level1    = step_idle_level(ax);
     ax->sym.duration1 = (uint16_t)low_ticks;
     ax->running       = true;
 
     const rmt_transmit_config_t tx_cfg = {
         .loop_count      = RMT_LOOP_COUNT,
-        .flags.eot_level = 0,
+        .flags.eot_level = step_idle_level(ax),
     };
     esp_err_t err = rmt_transmit(ax->tx_chan, ax->copy_enc,
                                  &ax->sym, sizeof(rmt_symbol_word_t), &tx_cfg);
@@ -1664,7 +1741,7 @@ bool motor_stop_immediate(uint8_t axis)
     ax->current_vel = 0.0f;
     ax->state       = AXIS_IDLE;
     rmt_stop_channel(ax);
-    gpio_set_level(s_step_gpios[axis], 0);
+    gpio_set_level(s_step_gpios[axis], step_idle_level(ax));
 
     ESP_LOGI(TAG, "Axis %d: stopped", axis);
     return true;

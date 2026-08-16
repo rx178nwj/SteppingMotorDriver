@@ -33,6 +33,16 @@ typedef enum {
     MOTOR_TYPE_OPEN_LOOP   = 1,   /* エンコーダなし（脱調検出無効、multi_i2c_bridge 絶対角でホーミング） */
 } motor_type_t;
 
+/* ------------------------------------------------------------------ */
+/*  ドライバタイプ（軸ごと）                                              */
+/*  外付けドライバ（TB6600 等）はフォトカプラ（アノード5V/カソード信号）    */
+/*  経由で接続されるため STEP/DIR の論理が反転する（GPIO Low = アクティブ）。*/
+/* ------------------------------------------------------------------ */
+typedef enum {
+    DRIVER_TYPE_ONBOARD  = 0,   /* オンボード DRV8825 直結（既定・非反転） */
+    DRIVER_TYPE_EXTERNAL = 1,   /* 外付けドライバ（フォトカプラ経由・STEP/DIR反転） */
+} driver_type_t;
+
 typedef struct {
     axis_state_t state;
     int32_t      pos;          /* 現在位置 [steps] */
@@ -179,6 +189,8 @@ int8_t   motor_get_enc_dir(uint8_t axis);
 bool     motor_set_enc_dir(uint8_t axis, int8_t dir);   /* +1=正 / -1=逆接続 */
 motor_type_t motor_get_motor_type(uint8_t axis);
 bool         motor_set_motor_type(uint8_t axis, motor_type_t type);
+driver_type_t motor_get_driver_type(uint8_t axis);
+bool          motor_set_driver_type(uint8_t axis, driver_type_t type);
 uint16_t motor_get_mpc_x100(uint8_t axis);
 bool     motor_set_mpc_x100(uint8_t axis, uint16_t mpc); /* microsteps_per_count×100 */
 uint32_t motor_get_v_home_coarse(uint8_t axis);

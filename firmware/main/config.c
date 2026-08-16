@@ -373,6 +373,15 @@ void config_init(void)
         motor_set_motor_type(i, (motor_type_u32 == (uint32_t)MOTOR_TYPE_OPEN_LOOP)
                                  ? MOTOR_TYPE_OPEN_LOOP : MOTOR_TYPE_CLOSED_LOOP);
 
+        /* ドライバタイプ (driver_type: 0=ONBOARD DRV8825直結[既定], 1=EXTERNAL 外付け・反転) */
+        uint32_t driver_type_u32 = (uint32_t)DRIVER_TYPE_ONBOARD;
+        if (err == ESP_OK) {
+            snprintf(key, sizeof(key), "drvtype%d", i);
+            nvs_get_u32(h, key, &driver_type_u32);
+        }
+        motor_set_driver_type(i, (driver_type_u32 == (uint32_t)DRIVER_TYPE_EXTERNAL)
+                                  ? DRIVER_TYPE_EXTERNAL : DRIVER_TYPE_ONBOARD);
+
         /* gear_ratio は既存 F-MOT-10 パラメータ。未保存時は 1.0。 */
         s_gear_ratio[i] = 1.0f;
         if (err == ESP_OK) {
@@ -470,6 +479,7 @@ bool config_save(void)
         snprintf(key, sizeof(key), "hdir%d",    i); nvs_set_u32(h, key, (uint32_t)(int32_t)motor_get_home_dir(i));
         snprintf(key, sizeof(key), "encdir%d",  i); nvs_set_u32(h, key, (uint32_t)(int32_t)motor_get_enc_dir(i));
         snprintf(key, sizeof(key), "mtype%d",   i); nvs_set_u32(h, key, (uint32_t)motor_get_motor_type(i));
+        snprintf(key, sizeof(key), "drvtype%d", i); nvs_set_u32(h, key, (uint32_t)motor_get_driver_type(i));
         snprintf(key, sizeof(key), "gearratio%d", i);
         nvs_set_u32(h, key, float_to_u32(s_gear_ratio[i]));
         snprintf(key, sizeof(key), "pot_scale%u", (unsigned)i);
@@ -532,6 +542,7 @@ void config_reset(void)
         if (p) apply_profile_params(i, p);
         motor_set_enc_dir(i, 1);
         motor_set_motor_type(i, MOTOR_TYPE_CLOSED_LOOP);
+        motor_set_driver_type(i, DRIVER_TYPE_ONBOARD);
         s_gear_offset[i] = 0.0f;
         s_gear_dir[i] = 1;
         s_gear_abs_capable[i] = false;

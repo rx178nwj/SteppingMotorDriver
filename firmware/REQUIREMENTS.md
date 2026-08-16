@@ -630,6 +630,50 @@ Section 4.4（`SET HOLD_MODE`/`SET HOLD_CURRENT_PERCENT`）
 
 ---
 
+#### F-MOT-15: ドライバタイプ（軸ごとの外付けドライバ対応、2026-08-16新設）
+
+**目的：** CH0 にオンボード DRV8825 の代わりに外付けドライバ（TB6600、Amazon購入品）を接続し、
+高出力モーター 23HS8430D を駆動できるようにする。
+
+**ハードウェア構成：**
+
+- ESP32-S3（3.3V）→ 74LVC8T245（3.3V⇔5V レベル変換）→ フォトカプラ → TB6600
+- フォトカプラはアノード側を5V固定、カソード側をSTEP/DIR信号線に接続する構成のため、
+  GPIO Low でLED点灯（アクティブ）となり、DRV8825直結時に対して**論理が反転する**
+- ENA（イネーブル）は全軸共通の `GPIO_DRV_EN` をフォトカプラ経由で共有する
+  （ハードウェア側でのみ反転され、ソフトウェアでは個別軸ごとの反転は行わない。
+  他軸のDRV8825直結ENAへの影響を避けるため）
+
+**設定（`SET DRIVER_TYPE <axis> <0|1>` / `GET DRIVER_TYPE <axis>`、軸ごと）：**
+
+| 値 | 名称 | 動作 |
+|---|------|------|
+| 0 | `DRIVER_TYPE_ONBOARD`（デフォルト） | オンボード DRV8825 直結。STEP/DIRとも非反転（既存動作） |
+| 1 | `DRIVER_TYPE_EXTERNAL` | 外付けドライバ（フォトカプラ経由）。STEPパルスのアイドル/アクティブ極性、DIR出力レベルをともに反転する |
+
+**制約：**
+
+- `SET DRIVER_TYPE` はモーション中（`motor_is_moving()`）は拒否する（E008）
+- `SET/GET DRIVER_TYPE` はNVSへ即時書き込みせず、`SAVE`コマンドで永続化する
+  （`SET MOTOR_TYPE`と同じパターン）
+- **共有 DRV_EN の極性切替（2026-08-16対応）：** 実機確認の結果、外付けドライバ（TB6600）の
+  ENAは`GPIO_DRV_EN`出力が**1(High)のときENABLE**になることが判明した。一方オンボードDRV8825の
+  ENはアクティブLow（`GPIO_DRV_EN`=0でENABLE）であり、同一GPIOを共有しているため両者の極性は
+  正反対である。この矛盾を解消するため、**いずれかの軸が`DRIVER_TYPE_EXTERNAL`を使用している
+  場合、共有`GPIO_DRV_EN`ライン全体をアクティブHigh（1=励磁）に切り替える**仕様とした
+  （`motor_ctrl.c`の`drv_en_active_high()`が全軸の`driver_type`を走査して判定し、
+  `drv_en_set_percent()`のLEDCデューティ計算に反映する。`SET DRIVER_TYPE`実行時にも現在の
+  励磁割合を新しい極性で即時再適用する）
+- **制約：** 外付けドライバ軸が1つでも存在する構成では、オンボードDRV8825を使う他軸のENも
+  同時にアクティブHighへ切り替わる。DRV8825はハードウェア的にアクティブLow固定のICピンのため、
+  **この構成でDRV8825軸とTB6600軸を同時にENABLEすることはできない**
+  （DRV8825軸はEN=Highで常にDISABLEのままになる）。同一基板でDRV8825軸と外付けドライバ軸を
+  同時運用する場合は、専用GPIOでのENA個別制御やハードウェアインバータ追加など別対策が必要
+
+**反映先：** Section 4.4（`SET/GET DRIVER_TYPE`）
+
+---
+
 ### 3.2 エンコーダ読み取り（3ch）
 
 #### F-ENC-01: 位置カウント
@@ -905,6 +949,8 @@ axis: 0〜2  または  ALL
 | `GET STALL_FAULT <axis>` | - | 脱調フォルト閾値取得（軸ごと） |
 | `SET MOTOR_TYPE <axis> <0\|1>` | 0=CLOSED_LOOP/1=OPEN_LOOP | モータータイプ設定（軸ごと、モーション中は拒否・E008、F-MOT-14） |
 | `GET MOTOR_TYPE <axis>` | - | モータータイプ取得（軸ごと、F-MOT-14） |
+| `SET DRIVER_TYPE <axis> <0\|1>` | 0=ONBOARD/1=EXTERNAL | ドライバタイプ設定（軸ごと、モーション中は拒否・E008、F-MOT-15） |
+| `GET DRIVER_TYPE <axis>` | - | ドライバタイプ取得（軸ごと、F-MOT-15） |
 | `SET POT_SCALE <axis> <deg_per_count>` | float | POT角度換算係数の校正（NVS 保存、F-MOT-12） |
 | `SET POT_ZERO <axis>` | - | 現在のPOT ADC生値をゼロ位置オフセットとして記録（NVS 保存、F-MOT-12） |
 | `CLEAR POT_ZERO <axis>` | - | POTゼロ位置オフセットを0にリセット（NVS 保存、F-MOT-12） |
